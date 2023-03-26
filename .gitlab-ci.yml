@@ -1,0 +1,19 @@
+before_script:
+    - apt-get update
+    - apt-get install --force-yes -y python lcov
+    - apt remove --purge --auto-remove cmake
+    - apt install -y software-properties-common lsb-release cmake
+
+build:
+    tags:
+        - Ubuntu2004-64bit
+    script:
+        - cmake -DCODE_COVERAGE=ON .
+        - make
+        - ctest
+        - make maxpluslibcoverage
+    artifacts:
+      expire_in: 14d
+      when: always
+      paths:
+      - ./build/coverage/

@@ -1,0 +1,7 @@
+add_subdirectory(analysis)
+add_subdirectory(exception)
+add_subdirectory(fraction)
+add_subdirectory(fsm)
+add_subdirectory(lookup)
+add_subdirectory(math)
+add_subdirectory(string)

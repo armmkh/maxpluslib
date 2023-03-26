@@ -1,0 +1,15 @@
+Makefile
+cmake_install.cmake
+cpm-package-lock.cmake
+CTestTestfile.cmake
+DartConfiguration.tcl
+/build/
+CMakeFiles/
+CMakeCache.txt
+CPM_*.cmake
+/Testing/
+CMakeDoxyfile.in
+CMakeDoxygenDefaults.cmake
+CMakeSettings.json
+/.vs/
+/out/
