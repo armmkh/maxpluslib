@@ -44,7 +44,7 @@
 #define MAXPLUS_GRAPH_MPSTATESPACE_H
 
 #include "base/fsm/fsm.h"
-#include "algebra/mpmatrix.h"
+#include "maxplus/algebra/mpmatrix.h"
 
 namespace MaxPlus {
 

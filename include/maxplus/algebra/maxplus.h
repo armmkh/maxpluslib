@@ -45,6 +45,6 @@
 #include "mptype.h"
 
 // vectors and matrices
-#include "algebra/mpmatrix.h"
+#include "maxplus/algebra/mpmatrix.h"
 
 #endif

@@ -45,7 +45,7 @@
 
 
 #include "base/fsm/fsm.h"
-#include "algebra/mptype.h"
+#include "maxplus/algebra/mptype.h"
 
 using namespace ::FSM::Labeled;
 
