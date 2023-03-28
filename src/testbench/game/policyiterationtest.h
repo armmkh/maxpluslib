@@ -1,9 +1,10 @@
 #pragma once
 
-#include <algorithm>
 #include "game/mpgameautomaton.h"
-#include "game/strategyvector.h"
 #include "game/policyiteration.h"
+#include "game/strategyvector.h"
+#include <algorithm>
+
 
 #include "testing.h"
 
@@ -23,6 +24,3 @@ public:
     void testSimpleTest(void);
     void testInvalidInputGraphTest(void);
 };
-
-
-

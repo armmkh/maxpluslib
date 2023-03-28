@@ -21,557 +21,546 @@
  *
  *  Permission is hereby granted, free of charge, to any person obtaining
  *  a copy of this software and associated documentation files (the “Software”),
- *  to deal in the Software without restriction, including without limitation 
- *  the rights to use, copy, modify, merge, publish, distribute, sublicense, 
- *  and/or sell copies of the Software, and to permit persons to whom the 
+ *  to deal in the Software without restriction, including without limitation
+ *  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ *  and/or sell copies of the Software, and to permit persons to whom the
  *  Software is furnished to do so, subject to the following conditions:
  *
- *  The above copyright notice and this permission notice shall be included 
+ *  The above copyright notice and this permission notice shall be included
  *  in all copies or substantial portions of the Software.
  *
  *  THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
 
 #ifndef BASE_MAXPLUS_GAME_POLICYITERATION_H
 #define BASE_MAXPLUS_GAME_POLICYITERATION_H
 
-#include <utility>       // std::pair
-#include <cmath>         // -Infinity
-#include <stack>
-#include <algorithm>     // std::max
 #include "ratiogame.h"
 #include "strategyvector.h"
+#include <algorithm> // std::max
+#include <cmath>     // -Infinity
+#include <stack>
+#include <utility> // std::pair
 
 using namespace ::FSM::Labeled;
 
 namespace MaxPlus {
 
-    /**
-     * Policy Iteration Algorithm to solve ratio games.
-     * <p>
-     * The algorithm start with random strategies for both players, and then starts
-     * improving the strategies until convergence. When the algorithm terminates,
-     * both strategies are optimal.
-     * <p>
-     * The algorithm has been adapted from the MDG algorithm by Chaloupka, see also
-     * Chaloupka, 2011, Algorithms for Mean-Payoff and Energy Games (PhD thesis).
-     *
-     * @author Bram van der Sanden
-     */
-    template<typename SL, typename EL>
-    class PolicyIteration {
-        const double EPSILON = 10e-5;
-
-    public:
-        ~PolicyIteration() {};
-
-        struct PolicyIterationResult {
-            std::map<State<SL, EL> *, double> values;
-            StrategyVector <SL, EL> strategy;
-        };
-
-        /**
-         * Find the values of the vertices and an optimal strategy for the given
-         * ratio game.
-         *
-         * @tparam SL state label type
-         * @tparam EL edge label type
-         * @param game game graph
-         * @return
-         */
-        PolicyIterationResult solve(RatioGame <SL, EL> *graph) {
-            return solve(graph, EPSILON);
-        }
-
-
-        /**
-         * Find the values of the vertices and an optimal strategy for the given
-         * ratio game.
-         *
-         * @tparam SL state label type
-         * @tparam EL edge label type
-         * @param game game graph
-         * @param epsilon maximum absolute error between two values when they are considered equal
-         * @return
-         */
-        PolicyIterationResult solve(RatioGame <SL, EL> *game, double epsilon) {
-            if (!checkEachStateHasSuccessor(game)) {
-                throw std::runtime_error("Input game graph is not valid. Some states have no successor.");
-            }
-            // Initialize arbitrary positional strategies.
-            StrategyVector<SL, EL> *initialStrategy = new StrategyVector<SL, EL>();
-            initialStrategy->initializeRandomStrategy(game);
-
-            return policyIteration(game, initialStrategy, epsilon);
-        }
-
-    private:
-        /**
-         * Policy iteration algorithm to find the value of each state and the strategy.
-         */
-        PolicyIterationResult policyIteration(RatioGame <SL, EL> *game,
-                                              StrategyVector <SL, EL> *initialStrategy, double epsilon) {
-            SetOfStates<SL, EL> *states = game->getStates();
-
-            bool improvement = true;
-
-            // Initialize distance vector.
-            std::map<State<SL, EL> *, double> distVector = initializeVector(states, (double) INFINITY);
-            std::map<State<SL, EL> *, double> dw2vector = initializeVector(states, (double) INFINITY);
-
-            // Initial ratio vector.
-            std::map<State<SL, EL> *, double> ratioVector = initializeVector(states, (double) -INFINITY);
-
-            // Initialize arbitrary positional strategies.
-            StrategyVector<SL, EL> currentStrategy = initialStrategy;
-
-            // Initialize state ids.
-            std::map<State<SL, EL> *, double> stateIds;
-            int cid = 0;
-            typename SetOfStates<SL, EL>::CIter si;
-            for (si = states->begin(); si != states->end(); si++) {
-                // Source vertex.
-                State<SL, EL> *state = (State<SL, EL> *) *si;
-                stateIds[state] = cid;
-                cid++;
-            }
-
-            while (improvement) {
-                improvement = false;
-
-                // Improve the strategy of player 1.
-                Player1Result result = improveStrategyPlayer1(game, &currentStrategy, distVector, ratioVector,
-                                                              dw2vector,
-                                                              stateIds, epsilon);
-
-                distVector = result.d_i_t;
-                ratioVector = result.r_i_t;
-                currentStrategy = result.s_i_t;
-                dw2vector = result.dw2_i_t;
-
-                // Improve the strategy of player 0, just one iteration.
-                std::set<State<SL, EL> *> *states = game->getV0();
-                typename std::set<State<SL, EL> *>::iterator si;
-                for (si = states->begin(); si != states->end(); si++) {
-                    // Source vertex.
-                    State<SL, EL> *v = (State<SL, EL> *) *si;
-                    // Outgoing edges.
-                    SetOfEdges<SL, EL> *es = (SetOfEdges<SL, EL> *) v->getOutgoingEdges();
-                    typename SetOfEdges<SL, EL>::CIter ei;
-                    for (ei = es->begin(); ei != es->end(); ei++) {
-                        Edge<SL, EL> *e = (Edge<SL, EL> *) *ei;
-
-                        State<SL, EL> *u = (State<SL, EL> *) e->getDestination();
-
-                        double mw = ratioVector[u];
-                        double w1 = game->getWeight1(e);
-                        double w2 = game->getWeight2(e);
-
-                        double reweighted = w1 - mw * w2;
-
-                        double w2sum_v = dw2vector[v];
-                        double w2sum_u = dw2vector[u] + w2;
-
-                        double delta = std::max(w2sum_v, w2sum_u) * epsilon;
-
-                        double dv = distVector[v];
-                        double du = distVector[u] + reweighted;
-
-                        // Player 0 wants to maximize the ratio.
-                        if (lessThan(ratioVector[v], ratioVector[u], epsilon)
-                            || (equalTo(ratioVector[v], ratioVector[u], epsilon)
-                                && (lessThan(dv, du, 2.0 * delta)))) {
-                            currentStrategy.setSuccessor(v, u);
-                            improvement = true;
-                        }
-                    }
-                }
-            }
-
-
-            PolicyIterationResult result = PolicyIterationResult();
-            result.strategy = initialStrategy;
-            result.values = ratioVector;
-            return result;
-        }
-
-        struct Player1Result {
-            std::map<State<SL, EL> *, double> d_i_t;
-            std::map<State<SL, EL> *, double> r_i_t;
-            StrategyVector <SL, EL> s_i_t;
-            std::map<State<SL, EL> *, double> dw2_i_t;
-        };
-
-        /**
-         * Improve the strategy of player 1 until the strategy is optimal against
-         * the current strategy of player 0. This procedure has been adapted from
-         * MDG in (Chaloupka, 2011).
-         *
-         * @param game            current ratio game
-         * @param currentStrategy current strategy of both players
-         * @param d_prev          previous distance vector
-         * @param r_prev          previous ratio vector
-         * @param dw2_prev        previous distance w.r.t. weights w2 vector
-         * @param stateIds        map with unique id for each state
-         * @param epsilon         epsilon value for equality on real numbers
-         * @return new distance and ratio vectors, and a new strategy vector with an
-         * updated strategy for player 1
-         */
-        Player1Result improveStrategyPlayer1(RatioGame <SL, EL> *game,
-                                             StrategyVector <SL, EL> *currentStrategy,
-                                             std::map<State<SL, EL> *, double> &d_prev,
-                                             std::map<State<SL, EL> *, double> &r_prev,
-                                             std::map<State<SL, EL> *, double> &dw2_prev,
-                                             std::map<State<SL, EL> *, double> &stateIds,
-                                             double epsilon) {
-
-            // Start strategy improvement of Player 1.
-            bool improvement = true;
-            std::map<State<SL, EL> *, double> d_i_t(d_prev);
-            std::map<State<SL, EL> *, double> r_i_t(r_prev);
-            std::map<State<SL, EL> *, double> dw2_i_t(dw2_prev);
-            StrategyVector<SL, EL> *s_i_t = new StrategyVector<SL, EL>(currentStrategy);
-
-            while (improvement) {
-                improvement = false;
-                // Evaluate the current strategies of both players.
-                StrategyEvaluation evalResult
-                        = evaluateStrategy(game, s_i_t, d_prev, r_prev, dw2_prev, stateIds, epsilon);
-
-                // Update the current vectors.
-                d_i_t = evalResult.d_i_t;
-                r_i_t = evalResult.r_i_t;
-                dw2_i_t = evalResult.dw2_i_t;
-
-
-                std::set<State<SL, EL> *> *states = game->getV1();
-                typename std::set<State<SL, EL> *>::iterator si;
-                for (si = states->begin(); si != states->end(); si++) {
-                    // Source vertex.
-                    State<SL, EL> *v = (State<SL, EL> *) *si;
-
-                    // Outgoing edges.
-                    SetOfEdges<SL, EL> *es = (SetOfEdges<SL, EL> *) v->getOutgoingEdges();
-                    typename SetOfEdges<SL, EL>::CIter ei;
-                    for (ei = es->begin(); ei != es->end(); ei++) {
-                        Edge<SL, EL> *e = (Edge<SL, EL> *) *ei;
-
-                        State<SL, EL> *u = (State<SL, EL> *) e->getDestination();
-
-                        double cycleRatio = r_i_t[u];
-                        double w1 = game->getWeight1(e);
-                        double w2 = game->getWeight2(e);
-
-                        double reweighted = w1 - cycleRatio * w2;
-
-                        double w2sum_v = dw2_i_t[v];
-                        double w2sum_u = dw2_i_t[u] + w2;
-
-                        double delta = std::max(w2sum_v, w2sum_u) * epsilon;
-
-                        double dv = d_i_t[v];
-                        double du = d_i_t[u] + reweighted;
-
-                        if (greaterThan(r_i_t[v], r_i_t[u], epsilon)
-                            || (equalTo(r_i_t[v], r_i_t[u], epsilon)
-                                && (greaterThan(dv, du, 2.0 * delta)))) {
-
-                            // Improve strategy if either a smaller ratio
-                            // can be obtained, or the distance becomes smaller.
-                            s_i_t->setSuccessor(v, u);
-                            improvement = true;
-                        }
-                    }
-                }
-
-            }
-
-            Player1Result result;
-            result.d_i_t = d_i_t;
-            result.r_i_t = r_i_t;
-            result.s_i_t = s_i_t;
-            result.dw2_i_t = dw2_i_t;
-            return result;
-        }
-
-
-        struct StrategyEvaluation {
-            std::map<State<SL, EL> *, double> d_i_t;
-            std::map<State<SL, EL> *, double> r_i_t;
-            std::map<State<SL, EL> *, double> dw2_i_t;
-        };
-
-        /**
-         * Evaluate the given strategies of both players, i.e. calculate both the
-         * distance and ratio of each vertex in the out-degree-one graph, and return
-         * the vectors.
-         *
-         * @param game           out-degree-one graph to be evaluated
-         * @param strategy       current strategy of both players
-         * @param distanceVector old distance vector
-         * @param ratioVector    old ratio vector
-         * @param dw2_prev        previous distance w.r.t. weights w2 vector
-         * @param stateIds        map with unique id for each state
-         * @return the new distance and ratio vectors
-         */
-        StrategyEvaluation evaluateStrategy(RatioGame <SL, EL> *game,
-                                            StrategyVector <SL, EL> *currentStrategy,
-                                            std::map<State<SL, EL> *, double> &distanceVector,
-                                            std::map<State<SL, EL> *, double> &ratioVector,
-                                            std::map<State<SL, EL> *, double> &dw2,
-                                            std::map<State<SL, EL> *, double> &stateIds,
-                                            double epsilon) {
-            // Find the selected vertex in each cycle, and store the ratio value.
-            CycleResult cycleResult
-                    = findCyclesInRestrictedGraph(game, currentStrategy, stateIds);
-            std::map<State<SL, EL> *, double> r_i_t = cycleResult.valueMap;
-
-            // Calculate the values for both vectors given the selected vertices
-            // and the ratio of each cycle.
-            DistanceResult dr
-                    = computeDistances(game, currentStrategy, cycleResult.states,
-                                       r_i_t, distanceVector, ratioVector, dw2, epsilon);
-
-            // Values of the new vectors.
-            StrategyEvaluation se;
-            se.d_i_t = dr.d_i_t;
-            se.r_i_t = dr.r_i_t;
-            se.dw2_i_t = dr.dw2;
-            return se;
-        }
-
-
-        struct CycleResult {
-            SetOfStates<SL, EL> *states;
-            std::map<State<SL, EL> *, double> valueMap;
-        };
-
-        /**
-         * Find all cycles in the out-degree-one graph given the current strategy.
-         * Return all selected vertices in those cycles and the ratio of each cycle,
-         * stored in the ratio vector at the selected vertex entry.
-         *
-         * @param game            out-degree-one graph to be evaluated
-         * @param currentStrategy current strategy of both players
-         * @param stateIds        map with unique id for each state
-         * @return
-         */
-        CycleResult findCyclesInRestrictedGraph(RatioGame <SL, EL> *game,
-                                                StrategyVector <SL, EL> *currentStrategy,
-                                                std::map<State<SL, EL> *, double> &stateIds) {
-            SetOfStates<SL, EL> *states = game->getStates();
-            State<SL, EL> *BOTTOM_VERTEX = nullptr;
-
-            SetOfStates<SL, EL> *selectedVertices = new SetOfStates<SL, EL>();
-
-            // Initially, all vertices are unvisited.
-            std::map<State<SL, EL> *, State<SL, EL> *> visited = initializeVector(states, BOTTOM_VERTEX);
-
-            std::map<State<SL, EL> *, double> r_i_t;
-
-            typename SetOfStates<SL, EL>::CIter si;
-            for (si = states->begin(); si != states->end(); si++) {
-                // Source vertex.
-                State<SL, EL> *v = (State<SL, EL> *) *si;
-                if (visited[v] == BOTTOM_VERTEX) {
-                    State<SL, EL> *u = v;
-                    while (visited[u] == BOTTOM_VERTEX) {
-                        visited[u] = v;
-                        u = currentStrategy->getSuccessor(u);
-                    }
-                    if (visited[u] == v) {
-                        State<SL, EL> *v_s = u;
-                        State<SL, EL> *x = currentStrategy->getSuccessor(u);
-
-                        // Initialize both numerator and denominator.
-                        Edge<SL, EL> *e = game->getEdge(u, currentStrategy->getSuccessor(u));
-                        double w1sum = game->getWeight1(e);
-                        double w2sum = game->getWeight2(e);
-
-                        while (x != u) {
-                            // Find the vertex with the lowest id for unique
-                            // ordering, to ensure always the same vertex is the
-                            // "selected vertex" in the cycle.
-                            if (stateIds[x] < stateIds[v_s]) {
-                                v_s = x;
-                            }
-                            Edge<SL, EL> *x_sucx = game->getEdge(x, currentStrategy->getSuccessor(x));
-                            double w1 = game->getWeight1(x_sucx);
-                            double w2 = game->getWeight2(x_sucx);
-
-                            w1sum += w1;
-                            w2sum += w2;
-                            x = currentStrategy->getSuccessor(x);
-                        }
-                        // Store the cycle ratio for the cycle containing v_s.
-                        r_i_t[v_s] = w1sum / w2sum;
-                        selectedVertices->insert(v_s);
-                    }
-                }
-            }
-
-            CycleResult result;
-            result.states = selectedVertices;
-            result.valueMap = r_i_t;
-
-            return result;
-        }
-
-
-        struct DistanceResult {
-            std::map<State<SL, EL> *, double> d_i_t;
-            std::map<State<SL, EL> *, double> r_i_t;
-            std::map<State<SL, EL> *, double> dw2;
-        };
-
-        /**
-         * Compute the new distance and ratio vectors.
-         *
-         * @param game             ratio game
-         * @param currentStrategy  current stategy of both players
-         * @param selectedVertices selected vertices of all cycles in the graph
-         * @param r_i_t            ratio vector, given the new player-1 strategy
-         * @param d_prev           previous distance vector
-         * @param r_prev           previous ratio vector
-         * @param dw2_prev        previous distance w.r.t. weights w2 vector
-         * @param epsilon         epsilon value for equality on real numbers
-         * @return
-         */
-        DistanceResult computeDistances(RatioGame <SL, EL> *game,
-                                        StrategyVector <SL, EL> *currentStrategy,
-                                        SetOfStates<SL, EL> *selectedStates,
-                                        std::map<State<SL, EL> *, double> &r_i_t,
-                                        std::map<State<SL, EL> *, double> &d_prev,
-                                        std::map<State<SL, EL> *, double> &r_prev,
-                                        std::map<State<SL, EL> *, double> &dw2_prev,
-                                        double epsilon) {
-            SetOfStates<SL, EL> *states = game->getStates();
-
-            std::stack<State<SL, EL> *> stack;
-            // Initialize visited vector.
-            std::map<State<SL, EL> *, bool> visited = initializeVector(states, false);
-            // Initialize selected states.
-            std::map<State<SL, EL> *, double> d_i_t;
-            std::map<State<SL, EL> *, double> dw2;
-
-            // For all selected states.
-            typename SetOfStates<SL, EL>::CIter ssi;
-            for (ssi = selectedStates->begin(); ssi != selectedStates->end(); ssi++) {
-                State<SL, EL> *u = (State<SL, EL> *) *ssi;
-                if (equalTo(r_i_t[u], r_prev[u], epsilon)) {
-                    d_i_t[u] = d_prev[u];
-                    dw2[u] = dw2_prev[u];
-                } else {
-                    d_i_t[u] = 0.0;
-                    dw2[u] = 0.0;
-                }
-                visited[u] = true;
-            }
-
-            // For all states.
-            typename SetOfStates<SL, EL>::CIter si;
-            for (si = states->begin(); si != states->end(); si++) {
-                State<SL, EL> *state = (State<SL, EL> *) *si;
-                if (!visited[state]) {
-                    State<SL, EL> *u = state;
-                    while (!visited[u]) {
-                        visited[u] = true;
-                        stack.push(u);
-                        u = currentStrategy->getSuccessor(u);
-                    }
-                    while (!stack.empty()) {
-                        State<SL, EL> *x = stack.top();
-                        stack.pop();
-                        Edge<SL, EL> *e = game->getEdge(x, u);
-                        double w1 = game->getWeight1(e);
-                        double w2 = game->getWeight2(e);
-
-                        double cycleRatio = r_i_t[u];
-
-                        double reweighted = w1 - cycleRatio * w2;
-
-                        // Update cycle ratio.
-                        r_i_t[x] = cycleRatio;
-                        // Update distance to cycle.
-                        d_i_t[x] = d_i_t[u] + reweighted;
-                        dw2[x] = dw2[u] + w2;
-                        u = x;
-                    }
-                }
-            }
-
-            DistanceResult result;
-            result.r_i_t = r_i_t;
-            result.d_i_t = d_i_t;
-            result.dw2 = dw2;
-            return result;
-        }
-
-        /**
-         * Check whether each state has at least one outgoing edge.
-         * @param graph game graph
-         * @return true if and only if each state has at least one outgoing edge
-         */
-        bool checkEachStateHasSuccessor(RatioGame <SL, EL> *graph) {
-            SetOfStates<SL, EL> *states = graph->getStates();
-
-            typename SetOfStates<SL, EL>::CIter si;
-            for (si = states->begin(); si != states->end(); si++) {
-                // For each state fetch its outgoing edges.
-                State<SL, EL> *src = (State<SL, EL> *) *si;
-                SetOfEdges<SL, EL> *es = (SetOfEdges<SL, EL> *) src->getOutgoingEdges();
-
-                // Check whether there are any outgoing edges.
-                if (es->empty()) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        /**
-         * Initialize a vector, where each vertex is mapped to a default value
-         * {@code value}.
-         *
-         * @tparam <T>      default value type
-         * @param states keys
-         * @param value    default value for each key
-         * @return map where each vertex is mapped to the default value
-         */
-        template<typename T>
-        std::map<State<SL, EL> *, T> initializeVector(SetOfStates<SL, EL> *states, T value) {
-            std::map<State<SL, EL> *, T> vector;
-
-            typename SetOfStates<SL, EL>::CIter si;
-            for (si = states->begin(); si != states->end(); si++) {
-                // Source vertex.
-                State<SL, EL> *state = (State<SL, EL> *) *si;
-                vector[state] = value;
-            }
-            return vector;
-        }
-
-
-        bool equalTo(double a, double b, double epsilon) {
-            return a == b ? true : std::abs(a - b) < epsilon;
-        }
-
-        bool greaterThan(double a, double b, double epsilon) {
-            return a - b > epsilon;
-        }
-
-        bool lessThan(double a, double b, double epsilon) {
-            return b - a > epsilon;
-        }
-
-
+/**
+ * Policy Iteration Algorithm to solve ratio games.
+ * <p>
+ * The algorithm start with random strategies for both players, and then starts
+ * improving the strategies until convergence. When the algorithm terminates,
+ * both strategies are optimal.
+ * <p>
+ * The algorithm has been adapted from the MDG algorithm by Chaloupka, see also
+ * Chaloupka, 2011, Algorithms for Mean-Payoff and Energy Games (PhD thesis).
+ *
+ * @author Bram van der Sanden
+ */
+template <typename SL, typename EL> class PolicyIteration {
+    const double EPSILON = 10e-5;
+
+public:
+    ~PolicyIteration(){};
+
+    struct PolicyIterationResult {
+        std::map<State<SL, EL> *, double> values;
+        StrategyVector<SL, EL> strategy;
     };
-}
 
-#endif //BASE_MAXPLUS_GAME_POLICYITERATION_H
+    /**
+     * Find the values of the vertices and an optimal strategy for the given
+     * ratio game.
+     *
+     * @tparam SL state label type
+     * @tparam EL edge label type
+     * @param game game graph
+     * @return
+     */
+    PolicyIterationResult solve(RatioGame<SL, EL> *graph) { return solve(graph, EPSILON); }
+
+    /**
+     * Find the values of the vertices and an optimal strategy for the given
+     * ratio game.
+     *
+     * @tparam SL state label type
+     * @tparam EL edge label type
+     * @param game game graph
+     * @param epsilon maximum absolute error between two values when they are considered equal
+     * @return
+     */
+    PolicyIterationResult solve(RatioGame<SL, EL> *game, double epsilon) {
+        if (!checkEachStateHasSuccessor(game)) {
+            throw std::runtime_error(
+                    "Input game graph is not valid. Some states have no successor.");
+        }
+        // Initialize arbitrary positional strategies.
+        StrategyVector<SL, EL> *initialStrategy = new StrategyVector<SL, EL>();
+        initialStrategy->initializeRandomStrategy(game);
+
+        return policyIteration(game, initialStrategy, epsilon);
+    }
+
+private:
+    /**
+     * Policy iteration algorithm to find the value of each state and the strategy.
+     */
+    PolicyIterationResult policyIteration(RatioGame<SL, EL> *game,
+                                          StrategyVector<SL, EL> *initialStrategy,
+                                          double epsilon) {
+        SetOfStates<SL, EL> *states = game->getStates();
+
+        bool improvement = true;
+
+        // Initialize distance vector.
+        std::map<State<SL, EL> *, double> distVector = initializeVector(states, (double)INFINITY);
+        std::map<State<SL, EL> *, double> dw2vector = initializeVector(states, (double)INFINITY);
+
+        // Initial ratio vector.
+        std::map<State<SL, EL> *, double> ratioVector = initializeVector(states, (double)-INFINITY);
+
+        // Initialize arbitrary positional strategies.
+        StrategyVector<SL, EL> currentStrategy = initialStrategy;
+
+        // Initialize state ids.
+        std::map<State<SL, EL> *, double> stateIds;
+        int cid = 0;
+        typename SetOfStates<SL, EL>::CIter si;
+        for (si = states->begin(); si != states->end(); si++) {
+            // Source vertex.
+            State<SL, EL> *state = (State<SL, EL> *)*si;
+            stateIds[state] = cid;
+            cid++;
+        }
+
+        while (improvement) {
+            improvement = false;
+
+            // Improve the strategy of player 1.
+            Player1Result result = improveStrategyPlayer1(
+                    game, &currentStrategy, distVector, ratioVector, dw2vector, stateIds, epsilon);
+
+            distVector = result.d_i_t;
+            ratioVector = result.r_i_t;
+            currentStrategy = result.s_i_t;
+            dw2vector = result.dw2_i_t;
+
+            // Improve the strategy of player 0, just one iteration.
+            std::set<State<SL, EL> *> *states = game->getV0();
+            typename std::set<State<SL, EL> *>::iterator si;
+            for (si = states->begin(); si != states->end(); si++) {
+                // Source vertex.
+                State<SL, EL> *v = (State<SL, EL> *)*si;
+                // Outgoing edges.
+                SetOfEdges<SL, EL> *es = (SetOfEdges<SL, EL> *)v->getOutgoingEdges();
+                typename SetOfEdges<SL, EL>::CIter ei;
+                for (ei = es->begin(); ei != es->end(); ei++) {
+                    Edge<SL, EL> *e = (Edge<SL, EL> *)*ei;
+
+                    State<SL, EL> *u = (State<SL, EL> *)e->getDestination();
+
+                    double mw = ratioVector[u];
+                    double w1 = game->getWeight1(e);
+                    double w2 = game->getWeight2(e);
+
+                    double reweighted = w1 - mw * w2;
+
+                    double w2sum_v = dw2vector[v];
+                    double w2sum_u = dw2vector[u] + w2;
+
+                    double delta = std::max(w2sum_v, w2sum_u) * epsilon;
+
+                    double dv = distVector[v];
+                    double du = distVector[u] + reweighted;
+
+                    // Player 0 wants to maximize the ratio.
+                    if (lessThan(ratioVector[v], ratioVector[u], epsilon)
+                        || (equalTo(ratioVector[v], ratioVector[u], epsilon)
+                            && (lessThan(dv, du, 2.0 * delta)))) {
+                        currentStrategy.setSuccessor(v, u);
+                        improvement = true;
+                    }
+                }
+            }
+        }
+
+        PolicyIterationResult result = PolicyIterationResult();
+        result.strategy = initialStrategy;
+        result.values = ratioVector;
+        return result;
+    }
+
+    struct Player1Result {
+        std::map<State<SL, EL> *, double> d_i_t;
+        std::map<State<SL, EL> *, double> r_i_t;
+        StrategyVector<SL, EL> s_i_t;
+        std::map<State<SL, EL> *, double> dw2_i_t;
+    };
+
+    /**
+     * Improve the strategy of player 1 until the strategy is optimal against
+     * the current strategy of player 0. This procedure has been adapted from
+     * MDG in (Chaloupka, 2011).
+     *
+     * @param game            current ratio game
+     * @param currentStrategy current strategy of both players
+     * @param d_prev          previous distance vector
+     * @param r_prev          previous ratio vector
+     * @param dw2_prev        previous distance w.r.t. weights w2 vector
+     * @param stateIds        map with unique id for each state
+     * @param epsilon         epsilon value for equality on real numbers
+     * @return new distance and ratio vectors, and a new strategy vector with an
+     * updated strategy for player 1
+     */
+    Player1Result improveStrategyPlayer1(RatioGame<SL, EL> *game,
+                                         StrategyVector<SL, EL> *currentStrategy,
+                                         std::map<State<SL, EL> *, double> &d_prev,
+                                         std::map<State<SL, EL> *, double> &r_prev,
+                                         std::map<State<SL, EL> *, double> &dw2_prev,
+                                         std::map<State<SL, EL> *, double> &stateIds,
+                                         double epsilon) {
+
+        // Start strategy improvement of Player 1.
+        bool improvement = true;
+        std::map<State<SL, EL> *, double> d_i_t(d_prev);
+        std::map<State<SL, EL> *, double> r_i_t(r_prev);
+        std::map<State<SL, EL> *, double> dw2_i_t(dw2_prev);
+        StrategyVector<SL, EL> *s_i_t = new StrategyVector<SL, EL>(currentStrategy);
+
+        while (improvement) {
+            improvement = false;
+            // Evaluate the current strategies of both players.
+            StrategyEvaluation evalResult =
+                    evaluateStrategy(game, s_i_t, d_prev, r_prev, dw2_prev, stateIds, epsilon);
+
+            // Update the current vectors.
+            d_i_t = evalResult.d_i_t;
+            r_i_t = evalResult.r_i_t;
+            dw2_i_t = evalResult.dw2_i_t;
+
+            std::set<State<SL, EL> *> *states = game->getV1();
+            typename std::set<State<SL, EL> *>::iterator si;
+            for (si = states->begin(); si != states->end(); si++) {
+                // Source vertex.
+                State<SL, EL> *v = (State<SL, EL> *)*si;
+
+                // Outgoing edges.
+                SetOfEdges<SL, EL> *es = (SetOfEdges<SL, EL> *)v->getOutgoingEdges();
+                typename SetOfEdges<SL, EL>::CIter ei;
+                for (ei = es->begin(); ei != es->end(); ei++) {
+                    Edge<SL, EL> *e = (Edge<SL, EL> *)*ei;
+
+                    State<SL, EL> *u = (State<SL, EL> *)e->getDestination();
+
+                    double cycleRatio = r_i_t[u];
+                    double w1 = game->getWeight1(e);
+                    double w2 = game->getWeight2(e);
+
+                    double reweighted = w1 - cycleRatio * w2;
+
+                    double w2sum_v = dw2_i_t[v];
+                    double w2sum_u = dw2_i_t[u] + w2;
+
+                    double delta = std::max(w2sum_v, w2sum_u) * epsilon;
+
+                    double dv = d_i_t[v];
+                    double du = d_i_t[u] + reweighted;
+
+                    if (greaterThan(r_i_t[v], r_i_t[u], epsilon)
+                        || (equalTo(r_i_t[v], r_i_t[u], epsilon)
+                            && (greaterThan(dv, du, 2.0 * delta)))) {
+
+                        // Improve strategy if either a smaller ratio
+                        // can be obtained, or the distance becomes smaller.
+                        s_i_t->setSuccessor(v, u);
+                        improvement = true;
+                    }
+                }
+            }
+        }
+
+        Player1Result result;
+        result.d_i_t = d_i_t;
+        result.r_i_t = r_i_t;
+        result.s_i_t = s_i_t;
+        result.dw2_i_t = dw2_i_t;
+        return result;
+    }
+
+    struct StrategyEvaluation {
+        std::map<State<SL, EL> *, double> d_i_t;
+        std::map<State<SL, EL> *, double> r_i_t;
+        std::map<State<SL, EL> *, double> dw2_i_t;
+    };
+
+    /**
+     * Evaluate the given strategies of both players, i.e. calculate both the
+     * distance and ratio of each vertex in the out-degree-one graph, and return
+     * the vectors.
+     *
+     * @param game           out-degree-one graph to be evaluated
+     * @param strategy       current strategy of both players
+     * @param distanceVector old distance vector
+     * @param ratioVector    old ratio vector
+     * @param dw2_prev        previous distance w.r.t. weights w2 vector
+     * @param stateIds        map with unique id for each state
+     * @return the new distance and ratio vectors
+     */
+    StrategyEvaluation evaluateStrategy(RatioGame<SL, EL> *game,
+                                        StrategyVector<SL, EL> *currentStrategy,
+                                        std::map<State<SL, EL> *, double> &distanceVector,
+                                        std::map<State<SL, EL> *, double> &ratioVector,
+                                        std::map<State<SL, EL> *, double> &dw2,
+                                        std::map<State<SL, EL> *, double> &stateIds,
+                                        double epsilon) {
+        // Find the selected vertex in each cycle, and store the ratio value.
+        CycleResult cycleResult = findCyclesInRestrictedGraph(game, currentStrategy, stateIds);
+        std::map<State<SL, EL> *, double> r_i_t = cycleResult.valueMap;
+
+        // Calculate the values for both vectors given the selected vertices
+        // and the ratio of each cycle.
+        DistanceResult dr = computeDistances(game,
+                                             currentStrategy,
+                                             cycleResult.states,
+                                             r_i_t,
+                                             distanceVector,
+                                             ratioVector,
+                                             dw2,
+                                             epsilon);
+
+        // Values of the new vectors.
+        StrategyEvaluation se;
+        se.d_i_t = dr.d_i_t;
+        se.r_i_t = dr.r_i_t;
+        se.dw2_i_t = dr.dw2;
+        return se;
+    }
+
+    struct CycleResult {
+        SetOfStates<SL, EL> *states;
+        std::map<State<SL, EL> *, double> valueMap;
+    };
+
+    /**
+     * Find all cycles in the out-degree-one graph given the current strategy.
+     * Return all selected vertices in those cycles and the ratio of each cycle,
+     * stored in the ratio vector at the selected vertex entry.
+     *
+     * @param game            out-degree-one graph to be evaluated
+     * @param currentStrategy current strategy of both players
+     * @param stateIds        map with unique id for each state
+     * @return
+     */
+    CycleResult findCyclesInRestrictedGraph(RatioGame<SL, EL> *game,
+                                            StrategyVector<SL, EL> *currentStrategy,
+                                            std::map<State<SL, EL> *, double> &stateIds) {
+        SetOfStates<SL, EL> *states = game->getStates();
+        State<SL, EL> *BOTTOM_VERTEX = nullptr;
+
+        SetOfStates<SL, EL> *selectedVertices = new SetOfStates<SL, EL>();
+
+        // Initially, all vertices are unvisited.
+        std::map<State<SL, EL> *, State<SL, EL> *> visited =
+                initializeVector(states, BOTTOM_VERTEX);
+
+        std::map<State<SL, EL> *, double> r_i_t;
+
+        typename SetOfStates<SL, EL>::CIter si;
+        for (si = states->begin(); si != states->end(); si++) {
+            // Source vertex.
+            State<SL, EL> *v = (State<SL, EL> *)*si;
+            if (visited[v] == BOTTOM_VERTEX) {
+                State<SL, EL> *u = v;
+                while (visited[u] == BOTTOM_VERTEX) {
+                    visited[u] = v;
+                    u = currentStrategy->getSuccessor(u);
+                }
+                if (visited[u] == v) {
+                    State<SL, EL> *v_s = u;
+                    State<SL, EL> *x = currentStrategy->getSuccessor(u);
+
+                    // Initialize both numerator and denominator.
+                    Edge<SL, EL> *e = game->getEdge(u, currentStrategy->getSuccessor(u));
+                    double w1sum = game->getWeight1(e);
+                    double w2sum = game->getWeight2(e);
+
+                    while (x != u) {
+                        // Find the vertex with the lowest id for unique
+                        // ordering, to ensure always the same vertex is the
+                        // "selected vertex" in the cycle.
+                        if (stateIds[x] < stateIds[v_s]) {
+                            v_s = x;
+                        }
+                        Edge<SL, EL> *x_succ = game->getEdge(x, currentStrategy->getSuccessor(x));
+                        double w1 = game->getWeight1(x_succ);
+                        double w2 = game->getWeight2(x_succ);
+
+                        w1sum += w1;
+                        w2sum += w2;
+                        x = currentStrategy->getSuccessor(x);
+                    }
+                    // Store the cycle ratio for the cycle containing v_s.
+                    r_i_t[v_s] = w1sum / w2sum;
+                    selectedVertices->insert(v_s);
+                }
+            }
+        }
+
+        CycleResult result;
+        result.states = selectedVertices;
+        result.valueMap = r_i_t;
+
+        return result;
+    }
+
+    struct DistanceResult {
+        std::map<State<SL, EL> *, double> d_i_t;
+        std::map<State<SL, EL> *, double> r_i_t;
+        std::map<State<SL, EL> *, double> dw2;
+    };
+
+    /**
+     * Compute the new distance and ratio vectors.
+     *
+     * @param game             ratio game
+     * @param currentStrategy  current strategy of both players
+     * @param selectedVertices selected vertices of all cycles in the graph
+     * @param r_i_t            ratio vector, given the new player-1 strategy
+     * @param d_prev           previous distance vector
+     * @param r_prev           previous ratio vector
+     * @param dw2_prev        previous distance w.r.t. weights w2 vector
+     * @param epsilon         epsilon value for equality on real numbers
+     * @return
+     */
+    DistanceResult computeDistances(RatioGame<SL, EL> *game,
+                                    StrategyVector<SL, EL> *currentStrategy,
+                                    SetOfStates<SL, EL> *selectedStates,
+                                    std::map<State<SL, EL> *, double> &r_i_t,
+                                    std::map<State<SL, EL> *, double> &d_prev,
+                                    std::map<State<SL, EL> *, double> &r_prev,
+                                    std::map<State<SL, EL> *, double> &dw2_prev,
+                                    double epsilon) {
+        SetOfStates<SL, EL> *states = game->getStates();
+
+        std::stack<State<SL, EL> *> stack;
+        // Initialize visited vector.
+        std::map<State<SL, EL> *, bool> visited = initializeVector(states, false);
+        // Initialize selected states.
+        std::map<State<SL, EL> *, double> d_i_t;
+        std::map<State<SL, EL> *, double> dw2;
+
+        // For all selected states.
+        typename SetOfStates<SL, EL>::CIter ssi;
+        for (ssi = selectedStates->begin(); ssi != selectedStates->end(); ssi++) {
+            State<SL, EL> *u = (State<SL, EL> *)*ssi;
+            if (equalTo(r_i_t[u], r_prev[u], epsilon)) {
+                d_i_t[u] = d_prev[u];
+                dw2[u] = dw2_prev[u];
+            } else {
+                d_i_t[u] = 0.0;
+                dw2[u] = 0.0;
+            }
+            visited[u] = true;
+        }
+
+        // For all states.
+        typename SetOfStates<SL, EL>::CIter si;
+        for (si = states->begin(); si != states->end(); si++) {
+            State<SL, EL> *state = (State<SL, EL> *)*si;
+            if (!visited[state]) {
+                State<SL, EL> *u = state;
+                while (!visited[u]) {
+                    visited[u] = true;
+                    stack.push(u);
+                    u = currentStrategy->getSuccessor(u);
+                }
+                while (!stack.empty()) {
+                    State<SL, EL> *x = stack.top();
+                    stack.pop();
+                    Edge<SL, EL> *e = game->getEdge(x, u);
+                    double w1 = game->getWeight1(e);
+                    double w2 = game->getWeight2(e);
+
+                    double cycleRatio = r_i_t[u];
+
+                    double reweighted = w1 - cycleRatio * w2;
+
+                    // Update cycle ratio.
+                    r_i_t[x] = cycleRatio;
+                    // Update distance to cycle.
+                    d_i_t[x] = d_i_t[u] + reweighted;
+                    dw2[x] = dw2[u] + w2;
+                    u = x;
+                }
+            }
+        }
+
+        DistanceResult result;
+        result.r_i_t = r_i_t;
+        result.d_i_t = d_i_t;
+        result.dw2 = dw2;
+        return result;
+    }
+
+    /**
+     * Check whether each state has at least one outgoing edge.
+     * @param graph game graph
+     * @return true if and only if each state has at least one outgoing edge
+     */
+    bool checkEachStateHasSuccessor(RatioGame<SL, EL> *graph) {
+        SetOfStates<SL, EL> *states = graph->getStates();
+
+        typename SetOfStates<SL, EL>::CIter si;
+        for (si = states->begin(); si != states->end(); si++) {
+            // For each state fetch its outgoing edges.
+            State<SL, EL> *src = (State<SL, EL> *)*si;
+            SetOfEdges<SL, EL> *es = (SetOfEdges<SL, EL> *)src->getOutgoingEdges();
+
+            // Check whether there are any outgoing edges.
+            if (es->empty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Initialize a vector, where each vertex is mapped to a default value
+     * {@code value}.
+     *
+     * @tparam <T>      default value type
+     * @param states keys
+     * @param value    default value for each key
+     * @return map where each vertex is mapped to the default value
+     */
+    template <typename T>
+    std::map<State<SL, EL> *, T> initializeVector(SetOfStates<SL, EL> *states, T value) {
+        std::map<State<SL, EL> *, T> vector;
+
+        typename SetOfStates<SL, EL>::CIter si;
+        for (si = states->begin(); si != states->end(); si++) {
+            // Source vertex.
+            State<SL, EL> *state = (State<SL, EL> *)*si;
+            vector[state] = value;
+        }
+        return vector;
+    }
+
+    bool equalTo(double a, double b, double epsilon) {
+        return a == b ? true : std::abs(a - b) < epsilon;
+    }
+
+    bool greaterThan(double a, double b, double epsilon) { return a - b > epsilon; }
+
+    bool lessThan(double a, double b, double epsilon) { return b - a > epsilon; }
+};
+} // namespace MaxPlus
+
+#endif // BASE_MAXPLUS_GAME_POLICYITERATION_H

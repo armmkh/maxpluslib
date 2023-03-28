@@ -28,67 +28,62 @@
  *
  *  Permission is hereby granted, free of charge, to any person obtaining
  *  a copy of this software and associated documentation files (the “Software”),
- *  to deal in the Software without restriction, including without limitation 
- *  the rights to use, copy, modify, merge, publish, distribute, sublicense, 
- *  and/or sell copies of the Software, and to permit persons to whom the 
+ *  to deal in the Software without restriction, including without limitation
+ *  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ *  and/or sell copies of the Software, and to permit persons to whom the
  *  Software is furnished to do so, subject to the following conditions:
  *
- *  The above copyright notice and this permission notice shall be included 
+ *  The above copyright notice and this permission notice shall be included
  *  in all copies or substantial portions of the Software.
  *
  *  THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
 
-#include "base/analysis/mcm/mcmgraph.h"
-#include "base/math/cmath.h"
-#include "base/lookup/clookup.h"
-#include "base/exception/exception.h"
 #include "base/analysis/mcm/mcmyto.h"
-
+#include "base/analysis/mcm/mcmgraph.h"
+#include "base/exception/exception.h"
+#include "base/lookup/clookup.h"
+#include "base/math/cmath.h"
 
 #include <float.h>
 
+namespace Graphs {
 
-namespace Graphs
-{
+#define NILN (node *)NULL
+#define NILA (arc *)NULL
 
+/*
+ * d_heap implementation
+ * ---------------------
+ * See R.E. Tarjan: Data Structures and Network
+ * Algorithms (Society for Industrial and Applied
+ * Mathematics)", Philadelphia, PA, 1983) for a
+ * description.
+ *
+ * Indices are numbered from 0 to hz-1 , hz =
+ * maximum heap size, therefore the parent of
+ * node x is int((x-1)/dh), dh = d_heap parameter
+ * = number of children per node, and the children
+ * of node x are the nodes in the interval
+ *
+ * [dh*x+1, dh*x+2, ..., min (dh *(x+1), hz-1)].
+ */
 
-#define NILN (node *) NULL
-#define  NILA (arc *) NULL
+#define dh 4L
 
-    /*
-     * d_heap implementation
-     * ---------------------
-     * See R.E. Tarjan: Data Structures and Network
-     * Algorithms (Society for Industrial and Applied
-     * Mathematics)", Philadelphia, PA, 1983) for a
-     * decsription.
-     *
-     * Indices are numbered from 0 to hz-1 , hz =
-     * maximum heap size, therefore the parent of
-     * node x is int((x-1)/dh), dh = d_heap parameter
-     * = number of children per node, and the children
-     * of node x are the nodes in the interval
-     *
-     * [dh*x+1, dh*x+2, ..., min (dh *(x+1), hz-1)].
-     */
+typedef arc *item;
 
-#define  dh 4L
-
-    typedef  arc  *item;
-
-    typedef struct D_heap
-    {
-        long max_size;
-        long size;
-        item *items;
-    } d_heap;
+typedef struct D_heap {
+    long max_size;
+    long size;
+    item *items;
+} d_heap;
 
 #if 0
     static
@@ -101,1068 +96,946 @@ namespace Graphs
     }
 #endif
 
-    static inline
-    long MINCHILD(long x, d_heap *h)
-    {
-        double min;
-        long k, kmin, upb;
+static inline long minChild(long x, d_heap *h) {
+    double min;
+    long k, k_min, upb;
 
-        kmin = -1;
-        if (x != h->size - 1)
-        {
-            min = DBL_MAX;
-            if (h->size - 1 < dh * (x + 1))
-                upb = h->size - 1;
-            else
-                upb = dh * (x + 1);
+    k_min = -1;
+    if (x != h->size - 1) {
+        min = DBL_MAX;
+        if (h->size - 1 < dh * (x + 1))
+            upb = h->size - 1;
+        else
+            upb = dh * (x + 1);
 
-            for (k = dh * x + 1; k <= upb; k++)
-            {
-                if (h->items[k]->key < min)
-                {
-                    min = h->items[k]->key;
-                    kmin = k;
-                }
+        for (k = dh * x + 1; k <= upb; k++) {
+            if (h->items[k]->key < min) {
+                min = h->items[k]->key;
+                k_min = k;
             }
         }
-
-        return (kmin);
     }
 
-	static inline
-		long MINCHILD_ROBUST(long x, d_heap* h, double epsilon)
-	{
-		double min;
-		long k, kmin, upb;
+    return (k_min);
+}
 
-		kmin = -1;
-		if (x != h->size - 1)
-		{
-			min = DBL_MAX;
-			if (h->size - 1 < dh * (x + 1))
-				upb = h->size - 1;
-			else
-				upb = dh * (x + 1);
+static inline long minChildRobust(long x, d_heap *h, double epsilon) {
+    double min;
+    long k, k_min, upb;
 
-			for (k = dh * x + 1; k <= upb; k++)
-			{
-				if (min - h->items[k]->key > epsilon)
-				{
-					min = h->items[k]->key;
-					kmin = k;
-				}
-			}
-		}
+    k_min = -1;
+    if (x != h->size - 1) {
+        min = DBL_MAX;
+        if (h->size - 1 < dh * (x + 1))
+            upb = h->size - 1;
+        else
+            upb = dh * (x + 1);
 
-		return (kmin);
-	}
-
-
-    static inline
-    void SIFTDOWN(d_heap *h, item i, long x)
-    {
-        long c, cc;
-
-        c = MINCHILD(x, h);
-        while (c >= 0 && h->items[c]->key < i->key)
-        {
-            cc = MINCHILD(c, h);
-            h->items[x] = h->items[c];
-            h->items[x]->hpos = x;
-            x = c;
-            c = cc;
+        for (k = dh * x + 1; k <= upb; k++) {
+            if (min - h->items[k]->key > epsilon) {
+                min = h->items[k]->key;
+                k_min = k;
+            }
         }
-        h->items[x] = i;
-        i->hpos = x;
     }
 
-	static inline
-		void SIFTDOWN_ROBUST(d_heap* h, item i, long x, double epsilon)
-	{
-		long c, cc;
+    return (k_min);
+}
 
-		c = MINCHILD_ROBUST(x, h, epsilon);
-		while (c >= 0 && i->key - h->items[c]->key > epsilon)
-		{
-			cc = MINCHILD_ROBUST(c, h, epsilon);
-			h->items[x] = h->items[c];
-			h->items[x]->hpos = x;
-			x = c;
-			c = cc;
-		}
-		h->items[x] = i;
-		i->hpos = x;
-	}
+static inline void SiftDown(d_heap *h, item i, long x) {
+    long c, cc;
 
-    static inline
-    void SIFTUP(d_heap *h, item i, long x)
-    {
-        long p;
-
-        p = (x == 0) ? - 1 : (x - 1) / dh;
-        while (p >= 0 && h->items[p]->key > i->key)
-        {
-            h->items[x] = h->items[p];
-            (h->items[x])->hpos = x;
-            x = p;
-            p = (p == 0) ? -1 : (p - 1) / dh;
-        }
-        h->items[x] = i;
-        i->hpos = x;
+    c = minChild(x, h);
+    while (c >= 0 && h->items[c]->key < i->key) {
+        cc = minChild(c, h);
+        h->items[x] = h->items[c];
+        h->items[x]->h_pos = x;
+        x = c;
+        c = cc;
     }
+    h->items[x] = i;
+    i->h_pos = x;
+}
 
-	static inline
-		void SIFTUP_ROBUST(d_heap* h, item i, long x, double epsilon)
-	{
-		long p;
+static inline void SiftDownRobust(d_heap *h, item i, long x, double epsilon) {
+    long c, cc;
 
-		p = (x == 0) ? -1 : (x - 1) / dh;
-		while (p >= 0 && h->items[p]->key - i->key > epsilon)
-		{
-			h->items[x] = h->items[p];
-			(h->items[x])->hpos = x;
-			x = p;
-			p = (p == 0) ? -1 : (p - 1) / dh;
-		}
-		h->items[x] = i;
-		i->hpos = x;
-	}
-
-    static inline
-    void INSERT(d_heap *h, item i)
-    {
-        SIFTUP(h, i, h->size);
-        ++(h->size);
+    c = minChildRobust(x, h, epsilon);
+    while (c >= 0 && i->key - h->items[c]->key > epsilon) {
+        cc = minChildRobust(c, h, epsilon);
+        h->items[x] = h->items[c];
+        h->items[x]->h_pos = x;
+        x = c;
+        c = cc;
     }
+    h->items[x] = i;
+    i->h_pos = x;
+}
 
-	static inline
-		void INSERT_ROBUST(d_heap* h, item i, double epsilon)
-	{
-		SIFTUP_ROBUST(h, i, h->size, epsilon);
-		++(h->size);
-	}
+static inline void SiftUp(d_heap *h, item i, long x) {
+    long p;
+
+    p = (x == 0) ? -1 : (x - 1) / dh;
+    while (p >= 0 && h->items[p]->key > i->key) {
+        h->items[x] = h->items[p];
+        (h->items[x])->h_pos = x;
+        x = p;
+        p = (p == 0) ? -1 : (p - 1) / dh;
+    }
+    h->items[x] = i;
+    i->h_pos = x;
+}
+
+static inline void SiftUpRobust(d_heap *h, item i, long x, double epsilon) {
+    long p;
+
+    p = (x == 0) ? -1 : (x - 1) / dh;
+    while (p >= 0 && h->items[p]->key - i->key > epsilon) {
+        h->items[x] = h->items[p];
+        (h->items[x])->h_pos = x;
+        x = p;
+        p = (p == 0) ? -1 : (p - 1) / dh;
+    }
+    h->items[x] = i;
+    i->h_pos = x;
+}
+
+static inline void INSERT(d_heap *h, item i) {
+    SiftUp(h, i, h->size);
+    ++(h->size);
+}
+
+static inline void INSERT_ROBUST(d_heap *h, item i, double epsilon) {
+    SiftUpRobust(h, i, h->size, epsilon);
+    ++(h->size);
+}
 
 #ifdef _MSC_VER
-    // Remove define DELETE because of a conflict with a define in winnt.h.
+// Remove define DELETE because of a conflict with a define in winnt.h.
 #undef DELETE
 #endif
 
-    static inline
-    void DELETE(d_heap *h, item i)
-    {
-        item j;
+static inline void DELETE(d_heap *h, item i) {
+    item j;
 
-        j = h->items[h->size - 1];
-        --(h->size);
-        if (i != j)
-        {
-            if (j->key <= i->key)
-                SIFTUP(h, j, i->hpos);
-            else
-                SIFTDOWN(h, j, i->hpos);
-        }
-    }
-
-	static inline
-		void DELETE_ROBUST(d_heap* h, item i, double epsilon)
-	{
-		item j;
-
-		j = h->items[h->size - 1];
-		--(h->size);
-		if (i != j)
-		{
-			if (!(j->key - i->key > epsilon))
-				SIFTUP_ROBUST(h, j, i->hpos, epsilon);
-			else
-				SIFTDOWN_ROBUST(h, j, i->hpos, epsilon);
-		}
-	}
-
-    static inline
-    item DELETE_MIN(d_heap *h)
-    {
-        item i;
-
-        if (h->size == 0)
-            return (NILA);
+    j = h->items[h->size - 1];
+    --(h->size);
+    if (i != j) {
+        if (j->key <= i->key)
+            SiftUp(h, j, i->h_pos);
         else
-        {
-            i = h->items[0];
-            DELETE(h, i);
-            return (i);
-        }
+            SiftDown(h, j, i->h_pos);
     }
+}
 
-    static inline
-    item GET_MIN(d_heap *h)
-    {
-        if (h->size == 0)
-            return (NILA);
+static inline void DELETE_ROBUST(d_heap *h, item i, double epsilon) {
+    item j;
+
+    j = h->items[h->size - 1];
+    --(h->size);
+    if (i != j) {
+        if (!(j->key - i->key > epsilon))
+            SiftUpRobust(h, j, i->h_pos, epsilon);
         else
-            return (h->items[0]);
+            SiftDownRobust(h, j, i->h_pos, epsilon);
     }
+}
 
-    static inline
-    bool ALLOC_HEAP(d_heap *h, long k)
-    {
-        h->items = (item *) malloc(k * sizeof(item));
-        if (h->items == (item *) NULL)
-            return false;
-        else
-        {
-            h->max_size = k;
-            h->size = 0;
-            return true;
-        }
+static inline item DELETE_MIN(d_heap *h) {
+    item i;
+
+    if (h->size == 0)
+        return (NILA);
+    else {
+        i = h->items[0];
+        DELETE(h, i);
+        return (i);
     }
+}
 
-    static inline
-    void DEALLOC_HEAP(d_heap *h)
-    {
-        free(h->items);
+static inline item GET_MIN(d_heap *h) {
+    if (h->size == 0)
+        return (NILA);
+    else
+        return (h->items[0]);
+}
+
+static inline bool ALLOC_HEAP(d_heap *h, long k) {
+    h->items = (item *)malloc(k * sizeof(item));
+    if (h->items == (item *)NULL)
+        return false;
+    else {
+        h->max_size = k;
+        h->size = 0;
+        return true;
     }
+}
 
-    static long update_level;
-    static node *upd_nodes;
+static inline void DEALLOC_HEAP(d_heap *h) { free(h->items); }
 
-    /**
-     * update_subtree ()
-     * recursive subtree traversal function, produces a one-way liked list of nodes
-     * contained in subtree updates node levels and costs of paths along sub-tree to
-     * nodes contained in it.
-     */
-    static
-    void update_subtree(node *root)
-    {
-        node *vptr;
+static long update_level;
+static node *upd_nodes;
 
-        root->level = update_level;
-        root->link = upd_nodes;
-        upd_nodes = root;
-		root->in_list = true;
+/**
+ * update_subtree ()
+ * recursive subtree traversal function, produces a one-way liked list of nodes
+ * contained in subtree updates node levels and costs of paths along sub-tree to
+ * nodes contained in it.
+ */
+static void update_subtree(node *root) {
+    node *vptr;
 
-        if (root->first_child != NILN)
-        {
-            ++update_level;
-            vptr = root->first_child;
-            do
-            {
-                vptr->cost_t = root->cost_t + vptr->parent_in->cost;
-                vptr->transit_time_t = root->transit_time_t
-                                       + vptr->parent_in->transit_time;
-                update_subtree(vptr);
-                vptr = vptr->right_sibl;
-            }
-            while (vptr != root->first_child);
-            --update_level;
-        }
-    }
+    root->level = update_level;
+    root->link = upd_nodes;
+    upd_nodes = root;
+    root->in_list = true;
 
-    /**
-     * mmcycle ()
-     *
-     * Determines maximum ratio cycle in a directed graph
-     * G = (V, E, c), c: E->IR a "cost" function on the
-     * edges, alternatively called "length" or "weight".
-     *
-	 * Note that it is assumed that every cycle has transit time  > 0 !
-	 * 
-	 * Note that it has been observed that the algorithm can behave non-deterministically 
-	 * across compilers, when the graph has multiple equally critical cycles
-	 * Due to the order in which floating point calculations are scheduled, the
-	 * algorithm's control flow may follow different paths and lead to different 
-	 * critical cycles as the output.
-	 * The function mmcycle_robust implements a version of the algorithm that is
-	 * deterministic across compilers. It may be a little slower.
-	 *
-     * Input parameter:
-     * ---------------
-     * gr     - graph structure with incidence lists of
-     *          incoming and outgoing edges for each node
-     *
-     * Output parameters:
-     * -----------------
-     * lambda - maximum cycle ratio
-     *
-     * cycle  - pointers to arcs on maximum ratio cycle,
-     *          ordered in array from top to bottom with
-     *          respect to subsequent arcs on cycle
-     *
-     * len    - number of elements of "cycle"
-     *
-     * If cycle or len is a NULL-pointer, then these parameters
-     * are not assigned a value.
-     *
-     * Reference
-     * ---------
-     * N.E. Young, R. E. Tarjan, J. B. Orlin: "Faster Parametric
-     * Shortest Path and Minimum-Balance Algorithms", Networks
-     * 21 (1991), 205-221
-     *
-     *
-     * Sketch of algorithm:
-     * -------------------
-     *
-     * 1) Introduce an extra node s and an emanating arc with
-     * cost zero to each node of the graph, let V' and E'
-     * be the extended node and edge sets respectively and
-     * G' = (V',E',c).
-     *
-     * 2) Let lambda = lambda_ini = sum (abs(c(e)) + 1.0 over
-     * all edges e of E';
-     *
-     * 3) Introduce edge costs c_lambda(e) = c(e) - lambda for
-     * all edges e of E', let G'_lambda = (V', E', c_lambda),
-     * (all edge costs c_lambda(e) are positive);
-     *
-     * 4) Set up tree T_lambda of shortest paths from s to all
-     * other nodes in G'_lambda, i.e. with respect to edge
-     * costs c_lambda, this tree consists of all edges ema-
-     * nating from node s, for each node v retain cost ct(v)
-     * of tree path in G' and the number of edges on the path
-     * from s to v, i.e. the tree level of v;
-     *
-     * 5) For all edges e = (u,v) in G - T_lambda compute edge
-     * (pivot) key pk as
-     *
-     * pk(e) = (ct(u) + c(u,v) - ct(v))/(lev(u) + 1 - lev(v))
-     *
-     * if lev(u) + 1 > lev(v),
-     * otherwise set pk(e) = -infinite
-     *
-     * For each node v select an incoming edge whose key is
-     * maximum among all incoming edges and assign it to v
-     * as vertex key.
-     *
-     * 6) Determine an edge emin = (u',v') such that pk(u',v')
-     * is maximum among all edge keys by way of vertex keys -
-     * such a key always exists at this point - let lambda =
-     * pk(u', v');
-     *
-     * 7) If v' is an ancestor of u' in the tree, inserting edge
-     * (u',v') into it creates a cycle with mean value lambda,
-     * this is a maximum mean cycle, return cycle and lambda;
-     *
-     * 8) Delete edge (u'',v') from the tree and insert edge (u',v')
-     * instead, for all nodes v of subtree rooted at v', update
-     * lev (v) and ct(v) by adding lev(u') + 1 - lev (v') and
-     * ct(u') + c(u',v') - ct(v') respectively, compute edge key
-     * for edge (u'',v'), remove edge key of (u',v') and update
-     * edge keys for all edges (u,v) with exactly one of its
-     * incident nodes u or v in subtree rooted at v' (such edges
-     * are the final ones on new shortest paths to destination
-     * node v), determine new vertex key for each vertex that
-     * has an incoming edge whose key has been changed;
-     *
-     * 9) goto (6);
-     */
-    void mmcycle(graph *gr, double *lambda, arc **cycle, long *len)
-    {
-        double min, infty, akey;
-        arc *aptr, *par_aptr, *vmin_aptr, *min_aptr;
-        node *sptr, *uptr, *vptr, *wptr;
-        bool foundCycle;
-        d_heap h;
-
-        // set up initial tree
-        sptr = gr->vs;
-        sptr->in_list = false;
-        sptr->cost_t = 0.0L;
-        sptr->transit_time_t = 0.0L;
-        sptr->level = 0L;
-        sptr->parent_in = NILA;
-        sptr->left_sibl = sptr;
-        sptr->right_sibl = sptr;
-        aptr = sptr->first_arc_out;
-        vptr = aptr->head;
-        sptr->first_child = vptr;
-        while (aptr != NILA)
-        {
-            wptr = aptr->head;
-            wptr->cost_t = 0.0L;
-            wptr->transit_time_t = 0.0L;
-            wptr->level = 1L;
-            wptr->parent_in = aptr;
-            wptr->first_child = NILN;
-            wptr->left_sibl = vptr;
-            vptr->right_sibl = wptr;
-            wptr->in_list = false;
-            aptr->in_tree = true;
-            aptr->hpos = -1;  // arc does not go into heap
-            aptr->key = DBL_MAX;
-            vptr = wptr;
-            aptr = aptr->next_out;
-        }
-        sptr->first_child->left_sibl = vptr;
-        vptr->right_sibl = sptr->first_child;
-
-
-        // determine upper bound on lambda, can be used as 'infinity'
-        // adds up all costs, and divide by smallest non-zero transit time
-		// requires that there are no cycles with zero transit time!
-		// Also, determine epsilon value on transit times, cost and cost/time ratios
-		// as a constant fraction of the smallest observed values
-        double total_cost_plus_one = 1.0L;
-		double min_transit_time = DBL_MAX;
-		for (aptr = &(gr->arcs[gr->n_arcs - 1L]); aptr >= gr->arcs; aptr--)
-        {
-			// add costs to total cost
-			total_cost_plus_one += fabs(aptr->cost);
-			// keep min of transit times
-			if (aptr->transit_time > 0.0L) {
-				if (aptr->transit_time < min_transit_time) {
-					min_transit_time = aptr->transit_time;
-				}
-			}
-		}
-        infty = total_cost_plus_one / min_transit_time;
-
-        // initial keys of non tree edges are equal to arc costs
-        for (aptr = &(gr->arcs[gr->n_arcs - 1L]); aptr >= gr->arcs; aptr--)
-        {
-			if (aptr->transit_time > 0) {
-				aptr->key = aptr->cost / aptr->transit_time;
-			}
-			else {
-				aptr->key = infty;
-			}
-            aptr->in_tree = false;
-        }
-
-
-
-        // d-heap used for maintenance of vertex keys
-        if (! ALLOC_HEAP(&h, gr->n_nodes))
-            throw CException("Failed allocating heap");
-
-        // compute initial vertex keys
-        for (vptr = &(gr->nodes[gr->n_nodes - 1L]); vptr >= gr->nodes; vptr--)
-        {
-            min = DBL_MAX;
-            vmin_aptr = NILA;
-            aptr = vptr->first_arc_in;
-            while (aptr != NILA)
-            {
-				if (! aptr->in_tree && aptr->key < min)
-                {
-					min = aptr->key;
-                    vmin_aptr = aptr;
-                }
-                aptr = aptr->next_in;
-            }
-            vptr->vkey = vmin_aptr;
-			if (vmin_aptr != NILA) {
-				INSERT(&h, vmin_aptr);
-			}
-        }
-        gr->vs->vkey = NILA;
-
-        while (true)
-        {
-			min_aptr = GET_MIN(&h);
-            ASSERT(min_aptr != NILA, "No element on heap!");
-
-            *lambda = min_aptr->key;
-            if (*lambda >= infty)
-            {
-				min_aptr = NILA;
-                break; // input graph is acyclic in this case
-            }
-
-            uptr = min_aptr->tail;
-            vptr = min_aptr->head;
-
-            /* check if *vptr is an ancestor of *uptr in tree */
-
-            foundCycle = false;
-            par_aptr = uptr->parent_in;
-
-            // MG: below is a fix, not in the original algorithm, since the original algorithm
-            // does not seem to anticipate the possibility of self-edges in the graph.
-            if (uptr == vptr)
-            {
-                // statement below was added to makje the calculation of the critical cycle work
-                // correctly for critical self-edges.
-                uptr->parent_in = min_aptr;
-                break;
-            }
-
-            while (par_aptr != NILA)
-            {
-				if (par_aptr->tail == vptr)
-                {
-					foundCycle = true;
-                    break;
-                }
-                else
-                    par_aptr = par_aptr->tail->parent_in;
-            }
-            if (foundCycle) break;
-
-            // it is not, remove edge (parent(v),v) from tree and make edge (u,v) a
-            // tree edge instead
-            par_aptr = vptr->parent_in;
-            par_aptr->in_tree = false;
-            min_aptr->in_tree = true;
-
-            vptr->cost_t = uptr->cost_t + min_aptr->cost;
-            vptr->transit_time_t = uptr->transit_time_t + min_aptr->transit_time;
-            wptr = par_aptr->tail;
-
-            // delete link (wptr,vptr) from tree
-			if (vptr->right_sibl == vptr) {
-				wptr->first_child = NILN;
-			}
-            else
-            {
-				vptr->right_sibl->left_sibl = vptr->left_sibl;
-                vptr->left_sibl->right_sibl = vptr->right_sibl;
-				if (wptr->first_child == vptr) {
-					wptr->first_child = vptr->right_sibl;
-				}
-            }
-
-            // insert link (uptr,vptr) into tree
-            vptr->parent_in = min_aptr;
-            if (uptr->first_child == NILN)
-            {
-				uptr->first_child = vptr;
-                vptr->right_sibl = vptr;
-                vptr->left_sibl = vptr;
-            }
-            else
-            {
-				vptr->right_sibl = uptr->first_child->right_sibl;
-                uptr->first_child->right_sibl->left_sibl = vptr;
-                vptr->left_sibl = uptr->first_child;
-                uptr->first_child->right_sibl = vptr;
-            }
-
-
-            // subtree rooted at v has u as parent node now, update level and cost
-            // entries of its nodes accordingly and produce list of nodes contained
-            // in subtree
-            upd_nodes = NILN;
-            update_level = uptr->level + 1L;
-
+    if (root->first_child != NILN) {
+        ++update_level;
+        vptr = root->first_child;
+        do {
+            vptr->cost_t = root->cost_t + vptr->parent_in->cost;
+            vptr->transit_time_t = root->transit_time_t + vptr->parent_in->transit_time;
             update_subtree(vptr);
-            // now compute new keys of arcs into nodes that have acquired a new
-            // shortest path, such arcs have head or tail in the subtree rooted at
-            // "vptr", update vertex keys at the same time, nodes to be checked are
-            // those contained in the subtree and the ones pointed to by arcs
-            // emanating from nodes in the subtree
-            vptr = upd_nodes;
-            while (vptr != NILN)
-            {
-				if (vptr->vkey != NILA)
-                    DELETE(&h, vptr->vkey);
-                min = DBL_MAX;
-                vmin_aptr = NILA;
-                aptr = vptr->first_arc_in;
-                while (aptr != NILA)
-                {
-					if (! aptr->in_tree)
-                    {
-						uptr = aptr->tail;
-                        aptr->key = uptr->transit_time_t + aptr->transit_time
-                                    > vptr->transit_time_t ?
-                                    (double)(uptr->cost_t + aptr->cost - vptr->cost_t) /
-                                    (double)(uptr->transit_time_t + aptr->transit_time
-                                             - vptr->transit_time_t) : infty;
+            vptr = vptr->right_sibling;
+        } while (vptr != root->first_child);
+        --update_level;
+    }
+}
 
-						if (aptr->key < min)
-                        {
-							min = aptr->key;
-                            vmin_aptr = aptr;
-                        }
-                    }
-                    aptr = aptr->next_in;
-                }
-				if (vmin_aptr != NILA) {
-					INSERT(&h, vmin_aptr);
-				}
-                vptr->vkey = vmin_aptr;
+/**
+ * mmcycle ()
+ *
+ * Determines maximum ratio cycle in a directed graph
+ * G = (V, E, c), c: E->IR a "cost" function on the
+ * edges, alternatively called "length" or "weight".
+ *
+ * Note that it is assumed that every cycle has transit time  > 0 !
+ *
+ * Note that it has been observed that the algorithm can behave non-deterministically
+ * across compilers, when the graph has multiple equally critical cycles
+ * Due to the order in which floating point calculations are scheduled, the
+ * algorithm's control flow may follow different paths and lead to different
+ * critical cycles as the output.
+ * The function mmcycle_robust implements a version of the algorithm that is
+ * deterministic across compilers. It may be a little slower.
+ *
+ * Input parameter:
+ * ---------------
+ * gr     - graph structure with incidence lists of
+ *          incoming and outgoing edges for each node
+ *
+ * Output parameters:
+ * -----------------
+ * lambda - maximum cycle ratio
+ *
+ * cycle  - pointers to arcs on maximum ratio cycle,
+ *          ordered in array from top to bottom with
+ *          respect to subsequent arcs on cycle
+ *
+ * len    - number of elements of "cycle"
+ *
+ * If cycle or len is a NULL-pointer, then these parameters
+ * are not assigned a value.
+ *
+ * Reference
+ * ---------
+ * N.E. Young, R. E. Tarjan, J. B. Orlin: "Faster Parametric
+ * Shortest Path and Minimum-Balance Algorithms", Networks
+ * 21 (1991), 205-221
+ *
+ *
+ * Sketch of algorithm:
+ * -------------------
+ *
+ * 1) Introduce an extra node s and an emanating arc with
+ * cost zero to each node of the graph, let V' and E'
+ * be the extended node and edge sets respectively and
+ * G' = (V',E',c).
+ *
+ * 2) Let lambda = lambda_ini = sum (abs(c(e)) + 1.0 over
+ * all edges e of E';
+ *
+ * 3) Introduce edge costs c_lambda(e) = c(e) - lambda for
+ * all edges e of E', let G'_lambda = (V', E', c_lambda),
+ * (all edge costs c_lambda(e) are positive);
+ *
+ * 4) Set up tree T_lambda of shortest paths from s to all
+ * other nodes in G'_lambda, i.e. with respect to edge
+ * costs c_lambda, this tree consists of all edges
+ * emanating from node s, for each node v retain cost ct(v)
+ * of tree path in G' and the number of edges on the path
+ * from s to v, i.e. the tree level of v;
+ *
+ * 5) For all edges e = (u,v) in G - T_lambda compute edge
+ * (pivot) key pk as
+ *
+ * pk(e) = (ct(u) + c(u,v) - ct(v))/(lev(u) + 1 - lev(v))
+ *
+ * if lev(u) + 1 > lev(v),
+ * otherwise set pk(e) = -infinite
+ *
+ * For each node v select an incoming edge whose key is
+ * maximum among all incoming edges and assign it to v
+ * as vertex key.
+ *
+ * 6) Determine an edge e_min = (u',v') such that pk(u',v')
+ * is maximum among all edge keys by way of vertex keys -
+ * such a key always exists at this point - let lambda =
+ * pk(u', v');
+ *
+ * 7) If v' is an ancestor of u' in the tree, inserting edge
+ * (u',v') into it creates a cycle with mean value lambda,
+ * this is a maximum mean cycle, return cycle and lambda;
+ *
+ * 8) Delete edge (u'',v') from the tree and insert edge (u',v')
+ * instead, for all nodes v of subtree rooted at v', update
+ * lev (v) and ct(v) by adding lev(u') + 1 - lev (v') and
+ * ct(u') + c(u',v') - ct(v') respectively, compute edge key
+ * for edge (u'',v'), remove edge key of (u',v') and update
+ * edge keys for all edges (u,v) with exactly one of its
+ * incident nodes u or v in subtree rooted at v' (such edges
+ * are the final ones on new shortest paths to destination
+ * node v), determine new vertex key for each vertex that
+ * has an incoming edge whose key has been changed;
+ *
+ * 9) goto (6);
+ */
+void mmcycle(graph *gr, double *lambda, arc **cycle, long *len) {
+    double min, infty, a_key;
+    arc *a_ptr, *par_a_ptr, *vmin_a_ptr, *min_a_ptr;
+    node *s_ptr, *uptr, *v_ptr, *w_ptr;
+    bool foundCycle;
+    d_heap h;
 
-                vptr = vptr->link;
-            }
+    // set up initial tree
+    s_ptr = gr->vs;
+    s_ptr->in_list = false;
+    s_ptr->cost_t = 0.0L;
+    s_ptr->transit_time_t = 0.0L;
+    s_ptr->level = 0L;
+    s_ptr->parent_in = NILA;
+    s_ptr->left_sibling = s_ptr;
+    s_ptr->right_sibling = s_ptr;
+    a_ptr = s_ptr->first_arc_out;
+    v_ptr = a_ptr->head;
+    s_ptr->first_child = v_ptr;
+    while (a_ptr != NILA) {
+        w_ptr = a_ptr->head;
+        w_ptr->cost_t = 0.0L;
+        w_ptr->transit_time_t = 0.0L;
+        w_ptr->level = 1L;
+        w_ptr->parent_in = a_ptr;
+        w_ptr->first_child = NILN;
+        w_ptr->left_sibling = v_ptr;
+        v_ptr->right_sibling = w_ptr;
+        w_ptr->in_list = false;
+        a_ptr->in_tree = true;
+        a_ptr->h_pos = -1; // arc does not go into heap
+        a_ptr->key = DBL_MAX;
+        v_ptr = w_ptr;
+        a_ptr = a_ptr->next_out;
+    }
+    s_ptr->first_child->left_sibling = v_ptr;
+    v_ptr->right_sibling = s_ptr->first_child;
 
-            min_aptr->key = DBL_MAX;
-
-            // now update keys of arcs from nodes in subtree to nodes not contained
-            // in subtree and update vertex keys for the latter if necessary
-            vptr = upd_nodes;
-            while (vptr != NILN)
-            {
-				aptr = vptr->first_arc_out;
-                while (aptr != NILA)
-                {
-					if (! aptr->in_tree && ! aptr->head->in_list)
-                    {
-						wptr = aptr->head;
-                        akey = vptr->transit_time_t + aptr->transit_time
-                               > wptr->transit_time_t ?
-                               (double)(vptr->cost_t + aptr->cost - wptr->cost_t)
-                               / (double)(vptr->transit_time_t + aptr->transit_time
-                                          - wptr->transit_time_t) : infty;
-
-						if (akey < wptr->vkey->key)
-                        {
-							DELETE(&h, wptr->vkey);
-                            aptr->key = akey;
-                            INSERT(&h, aptr);
-                            wptr->vkey = aptr;
-                        }
-						else {
-							aptr->key = akey;
-						}
-                    }
-                    aptr = aptr->next_out;
-                }
-                vptr = vptr->link;
-            }
-
-            vptr = upd_nodes;
-            while (vptr != NILN)
-            {
-				vptr->in_list = false;
-                vptr = vptr->link;
-            }
-        }
-
-        DEALLOC_HEAP(&h);
-        if (cycle != NULL && len != NULL)
-        {
-            *len = 0L;
-            if (min_aptr != NILA)
-            {
-                cycle[(*len)++] = min_aptr;
-                aptr = min_aptr->tail->parent_in;
-                // MG: adapted the loop to work also for critical self-edges
-                // keeping the original in comment for later reference in case of
-                // problems or doubts...
-                //    do
-                //    {
-                //        cycle[(*len)++] = aptr;
-                //        aptr = aptr->tail->parent_in;
-                //    }
-                //    while (aptr->head != min_aptr->head);
-                while (aptr->head != min_aptr->head)
-                {
-                    cycle[(*len)++] = aptr;
-                    aptr = aptr->tail->parent_in;
-                }
+    // determine upper bound on lambda, can be used as 'infinity'
+    // adds up all costs, and divide by smallest non-zero transit time
+    // requires that there are no cycles with zero transit time!
+    // Also, determine epsilon value on transit times, cost and cost/time ratios
+    // as a constant fraction of the smallest observed values
+    double total_cost_plus_one = 1.0L;
+    double min_transit_time = DBL_MAX;
+    for (a_ptr = &(gr->arcs[gr->n_arcs - 1L]); a_ptr >= gr->arcs; a_ptr--) {
+        // add costs to total cost
+        total_cost_plus_one += fabs(a_ptr->cost);
+        // keep min of transit times
+        if (a_ptr->transit_time > 0.0L) {
+            if (a_ptr->transit_time < min_transit_time) {
+                min_transit_time = a_ptr->transit_time;
             }
         }
     }
+    infty = total_cost_plus_one / min_transit_time;
 
-	/**
-	 * mmcycle_robust ()
-	 *
-	 * Determines maximum ratio cycle in a directed graph in a robust way
-	 * G = (V, E, c), c: E->IR a "cost" function on the
-	 * edges, alternatively called "length" or "weight".
-	 * It has been observed that the mmcycle algorithm can behave non - deterministically
-	 * across compilers, when the graph has multiple equally critical cycles
-	 * Due to the order in which floating point calculations are scheduled, the
-	 * algorithm's control flow may follow different paths and lead to different
-	 * critical cycles as the output.
-	 * This function mmcycle_robust implements a version of the algorithm that is
-	 * deterministic across compilers. It may be a little slower.
-	 * For more info about the algorithm, see the mmcycle function.
-	 *
-	 * TODO: see if the algoithms can be unified to remove duplicate code
-	 **/
+    // initial keys of non tree edges are equal to arc costs
+    for (a_ptr = &(gr->arcs[gr->n_arcs - 1L]); a_ptr >= gr->arcs; a_ptr--) {
+        if (a_ptr->transit_time > 0) {
+            a_ptr->key = a_ptr->cost / a_ptr->transit_time;
+        } else {
+            a_ptr->key = infty;
+        }
+        a_ptr->in_tree = false;
+    }
 
-	void mmcycle_robust(graph* gr, double* lambda, arc** cycle, long* len)
-	{
-		const double MCR_EPSILON_RATIO = 1.0e-8L;
-		double min, infty, akey;
-		arc* aptr, * par_aptr, * vmin_aptr, * min_aptr;
-		node* sptr, * uptr, * vptr, * wptr;
-		bool foundCycle;
-		d_heap h;
+    // d-heap used for maintenance of vertex keys
+    if (!ALLOC_HEAP(&h, gr->n_nodes))
+        throw CException("Failed allocating heap");
 
-		// set up initial tree
-		sptr = gr->vs;
-		sptr->in_list = false;
-		sptr->cost_t = 0.0L;
-		sptr->transit_time_t = 0.0L;
-		sptr->level = 0L;
-		sptr->parent_in = NILA;
-		sptr->left_sibl = sptr;
-		sptr->right_sibl = sptr;
-		aptr = sptr->first_arc_out;
-		vptr = aptr->head;
-		sptr->first_child = vptr;
-		while (aptr != NILA)
-		{
-			wptr = aptr->head;
-			wptr->cost_t = 0.0L;
-			wptr->transit_time_t = 0.0L;
-			wptr->level = 1L;
-			wptr->parent_in = aptr;
-			wptr->first_child = NILN;
-			wptr->left_sibl = vptr;
-			vptr->right_sibl = wptr;
-			wptr->in_list = false;
-			aptr->in_tree = true;
-			aptr->hpos = -1;  // arc does not go into heap
-			aptr->key = DBL_MAX;
-			vptr = wptr;
-			aptr = aptr->next_out;
-		}
-		sptr->first_child->left_sibl = vptr;
-		vptr->right_sibl = sptr->first_child;
+    // compute initial vertex keys
+    for (v_ptr = &(gr->nodes[gr->n_nodes - 1L]); v_ptr >= gr->nodes; v_ptr--) {
+        min = DBL_MAX;
+        vmin_a_ptr = NILA;
+        a_ptr = v_ptr->first_arc_in;
+        while (a_ptr != NILA) {
+            if (!a_ptr->in_tree && a_ptr->key < min) {
+                min = a_ptr->key;
+                vmin_a_ptr = a_ptr;
+            }
+            a_ptr = a_ptr->next_in;
+        }
+        v_ptr->v_key = vmin_a_ptr;
+        if (vmin_a_ptr != NILA) {
+            INSERT(&h, vmin_a_ptr);
+        }
+    }
+    gr->vs->v_key = NILA;
 
+    while (true) {
+        min_a_ptr = GET_MIN(&h);
+        ASSERT(min_a_ptr != NILA, "No element on heap!");
 
-		// determine upper bound on lambda, can be used as 'infinity'
-		// adds up all costs, and divide by smallest non-zero transit time
-		// requires that there are no cycles with zero transit time!
-		// Also, determine epsilon value on transit times, cost and cost/time ratios
-		// as a constant fraction of the smallest observed values
-		double total_cost_plus_one = 1.0L;
-		double min_transit_time = DBL_MAX;
-		double min_cost = DBL_MAX;
-		for (aptr = &(gr->arcs[gr->n_arcs - 1L]); aptr >= gr->arcs; aptr--)
-		{
-			// add costs to total cost
-			total_cost_plus_one += fabs(aptr->cost);
-			// keep min of transit times
-			if (aptr->transit_time > 0.0L) {
-				if (aptr->transit_time < min_transit_time) {
-					min_transit_time = aptr->transit_time;
-				}
-			}
-			// keep min of costs
-			if (aptr->cost > 0.0L) {
-				if (aptr->cost < min_cost) {
-					min_cost = aptr->cost;
-				}
-			}
-		}
-		infty = total_cost_plus_one / min_transit_time;
-		double epsilon_transit_time = MCR_EPSILON_RATIO * min_transit_time;
-		double epsilon_cost_time_ratio = MCR_EPSILON_RATIO * (min_cost / min_transit_time);
-
-		// initial keys of non tree edges are equal to arc costs
-		for (aptr = &(gr->arcs[gr->n_arcs - 1L]); aptr >= gr->arcs; aptr--)
-		{
-			if (aptr->transit_time > epsilon_transit_time) {
-				aptr->key = aptr->cost / aptr->transit_time;
-			}
-			else {
-				aptr->key = infty;
-			}
-			aptr->in_tree = false;
-		}
-
-
-
-		// d-heap used for maintenance of vertex keys
-		if (!ALLOC_HEAP(&h, gr->n_nodes))
-			throw CException("Failed allocating heap");
-
-		// compute initial vertex keys
-		for (vptr = &(gr->nodes[gr->n_nodes - 1L]); vptr >= gr->nodes; vptr--)
-		{
-			min = DBL_MAX;
-			vmin_aptr = NILA;
-			aptr = vptr->first_arc_in;
-			while (aptr != NILA)
-			{
-				if (!aptr->in_tree && (min - aptr->key > epsilon_cost_time_ratio))
-				{
-					min = aptr->key;
-					vmin_aptr = aptr;
-				}
-				aptr = aptr->next_in;
-			}
-			vptr->vkey = vmin_aptr;
-			if (vmin_aptr != NILA) {
-				INSERT_ROBUST(&h, vmin_aptr, epsilon_cost_time_ratio);
-			}
-		}
-		gr->vs->vkey = NILA;
-
-		while (true)
-		{
-			min_aptr = GET_MIN(&h);
-			ASSERT(min_aptr != NILA, "No element on heap!");
-
-			*lambda = min_aptr->key;
-			if (*lambda >= infty)
-			{
-				min_aptr = NILA;
-				break; // input graph is acyclic in this case
-			}
-
-			uptr = min_aptr->tail;
-			vptr = min_aptr->head;
-
-			/* check if *vptr is an ancestor of *uptr in tree */
-
-			foundCycle = false;
-			par_aptr = uptr->parent_in;
-
-			// MG: below is a fix, not in the original algorithm, since the original algorithm
-			// does not seem to anticipate the possibility of self-edges in the graph.
-			if (uptr == vptr)
-			{
-				// statement below was added to makje the calculation of the critical cycle work
-				// correctly for critical self-edges.
-				uptr->parent_in = min_aptr;
-				break;
-			}
-
-			while (par_aptr != NILA)
-			{
-				if (par_aptr->tail == vptr)
-				{
-					foundCycle = true;
-					break;
-				}
-				else
-					par_aptr = par_aptr->tail->parent_in;
-			}
-			if (foundCycle) break;
-
-			// it is not, remove edge (parent(v),v) from tree and make edge (u,v) a
-			// tree edge instead
-			par_aptr = vptr->parent_in;
-			par_aptr->in_tree = false;
-			min_aptr->in_tree = true;
-
-			vptr->cost_t = uptr->cost_t + min_aptr->cost;
-			vptr->transit_time_t = uptr->transit_time_t + min_aptr->transit_time;
-			wptr = par_aptr->tail;
-
-			// delete link (wptr,vptr) from tree
-			if (vptr->right_sibl == vptr) {
-				wptr->first_child = NILN;
-			}
-			else
-			{
-				vptr->right_sibl->left_sibl = vptr->left_sibl;
-				vptr->left_sibl->right_sibl = vptr->right_sibl;
-				if (wptr->first_child == vptr) {
-					wptr->first_child = vptr->right_sibl;
-				}
-			}
-
-			// insert link (uptr,vptr) into tree
-			vptr->parent_in = min_aptr;
-			if (uptr->first_child == NILN)
-			{
-				uptr->first_child = vptr;
-				vptr->right_sibl = vptr;
-				vptr->left_sibl = vptr;
-			}
-			else
-			{
-				vptr->right_sibl = uptr->first_child->right_sibl;
-				uptr->first_child->right_sibl->left_sibl = vptr;
-				vptr->left_sibl = uptr->first_child;
-				uptr->first_child->right_sibl = vptr;
-			}
-
-
-			// subtree rooted at v has u as parent node now, update level and cost
-			// entries of its nodes accordingly and produce list of nodes contained
-			// in subtree
-			upd_nodes = NILN;
-			update_level = uptr->level + 1L;
-
-			update_subtree(vptr);
-			// now compute new keys of arcs into nodes that have acquired a new
-			// shortest path, such arcs have head or tail in the subtree rooted at
-			// "vptr", update vertex keys at the same time, nodes to be checked are
-			// those contained in the subtree and the ones pointed to by arcs
-			// emanating from nodes in the subtree
-			vptr = upd_nodes;
-			while (vptr != NILN)
-			{
-				if (vptr->vkey != NILA)
-					DELETE_ROBUST(&h, vptr->vkey, epsilon_cost_time_ratio);
-				min = DBL_MAX;
-				vmin_aptr = NILA;
-				aptr = vptr->first_arc_in;
-				while (aptr != NILA)
-				{
-					if (!aptr->in_tree)
-					{
-						uptr = aptr->tail;
-						if (uptr->transit_time_t + aptr->transit_time - vptr->transit_time_t > epsilon_transit_time) {
-							aptr->key = (uptr->cost_t + aptr->cost - vptr->cost_t) / (uptr->transit_time_t + aptr->transit_time - vptr->transit_time_t);
-						}
-						else {
-							aptr->key = infty;
-						}
-
-						if (min - aptr->key > epsilon_cost_time_ratio)
-						{
-							min = aptr->key;
-							vmin_aptr = aptr;
-						}
-					}
-					aptr = aptr->next_in;
-				}
-				if (vmin_aptr != NILA) {
-					INSERT_ROBUST(&h, vmin_aptr, epsilon_cost_time_ratio);
-				}
-				vptr->vkey = vmin_aptr;
-				vptr = vptr->link;
-			}
-
-			min_aptr->key = DBL_MAX;
-
-			// now update keys of arcs from nodes in subtree to nodes not contained
-			// in subtree and update vertex keys for the latter if necessary
-			vptr = upd_nodes;
-			while (vptr != NILN)
-			{
-				aptr = vptr->first_arc_out;
-				while (aptr != NILA)
-				{
-					if (!aptr->in_tree && !aptr->head->in_list)
-					{
-						wptr = aptr->head;
-						if (vptr->transit_time_t + aptr->transit_time - wptr->transit_time_t > epsilon_transit_time) {
-							akey = (vptr->cost_t + aptr->cost - wptr->cost_t) / (vptr->transit_time_t + aptr->transit_time - wptr->transit_time_t);
-						}
-						else {
-							akey = infty;
-						}
-						if (wptr->vkey->key - akey > epsilon_cost_time_ratio)
-						{
-							DELETE_ROBUST(&h, wptr->vkey, epsilon_cost_time_ratio);
-							aptr->key = akey;
-							INSERT_ROBUST(&h, aptr, epsilon_cost_time_ratio);
-							wptr->vkey = aptr;
-						}
-						else {
-							aptr->key = akey;
-						}
-					}
-					aptr = aptr->next_out;
-				}
-				vptr = vptr->link;
-			}
-
-			vptr = upd_nodes;
-			while (vptr != NILN)
-			{
-				vptr->in_list = false;
-				vptr = vptr->link;
-			}
-		}
-
-		DEALLOC_HEAP(&h);
-		if (cycle != NULL && len != NULL)
-		{
-			*len = 0L;
-			if (min_aptr != NILA)
-			{
-				cycle[(*len)++] = min_aptr;
-				aptr = min_aptr->tail->parent_in;
-				// MG: adapted the loop to work also for critical self-edges
-				// keeping the original in comment for later reference in case of
-				// problems or doubts...
-				//    do
-				//    {
-				//        cycle[(*len)++] = aptr;
-				//        aptr = aptr->tail->parent_in;
-				//    }
-				//    while (aptr->head != min_aptr->head);
-				while (aptr->head != min_aptr->head)
-				{
-					cycle[(*len)++] = aptr;
-					aptr = aptr->tail->parent_in;
-				}
-			}
-		}
-	}
-
-
-
-
-    /**
-     * convertMCMgraphToYTOgraph ()
-     * The function converts a weighted directed graph used in the MCM algorithms
-     * to graph input for Young-Tarjan-Orlin's algorithm.
-	 * It assumes that the id's of the nodes are 0 <= id < number of nodes
-     */
-    void convertMCMgraphToYTOgraph(MCMgraph *g,
-                                   graph *gr, double(*costFunction)(MCMedge *e),
-                                   double(*transit_timeFunction)(MCMedge *e))
-    {
-        node *x;
-        arc *a;
-
-        gr->n_nodes = g->nrVisibleNodes();
-        gr->n_arcs = g->nrVisibleEdges();
-		// allocate space for the nodes, plus one for the exta source node that will be added
-        gr->nodes = (node *)malloc((gr->n_nodes + 1) * sizeof(node));
-        gr->arcs = (arc *)malloc((gr->n_arcs + gr->n_nodes) * sizeof(arc));
-
-        // create nodes
-		// keep an index of node id's
-		CLookupIntInt nodeIndex;
-		uint ind = 0;
-		for (MCMnodesCIter iter = g->getNodes().begin(); iter != g->getNodes().end(); iter++)
-        {
-            MCMnode *n = *iter;
-			nodeIndex.put(n->id, ind);
-			x = &((gr->nodes)[ind]);
-            x->id = n->id + 1;
-            x->first_arc_out = NULL;
-            x->first_arc_in = NULL;
-
-            // Next
-            x++;
-			ind++;
+        *lambda = min_a_ptr->key;
+        if (*lambda >= infty) {
+            min_a_ptr = NILA;
+            break; // input graph is acyclic in this case
         }
 
-        // create arcs
-        a = gr->arcs;
-        for (MCMedgesCIter iter = g->getEdges().begin(); iter != g->getEdges().end(); iter++)
-        {
-            MCMedge *e = *iter;
-            MCMnode *u = e->src;
-            MCMnode *v = e->dst;
+        uptr = min_a_ptr->tail;
+        v_ptr = min_a_ptr->head;
 
-            a->tail = &(gr->nodes[nodeIndex.get(u->id)]);
-            a->head = &(gr->nodes[nodeIndex.get(v->id)]);
-            a->cost = (*costFunction)(e);
-            a->transit_time = (*transit_timeFunction)(e);
-            a->next_out = a->tail->first_arc_out;
-            a->tail->first_arc_out = a;
-            a->next_in = a->head->first_arc_in;
-            a->head->first_arc_in = a;
-            a->mcmEdge = e;
-            // Next
-            a++;
+        /* check if *vptr is an ancestor of *uptr in tree */
+
+        foundCycle = false;
+        par_a_ptr = uptr->parent_in;
+
+        // MG: below is a fix, not in the original algorithm, since the original algorithm
+        // does not seem to anticipate the possibility of self-edges in the graph.
+        if (uptr == v_ptr) {
+            // statement below was added to make the calculation of the critical cycle work
+            // correctly for critical self-edges.
+            uptr->parent_in = min_a_ptr;
+            break;
         }
 
-        // Create a source node which has an edge to all nodes
-        gr->vs = &(gr->nodes[gr->n_nodes]);
-        gr->vs->id = 0;
-        gr->vs->first_arc_out = NULL;
-        gr->vs->first_arc_in = NULL;
-        for (int i = 0; i < gr->n_nodes; i++)
-        {
-            a->cost = 0;
-            a->transit_time = 0.0;
-            a->tail = gr->vs;
-            a->head = &(gr->nodes[i]);
-            a->next_out = gr->vs->first_arc_out;
-            gr->vs->first_arc_out = a;
-            a->next_in = a->head->first_arc_in;
-            a->head->first_arc_in = a;
-
-            // Next
-            a++;
+        while (par_a_ptr != NILA) {
+            if (par_a_ptr->tail == v_ptr) {
+                foundCycle = true;
+                break;
+            } else
+                par_a_ptr = par_a_ptr->tail->parent_in;
         }
+        if (foundCycle)
+            break;
+
+        // it is not, remove edge (parent(v),v) from tree and make edge (u,v) a
+        // tree edge instead
+        par_a_ptr = v_ptr->parent_in;
+        par_a_ptr->in_tree = false;
+        min_a_ptr->in_tree = true;
+
+        v_ptr->cost_t = uptr->cost_t + min_a_ptr->cost;
+        v_ptr->transit_time_t = uptr->transit_time_t + min_a_ptr->transit_time;
+        w_ptr = par_a_ptr->tail;
+
+        // delete link (w_ptr,v_ptr) from tree
+        if (v_ptr->right_sibling == v_ptr) {
+            w_ptr->first_child = NILN;
+        } else {
+            v_ptr->right_sibling->left_sibling = v_ptr->left_sibling;
+            v_ptr->left_sibling->right_sibling = v_ptr->right_sibling;
+            if (w_ptr->first_child == v_ptr) {
+                w_ptr->first_child = v_ptr->right_sibling;
+            }
+        }
+
+        // insert link (uptr,vptr) into tree
+        v_ptr->parent_in = min_a_ptr;
+        if (uptr->first_child == NILN) {
+            uptr->first_child = v_ptr;
+            v_ptr->right_sibling = v_ptr;
+            v_ptr->left_sibling = v_ptr;
+        } else {
+            v_ptr->right_sibling = uptr->first_child->right_sibling;
+            uptr->first_child->right_sibling->left_sibling = v_ptr;
+            v_ptr->left_sibling = uptr->first_child;
+            uptr->first_child->right_sibling = v_ptr;
+        }
+
+        // subtree rooted at v has u as parent node now, update level and cost
+        // entries of its nodes accordingly and produce list of nodes contained
+        // in subtree
+        upd_nodes = NILN;
+        update_level = uptr->level + 1L;
+
+        update_subtree(v_ptr);
+        // now compute new keys of arcs into nodes that have acquired a new
+        // shortest path, such arcs have head or tail in the subtree rooted at
+        // "vptr", update vertex keys at the same time, nodes to be checked are
+        // those contained in the subtree and the ones pointed to by arcs
+        // emanating from nodes in the subtree
+        v_ptr = upd_nodes;
+        while (v_ptr != NILN) {
+            if (v_ptr->v_key != NILA)
+                DELETE(&h, v_ptr->v_key);
+            min = DBL_MAX;
+            vmin_a_ptr = NILA;
+            a_ptr = v_ptr->first_arc_in;
+            while (a_ptr != NILA) {
+                if (!a_ptr->in_tree) {
+                    uptr = a_ptr->tail;
+                    a_ptr->key =
+                            uptr->transit_time_t + a_ptr->transit_time > v_ptr->transit_time_t
+                                    ? (double)(uptr->cost_t + a_ptr->cost - v_ptr->cost_t)
+                                              / (double)(uptr->transit_time_t + a_ptr->transit_time
+                                                         - v_ptr->transit_time_t)
+                                    : infty;
+
+                    if (a_ptr->key < min) {
+                        min = a_ptr->key;
+                        vmin_a_ptr = a_ptr;
+                    }
+                }
+                a_ptr = a_ptr->next_in;
+            }
+            if (vmin_a_ptr != NILA) {
+                INSERT(&h, vmin_a_ptr);
+            }
+            v_ptr->v_key = vmin_a_ptr;
+
+            v_ptr = v_ptr->link;
+        }
+
+        min_a_ptr->key = DBL_MAX;
+
+        // now update keys of arcs from nodes in subtree to nodes not contained
+        // in subtree and update vertex keys for the latter if necessary
+        v_ptr = upd_nodes;
+        while (v_ptr != NILN) {
+            a_ptr = v_ptr->first_arc_out;
+            while (a_ptr != NILA) {
+                if (!a_ptr->in_tree && !a_ptr->head->in_list) {
+                    w_ptr = a_ptr->head;
+                    a_key = v_ptr->transit_time_t + a_ptr->transit_time > w_ptr->transit_time_t
+                                    ? (double)(v_ptr->cost_t + a_ptr->cost - w_ptr->cost_t)
+                                              / (double)(v_ptr->transit_time_t + a_ptr->transit_time
+                                                         - w_ptr->transit_time_t)
+                                    : infty;
+
+                    if (a_key < w_ptr->v_key->key) {
+                        DELETE(&h, w_ptr->v_key);
+                        a_ptr->key = a_key;
+                        INSERT(&h, a_ptr);
+                        w_ptr->v_key = a_ptr;
+                    } else {
+                        a_ptr->key = a_key;
+                    }
+                }
+                a_ptr = a_ptr->next_out;
+            }
+            v_ptr = v_ptr->link;
+        }
+
+        v_ptr = upd_nodes;
+        while (v_ptr != NILN) {
+            v_ptr->in_list = false;
+            v_ptr = v_ptr->link;
+        }
+    }
+
+    DEALLOC_HEAP(&h);
+    if (cycle != NULL && len != NULL) {
+        *len = 0L;
+        if (min_a_ptr != NILA) {
+            cycle[(*len)++] = min_a_ptr;
+            a_ptr = min_a_ptr->tail->parent_in;
+            // MG: adapted the loop to work also for critical self-edges
+            // keeping the original in comment for later reference in case of
+            // problems or doubts...
+            //    do
+            //    {
+            //        cycle[(*len)++] = a_ptr;
+            //        a_ptr = a_ptr->tail->parent_in;
+            //    }
+            //    while (a_ptr->head != min_a_ptr->head);
+            while (a_ptr->head != min_a_ptr->head) {
+                cycle[(*len)++] = a_ptr;
+                a_ptr = a_ptr->tail->parent_in;
+            }
+        }
+    }
+}
+
+/**
+ * mmcycle_robust ()
+ *
+ * Determines maximum ratio cycle in a directed graph in a robust way
+ * G = (V, E, c), c: E->IR a "cost" function on the
+ * edges, alternatively called "length" or "weight".
+ * It has been observed that the mmcycle algorithm can behave non - deterministically
+ * across compilers, when the graph has multiple equally critical cycles
+ * Due to the order in which floating point calculations are scheduled, the
+ * algorithm's control flow may follow different paths and lead to different
+ * critical cycles as the output.
+ * This function mmcycle_robust implements a version of the algorithm that is
+ * deterministic across compilers. It may be a little slower.
+ * For more info about the algorithm, see the mmcycle function.
+ *
+ * TODO: see if the algorithms can be unified to remove duplicate code
+ **/
+
+void mmcycle_robust(graph *gr, double *lambda, arc **cycle, long *len) {
+    const double MCR_EPSILON_RATIO = 1.0e-8L;
+    double min, infty, a_key;
+    arc *a_ptr, *par_a_ptr, *vmin_a_ptr, *min_a_ptr;
+    node *s_ptr, *uptr, *v_ptr, *w_ptr;
+    bool foundCycle;
+    d_heap h;
+
+    // set up initial tree
+    s_ptr = gr->vs;
+    s_ptr->in_list = false;
+    s_ptr->cost_t = 0.0L;
+    s_ptr->transit_time_t = 0.0L;
+    s_ptr->level = 0L;
+    s_ptr->parent_in = NILA;
+    s_ptr->left_sibling = s_ptr;
+    s_ptr->right_sibling = s_ptr;
+    a_ptr = s_ptr->first_arc_out;
+    v_ptr = a_ptr->head;
+    s_ptr->first_child = v_ptr;
+    while (a_ptr != NILA) {
+        w_ptr = a_ptr->head;
+        w_ptr->cost_t = 0.0L;
+        w_ptr->transit_time_t = 0.0L;
+        w_ptr->level = 1L;
+        w_ptr->parent_in = a_ptr;
+        w_ptr->first_child = NILN;
+        w_ptr->left_sibling = v_ptr;
+        v_ptr->right_sibling = w_ptr;
+        w_ptr->in_list = false;
+        a_ptr->in_tree = true;
+        a_ptr->h_pos = -1; // arc does not go into heap
+        a_ptr->key = DBL_MAX;
+        v_ptr = w_ptr;
+        a_ptr = a_ptr->next_out;
+    }
+    s_ptr->first_child->left_sibling = v_ptr;
+    v_ptr->right_sibling = s_ptr->first_child;
+
+    // determine upper bound on lambda, can be used as 'infinity'
+    // adds up all costs, and divide by smallest non-zero transit time
+    // requires that there are no cycles with zero transit time!
+    // Also, determine epsilon value on transit times, cost and cost/time ratios
+    // as a constant fraction of the smallest observed values
+    double total_cost_plus_one = 1.0L;
+    double min_transit_time = DBL_MAX;
+    double min_cost = DBL_MAX;
+    for (a_ptr = &(gr->arcs[gr->n_arcs - 1L]); a_ptr >= gr->arcs; a_ptr--) {
+        // add costs to total cost
+        total_cost_plus_one += fabs(a_ptr->cost);
+        // keep min of transit times
+        if (a_ptr->transit_time > 0.0L) {
+            if (a_ptr->transit_time < min_transit_time) {
+                min_transit_time = a_ptr->transit_time;
+            }
+        }
+        // keep min of costs
+        if (a_ptr->cost > 0.0L) {
+            if (a_ptr->cost < min_cost) {
+                min_cost = a_ptr->cost;
+            }
+        }
+    }
+    infty = total_cost_plus_one / min_transit_time;
+    double epsilon_transit_time = MCR_EPSILON_RATIO * min_transit_time;
+    double epsilon_cost_time_ratio = MCR_EPSILON_RATIO * (min_cost / min_transit_time);
+
+    // initial keys of non tree edges are equal to arc costs
+    for (a_ptr = &(gr->arcs[gr->n_arcs - 1L]); a_ptr >= gr->arcs; a_ptr--) {
+        if (a_ptr->transit_time > epsilon_transit_time) {
+            a_ptr->key = a_ptr->cost / a_ptr->transit_time;
+        } else {
+            a_ptr->key = infty;
+        }
+        a_ptr->in_tree = false;
+    }
+
+    // d-heap used for maintenance of vertex keys
+    if (!ALLOC_HEAP(&h, gr->n_nodes))
+        throw CException("Failed allocating heap");
+
+    // compute initial vertex keys
+    for (v_ptr = &(gr->nodes[gr->n_nodes - 1L]); v_ptr >= gr->nodes; v_ptr--) {
+        min = DBL_MAX;
+        vmin_a_ptr = NILA;
+        a_ptr = v_ptr->first_arc_in;
+        while (a_ptr != NILA) {
+            if (!a_ptr->in_tree && (min - a_ptr->key > epsilon_cost_time_ratio)) {
+                min = a_ptr->key;
+                vmin_a_ptr = a_ptr;
+            }
+            a_ptr = a_ptr->next_in;
+        }
+        v_ptr->v_key = vmin_a_ptr;
+        if (vmin_a_ptr != NILA) {
+            INSERT_ROBUST(&h, vmin_a_ptr, epsilon_cost_time_ratio);
+        }
+    }
+    gr->vs->v_key = NILA;
+
+    while (true) {
+        min_a_ptr = GET_MIN(&h);
+        ASSERT(min_a_ptr != NILA, "No element on heap!");
+
+        *lambda = min_a_ptr->key;
+        if (*lambda >= infty) {
+            min_a_ptr = NILA;
+            break; // input graph is acyclic in this case
+        }
+
+        uptr = min_a_ptr->tail;
+        v_ptr = min_a_ptr->head;
+
+        /* check if *vptr is an ancestor of *uptr in tree */
+
+        foundCycle = false;
+        par_a_ptr = uptr->parent_in;
+
+        // MG: below is a fix, not in the original algorithm, since the original algorithm
+        // does not seem to anticipate the possibility of self-edges in the graph.
+        if (uptr == v_ptr) {
+            // statement below was added to make the calculation of the critical cycle work
+            // correctly for critical self-edges.
+            uptr->parent_in = min_a_ptr;
+            break;
+        }
+
+        while (par_a_ptr != NILA) {
+            if (par_a_ptr->tail == v_ptr) {
+                foundCycle = true;
+                break;
+            } else
+                par_a_ptr = par_a_ptr->tail->parent_in;
+        }
+        if (foundCycle)
+            break;
+
+        // it is not, remove edge (parent(v),v) from tree and make edge (u,v) a
+        // tree edge instead
+        par_a_ptr = v_ptr->parent_in;
+        par_a_ptr->in_tree = false;
+        min_a_ptr->in_tree = true;
+
+        v_ptr->cost_t = uptr->cost_t + min_a_ptr->cost;
+        v_ptr->transit_time_t = uptr->transit_time_t + min_a_ptr->transit_time;
+        w_ptr = par_a_ptr->tail;
+
+        // delete link (w_ptr,v_ptr) from tree
+        if (v_ptr->right_sibling == v_ptr) {
+            w_ptr->first_child = NILN;
+        } else {
+            v_ptr->right_sibling->left_sibling = v_ptr->left_sibling;
+            v_ptr->left_sibling->right_sibling = v_ptr->right_sibling;
+            if (w_ptr->first_child == v_ptr) {
+                w_ptr->first_child = v_ptr->right_sibling;
+            }
+        }
+
+        // insert link (uptr,vptr) into tree
+        v_ptr->parent_in = min_a_ptr;
+        if (uptr->first_child == NILN) {
+            uptr->first_child = v_ptr;
+            v_ptr->right_sibling = v_ptr;
+            v_ptr->left_sibling = v_ptr;
+        } else {
+            v_ptr->right_sibling = uptr->first_child->right_sibling;
+            uptr->first_child->right_sibling->left_sibling = v_ptr;
+            v_ptr->left_sibling = uptr->first_child;
+            uptr->first_child->right_sibling = v_ptr;
+        }
+
+        // subtree rooted at v has u as parent node now, update level and cost
+        // entries of its nodes accordingly and produce list of nodes contained
+        // in subtree
+        upd_nodes = NILN;
+        update_level = uptr->level + 1L;
+
+        update_subtree(v_ptr);
+        // now compute new keys of arcs into nodes that have acquired a new
+        // shortest path, such arcs have head or tail in the subtree rooted at
+        // "vptr", update vertex keys at the same time, nodes to be checked are
+        // those contained in the subtree and the ones pointed to by arcs
+        // emanating from nodes in the subtree
+        v_ptr = upd_nodes;
+        while (v_ptr != NILN) {
+            if (v_ptr->v_key != NILA)
+                DELETE_ROBUST(&h, v_ptr->v_key, epsilon_cost_time_ratio);
+            min = DBL_MAX;
+            vmin_a_ptr = NILA;
+            a_ptr = v_ptr->first_arc_in;
+            while (a_ptr != NILA) {
+                if (!a_ptr->in_tree) {
+                    uptr = a_ptr->tail;
+                    if (uptr->transit_time_t + a_ptr->transit_time - v_ptr->transit_time_t
+                        > epsilon_transit_time) {
+                        a_ptr->key = (uptr->cost_t + a_ptr->cost - v_ptr->cost_t)
+                                     / (uptr->transit_time_t + a_ptr->transit_time
+                                        - v_ptr->transit_time_t);
+                    } else {
+                        a_ptr->key = infty;
+                    }
+
+                    if (min - a_ptr->key > epsilon_cost_time_ratio) {
+                        min = a_ptr->key;
+                        vmin_a_ptr = a_ptr;
+                    }
+                }
+                a_ptr = a_ptr->next_in;
+            }
+            if (vmin_a_ptr != NILA) {
+                INSERT_ROBUST(&h, vmin_a_ptr, epsilon_cost_time_ratio);
+            }
+            v_ptr->v_key = vmin_a_ptr;
+            v_ptr = v_ptr->link;
+        }
+
+        min_a_ptr->key = DBL_MAX;
+
+        // now update keys of arcs from nodes in subtree to nodes not contained
+        // in subtree and update vertex keys for the latter if necessary
+        v_ptr = upd_nodes;
+        while (v_ptr != NILN) {
+            a_ptr = v_ptr->first_arc_out;
+            while (a_ptr != NILA) {
+                if (!a_ptr->in_tree && !a_ptr->head->in_list) {
+                    w_ptr = a_ptr->head;
+                    if (v_ptr->transit_time_t + a_ptr->transit_time - w_ptr->transit_time_t
+                        > epsilon_transit_time) {
+                        a_key = (v_ptr->cost_t + a_ptr->cost - w_ptr->cost_t)
+                                / (v_ptr->transit_time_t + a_ptr->transit_time
+                                   - w_ptr->transit_time_t);
+                    } else {
+                        a_key = infty;
+                    }
+                    if (w_ptr->v_key->key - a_key > epsilon_cost_time_ratio) {
+                        DELETE_ROBUST(&h, w_ptr->v_key, epsilon_cost_time_ratio);
+                        a_ptr->key = a_key;
+                        INSERT_ROBUST(&h, a_ptr, epsilon_cost_time_ratio);
+                        w_ptr->v_key = a_ptr;
+                    } else {
+                        a_ptr->key = a_key;
+                    }
+                }
+                a_ptr = a_ptr->next_out;
+            }
+            v_ptr = v_ptr->link;
+        }
+
+        v_ptr = upd_nodes;
+        while (v_ptr != NILN) {
+            v_ptr->in_list = false;
+            v_ptr = v_ptr->link;
+        }
+    }
+
+    DEALLOC_HEAP(&h);
+    if (cycle != NULL && len != NULL) {
+        *len = 0L;
+        if (min_a_ptr != NILA) {
+            cycle[(*len)++] = min_a_ptr;
+            a_ptr = min_a_ptr->tail->parent_in;
+            // MG: adapted the loop to work also for critical self-edges
+            // keeping the original in comment for later reference in case of
+            // problems or doubts...
+            //    do
+            //    {
+            //        cycle[(*len)++] = a_ptr;
+            //        a_ptr = a_ptr->tail->parent_in;
+            //    }
+            //    while (a_ptr->head != min_a_ptr->head);
+            while (a_ptr->head != min_a_ptr->head) {
+                cycle[(*len)++] = a_ptr;
+                a_ptr = a_ptr->tail->parent_in;
+            }
+        }
+    }
+}
+
+/**
+ * convertMCMgraphToYTOgraph ()
+ * The function converts a weighted directed graph used in the MCM algorithms
+ * to graph input for Young-Tarjan-Orlin's algorithm.
+ * It assumes that the id's of the nodes are 0 <= id < number of nodes
+ */
+void convertMCMgraphToYTOgraph(MCMgraph *g,
+                               graph *gr,
+                               double (*costFunction)(MCMedge *e),
+                               double (*transit_timeFunction)(MCMedge *e)) {
+    node *x;
+    arc *a;
+
+    gr->n_nodes = g->nrVisibleNodes();
+    gr->n_arcs = g->nrVisibleEdges();
+    // allocate space for the nodes, plus one for the exta source node that will be added
+    gr->nodes = (node *)malloc((gr->n_nodes + 1) * sizeof(node));
+    gr->arcs = (arc *)malloc((gr->n_arcs + gr->n_nodes) * sizeof(arc));
+
+    // create nodes
+    // keep an index of node id's
+    CLookupIntInt nodeIndex;
+    uint ind = 0;
+    for (MCMnodesCIter iter = g->getNodes().begin(); iter != g->getNodes().end(); iter++) {
+        MCMnode *n = *iter;
+        nodeIndex.put(n->id, ind);
+        x = &((gr->nodes)[ind]);
+        x->id = n->id + 1;
+        x->first_arc_out = NULL;
+        x->first_arc_in = NULL;
+
+        // Next
+        x++;
+        ind++;
+    }
+
+    // create arcs
+    a = gr->arcs;
+    for (MCMedgesCIter iter = g->getEdges().begin(); iter != g->getEdges().end(); iter++) {
+        MCMedge *e = *iter;
+        MCMnode *u = e->src;
+        MCMnode *v = e->dst;
+
+        a->tail = &(gr->nodes[nodeIndex.get(u->id)]);
+        a->head = &(gr->nodes[nodeIndex.get(v->id)]);
+        a->cost = (*costFunction)(e);
+        a->transit_time = (*transit_timeFunction)(e);
+        a->next_out = a->tail->first_arc_out;
+        a->tail->first_arc_out = a;
+        a->next_in = a->head->first_arc_in;
+        a->head->first_arc_in = a;
+        a->mcmEdge = e;
+        // Next
+        a++;
+    }
+
+    // Create a source node which has an edge to all nodes
+    gr->vs = &(gr->nodes[gr->n_nodes]);
+    gr->vs->id = 0;
+    gr->vs->first_arc_out = NULL;
+    gr->vs->first_arc_in = NULL;
+    for (int i = 0; i < gr->n_nodes; i++) {
+        a->cost = 0;
+        a->transit_time = 0.0;
+        a->tail = gr->vs;
+        a->head = &(gr->nodes[i]);
+        a->next_out = gr->vs->first_arc_out;
+        gr->vs->first_arc_out = a;
+        a->next_in = a->head->first_arc_in;
+        a->head->first_arc_in = a;
+
+        // Next
+        a++;
+    }
 
 #if 0
         // Print the MCM graph
@@ -1205,247 +1078,222 @@ namespace Graphs
             x++;
         }
 #endif
-    }
+}
 
-    /**
-     * constOne ()
-     * The function returns the unit cost associated with an edge.
-     */
-    static double constOne(MCMedge *e)
-    {
-        return 1.0;
-    }
+/**
+ * constOne ()
+ * The function returns the unit cost associated with an edge.
+ */
+static double constOne(MCMedge *e) { return 1.0; }
 
-    /**
-     * getWeight ()
-     * The function returns the weight associated with an edge.
-     */
-    double getWeight(MCMedge *e)
-    {
-        return e->w;
-    }
+/**
+ * getWeight ()
+ * The function returns the weight associated with an edge.
+ */
+double getWeight(MCMedge *e) { return e->w; }
 
-    /**
-     * getDelay ()
-     * The function returns the delay associated with an edge.
-     */
-    double getDelay(MCMedge *e)
-    {
-        return e->d;
-    }
+/**
+ * getDelay ()
+ * The function returns the delay associated with an edge.
+ */
+double getDelay(MCMedge *e) { return e->d; }
 
-    /**
-     * maxCycleMeanAndCriticalCycleYoungTarjanOrlin ()
-     * The function computes the maximum cycle mean of edge weight of
-     * an MCMgraph using Young-Tarjan-Orlin's algorithm.
-     * It returns both the MCM and a critical cycle
-     * The critical cycle is only returned if cycle and len are not NULL. Then *cycle points
-     * to an array of *MCMEdges of the critical cycle and *len indicates the length of the cycle.
-     * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
-     * in due time.
-	 *
-	 * Note that the following assumed are made about the MCMgraph
-	 * 1. it is assumed that all nodes in the graph are 'visible'
-	 * 2. it is assumed that the node have id's ranging from 0 up to the number of nodes.
-	 * 3. it is assumed that cycles have a weight > 0 ! 
-	 */
-    CDouble maxCycleMeanAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge *** cycle, uint *len)
-    {
-        double mincr;
-        graph ytoGraph;
-        arc **ytoCycle;
-        long ytoCycLen;
+/**
+ * maxCycleMeanAndCriticalCycleYoungTarjanOrlin ()
+ * The function computes the maximum cycle mean of edge weight of
+ * an MCMgraph using Young-Tarjan-Orlin's algorithm.
+ * It returns both the MCM and a critical cycle
+ * The critical cycle is only returned if cycle and len are not NULL. Then *cycle points
+ * to an array of *MCMEdges of the critical cycle and *len indicates the length of the cycle.
+ * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
+ * in due time.
+ *
+ * Note that the following assumed are made about the MCMgraph
+ * 1. it is assumed that all nodes in the graph are 'visible'
+ * 2. it is assumed that the node have id's ranging from 0 up to the number of nodes.
+ * 3. it is assumed that cycles have a weight > 0 !
+ */
+CDouble
+maxCycleMeanAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cycle, uint *len) {
+    double min_cr;
+    graph ytoGraph;
+    arc **ytoCycle;
+    long ytoCycLen;
 
-        // Convert the graph to an input graph for the YTO algorithm
-        convertMCMgraphToYTOgraph(mcmGraph, &ytoGraph, constOne, getWeight);
+    // Convert the graph to an input graph for the YTO algorithm
+    convertMCMgraphToYTOgraph(mcmGraph, &ytoGraph, constOne, getWeight);
 
-        if (cycle != NULL && len != NULL)
-        {
-            // allocate space for the critical cycle
-            ytoCycle = (arc **) malloc(sizeof(arc *) * mcmGraph->nrVisibleEdges());
+    if (cycle != NULL && len != NULL) {
+        // allocate space for the critical cycle
+        ytoCycle = (arc **)malloc(sizeof(arc *) * mcmGraph->nrVisibleEdges());
 
-            // Find maximum cycle mean
-            mmcycle_robust(&ytoGraph, &mincr, ytoCycle, &ytoCycLen);
+        // Find maximum cycle mean
+        mmcycle_robust(&ytoGraph, &min_cr, ytoCycle, &ytoCycLen);
 
-            *len = ytoCycLen;
+        *len = ytoCycLen;
 
-            *cycle = (MCMedge **) malloc(sizeof(MCMedge *) * (*len));
+        *cycle = (MCMedge **)malloc(sizeof(MCMedge *) * (*len));
 
-            for (uint i = 0; i < *len; i++)
-            {
-                (*cycle)[i] = ytoCycle[i]->mcmEdge;
-            }
-
-            free(ytoCycle);
-
-        }
-        else
-        {
-            // Find maximum cycle mean without cycle
-            mmcycle_robust(&ytoGraph, &mincr, NULL, NULL);
+        for (uint i = 0; i < *len; i++) {
+            (*cycle)[i] = ytoCycle[i]->mcmEdge;
         }
 
-        // Cleanup
-        free(ytoGraph.nodes);
-        free(ytoGraph.arcs);
+        free(ytoCycle);
 
-        return 1.0 / mincr;
+    } else {
+        // Find maximum cycle mean without cycle
+        mmcycle_robust(&ytoGraph, &min_cr, NULL, NULL);
     }
 
-    /**
-     * mcmYoungTarjanOrlin ()
-     * The function computes the maximum cycle mean of edge weight per edge of
-     * an MCMgraph using Young-Tarjan-Orlin's algorithm.
-     */
+    // Cleanup
+    free(ytoGraph.nodes);
+    free(ytoGraph.arcs);
 
-    CDouble maxCycleMeanYoungTarjanOrlin(MCMgraph *mcmGraph)
-    {
-        return maxCycleMeanAndCriticalCycleYoungTarjanOrlin(mcmGraph, NULL, NULL);
-    }
+    return 1.0 / min_cr;
+}
 
-    /**
-     * maxCycleRatioAndCriticalCycleYoungTarjanOrlin ()
-     * The function computes the maximum cycle ratio of edge weight over delay of
-     * an MCMgraph using Young-Tarjan-Orlin's algorithm.
-     * It returns both the MCR and a critical cycle
-     * Since MCM is in C-style code, let's do it the C-way.
-     * The critical cycle is only returned if cycle and len are not NULL. Then *cycle points
-     * to an array of MCMEdges of the critical cycle and *len indicates the length of the cycle.
-     * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
-     * in due time.
-     */
+/**
+ * mcmYoungTarjanOrlin ()
+ * The function computes the maximum cycle mean of edge weight per edge of
+ * an MCMgraph using Young-Tarjan-Orlin's algorithm.
+ */
 
-    CDouble maxCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge *** cycle, uint *len)
-    {
-        double mincr;
-        graph ytoGraph;
-        arc **ytoCycle;
-        long ytoCycLen;
+CDouble maxCycleMeanYoungTarjanOrlin(MCMgraph *mcmGraph) {
+    return maxCycleMeanAndCriticalCycleYoungTarjanOrlin(mcmGraph, NULL, NULL);
+}
 
-		// catch special case when the graph has no edges
-		if (mcmGraph->nrVisibleEdges() == 0) {
-            if ( len != NULL ){
-                *len = 0;
-            }
-            if ( cycle != NULL ){
-                *cycle = NULL;
-            }
-			return 0.0;
-		}
+/**
+ * maxCycleRatioAndCriticalCycleYoungTarjanOrlin ()
+ * The function computes the maximum cycle ratio of edge weight over delay of
+ * an MCMgraph using Young-Tarjan-Orlin's algorithm.
+ * It returns both the MCR and a critical cycle
+ * Since MCM is in C-style code, let's do it the C-way.
+ * The critical cycle is only returned if cycle and len are not NULL. Then *cycle points
+ * to an array of MCMEdges of the critical cycle and *len indicates the length of the cycle.
+ * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
+ * in due time.
+ */
 
-        // Convert the graph to an input graph for the YTO algorithm
-        convertMCMgraphToYTOgraph(mcmGraph, &ytoGraph, getDelay, getWeight);
+CDouble
+maxCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cycle, uint *len) {
+    double min_cr;
+    graph ytoGraph;
+    arc **ytoCycle;
+    long ytoCycLen;
 
-        if (cycle != NULL && len != NULL)
-        {
-            // allocate space for the critical cycle
-            ytoCycle = (arc **) malloc(sizeof(arc *) * mcmGraph->nrVisibleEdges());
-
-            // Find maximum cycle ratio
-            mmcycle_robust(&ytoGraph, &mincr, ytoCycle, &ytoCycLen);
-
-            *len = ytoCycLen;
-
-            *cycle = (MCMedge **) malloc(sizeof(MCMedge *) * (*len));
-
-            // note that mmcycle returns the critical cycle following edges backwards
-            // therefore reverse the order of the edges.
-            for (uint i = 0; i < *len; i++)
-            {
-                (*cycle)[i] = ytoCycle[(*len) - 1 - i]->mcmEdge;
-            }
-
-            free(ytoCycle);
-
+    // catch special case when the graph has no edges
+    if (mcmGraph->nrVisibleEdges() == 0) {
+        if (len != NULL) {
+            *len = 0;
         }
-        else
-        {
-            // Find maximum cycle ratio without cycle
-            mmcycle_robust(&ytoGraph, &mincr, NULL, NULL);
+        if (cycle != NULL) {
+            *cycle = NULL;
+        }
+        return 0.0;
+    }
+
+    // Convert the graph to an input graph for the YTO algorithm
+    convertMCMgraphToYTOgraph(mcmGraph, &ytoGraph, getDelay, getWeight);
+
+    if (cycle != NULL && len != NULL) {
+        // allocate space for the critical cycle
+        ytoCycle = (arc **)malloc(sizeof(arc *) * mcmGraph->nrVisibleEdges());
+
+        // Find maximum cycle ratio
+        mmcycle_robust(&ytoGraph, &min_cr, ytoCycle, &ytoCycLen);
+
+        *len = ytoCycLen;
+
+        *cycle = (MCMedge **)malloc(sizeof(MCMedge *) * (*len));
+
+        // note that mmcycle returns the critical cycle following edges backwards
+        // therefore reverse the order of the edges.
+        for (uint i = 0; i < *len; i++) {
+            (*cycle)[i] = ytoCycle[(*len) - 1 - i]->mcmEdge;
         }
 
-        // Cleanup
-        free(ytoGraph.nodes);
-        free(ytoGraph.arcs);
+        free(ytoCycle);
 
-        return 1.0 / mincr;
+    } else {
+        // Find maximum cycle ratio without cycle
+        mmcycle_robust(&ytoGraph, &min_cr, NULL, NULL);
     }
 
-    /**
-     * maxCycleRatioYoungTarjanOrlin ()
-     * The function computes the maximum cycle ratio of edge weight over delay of
-     * an MCMgraph using Young-Tarjan-Orlin's algorithm.
-     */
+    // Cleanup
+    free(ytoGraph.nodes);
+    free(ytoGraph.arcs);
 
-    CDouble maxCycleRatioYoungTarjanOrlin(MCMgraph *mcmGraph)
-    {
-        return maxCycleRatioAndCriticalCycleYoungTarjanOrlin(mcmGraph, NULL, NULL);
-    }
+    return 1.0 / min_cr;
+}
 
-    /**
-     * minCycleRatioAndCriticalCycleYoungTarjanOrlin ()
-     * The function computes the minimum cycle ratio of edge weight over delay of
-     * an MCMgraph using Young-Tarjan-Orlin's algorithm.
-     * It returns both the MCR and a critical cycle
-     * The critical cycle is only returned if cycle and len are not NULL. Then *cycle points
-     * to an array of MCMEdges of the critical cycle and *len indicates the length of the cycle.
-     * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
-     * in due time.
-     */
+/**
+ * maxCycleRatioYoungTarjanOrlin ()
+ * The function computes the maximum cycle ratio of edge weight over delay of
+ * an MCMgraph using Young-Tarjan-Orlin's algorithm.
+ */
 
-    CDouble minCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge *** cycle, uint *len)
-    {
-        double mincr;
-        graph ytoGraph;
-        arc **ytoCycle;
-        long ytoCycLen;
+CDouble maxCycleRatioYoungTarjanOrlin(MCMgraph *mcmGraph) {
+    return maxCycleRatioAndCriticalCycleYoungTarjanOrlin(mcmGraph, NULL, NULL);
+}
 
-        // Convert the graph to an input graph for the YTO algorithm
-        convertMCMgraphToYTOgraph(mcmGraph, &ytoGraph, getWeight, getDelay);
+/**
+ * minCycleRatioAndCriticalCycleYoungTarjanOrlin ()
+ * The function computes the minimum cycle ratio of edge weight over delay of
+ * an MCMgraph using Young-Tarjan-Orlin's algorithm.
+ * It returns both the MCR and a critical cycle
+ * The critical cycle is only returned if cycle and len are not NULL. Then *cycle points
+ * to an array of MCMEdges of the critical cycle and *len indicates the length of the cycle.
+ * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
+ * in due time.
+ */
 
-        if (cycle != NULL && len != NULL)
-        {
-            // allocate space for the critical cycle
-            ytoCycle = (arc **) malloc(sizeof(arc *) * mcmGraph->nrVisibleEdges());
+CDouble
+minCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cycle, uint *len) {
+    double min_cr;
+    graph ytoGraph;
+    arc **ytoCycle;
+    long ytoCycLen;
 
-            // Find minimum cycle ratio
-            mmcycle_robust(&ytoGraph, &mincr, ytoCycle, &ytoCycLen);
+    // Convert the graph to an input graph for the YTO algorithm
+    convertMCMgraphToYTOgraph(mcmGraph, &ytoGraph, getWeight, getDelay);
 
-            *len = ytoCycLen;
+    if (cycle != NULL && len != NULL) {
+        // allocate space for the critical cycle
+        ytoCycle = (arc **)malloc(sizeof(arc *) * mcmGraph->nrVisibleEdges());
 
-            *cycle = (MCMedge **) malloc(sizeof(MCMedge *) * (*len));
+        // Find minimum cycle ratio
+        mmcycle_robust(&ytoGraph, &min_cr, ytoCycle, &ytoCycLen);
 
-            for (uint i = 0; i < *len; i++)
-            {
-                (*cycle)[i] = ytoCycle[i]->mcmEdge;
-            }
+        *len = ytoCycLen;
 
-            free(ytoCycle);
+        *cycle = (MCMedge **)malloc(sizeof(MCMedge *) * (*len));
 
-        }
-        else
-        {
-            // Find minimum cycle ratio without cycle
-            mmcycle_robust(&ytoGraph, &mincr, NULL, NULL);
+        for (uint i = 0; i < *len; i++) {
+            (*cycle)[i] = ytoCycle[i]->mcmEdge;
         }
 
-        // Cleanup
-        free(ytoGraph.nodes);
-        free(ytoGraph.arcs);
+        free(ytoCycle);
 
-        return mincr;
+    } else {
+        // Find minimum cycle ratio without cycle
+        mmcycle_robust(&ytoGraph, &min_cr, NULL, NULL);
     }
 
-    /**
-     * minCycleRatioYoungTarjanOrlin ()
-     * The function computes the minimum cycle ratio of edge weight over delay of
-     * an MCMgraph using Young-Tarjan-Orlin's algorithm.
-     */
+    // Cleanup
+    free(ytoGraph.nodes);
+    free(ytoGraph.arcs);
 
-    CDouble minCycleRatioYoungTarjanOrlin(MCMgraph *mcmGraph)
-    {
-        return minCycleRatioAndCriticalCycleYoungTarjanOrlin(mcmGraph, NULL, NULL);
-    }
+    return min_cr;
+}
 
+/**
+ * minCycleRatioYoungTarjanOrlin ()
+ * The function computes the minimum cycle ratio of edge weight over delay of
+ * an MCMgraph using Young-Tarjan-Orlin's algorithm.
+ */
 
-}//namespace SDF
+CDouble minCycleRatioYoungTarjanOrlin(MCMgraph *mcmGraph) {
+    return minCycleRatioAndCriticalCycleYoungTarjanOrlin(mcmGraph, NULL, NULL);
+}
+
+} // namespace Graphs

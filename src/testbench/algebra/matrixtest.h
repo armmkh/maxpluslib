@@ -2,10 +2,8 @@
 
 #include <algorithm>
 
-#include "testing.h"
 #include "algebra/mpmatrix.h"
-
-
+#include "testing.h"
 
 using namespace MaxPlus;
 
@@ -14,8 +12,8 @@ class MatrixTest : public ::testing::Test {
 public:
     MatrixTest() {}
 
-    virtual void SetUp() {};
-    virtual void TearDown() {};
+    virtual void SetUp(){};
+    virtual void TearDown(){};
     int test_SetMPTimeInMatrix(void);
     int test_PasteMatrix(void);
     int test_SubMatrix(void);
@@ -23,5 +21,3 @@ public:
     int test_Addition(void);
     virtual void Run(void);
 };
-
-

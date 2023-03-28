@@ -32,55 +32,59 @@
  *
  *  Permission is hereby granted, free of charge, to any person obtaining
  *  a copy of this software and associated documentation files (the “Software”),
- *  to deal in the Software without restriction, including without limitation 
- *  the rights to use, copy, modify, merge, publish, distribute, sublicense, 
- *  and/or sell copies of the Software, and to permit persons to whom the 
+ *  to deal in the Software without restriction, including without limitation
+ *  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ *  and/or sell copies of the Software, and to permit persons to whom the
  *  Software is furnished to do so, subject to the following conditions:
  *
- *  The above copyright notice and this permission notice shall be included 
+ *  The above copyright notice and this permission notice shall be included
  *  in all copies or substantial portions of the Software.
  *
  *  THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
-
 
 #ifndef BASE_ANALYSIS_MCM_MCMHOWARD_H_INCLUDED
 #define BASE_ANALYSIS_MCM_MCMHOWARD_H_INCLUDED
 
 #include "base/analysis/mcm/mcmgraph.h"
-namespace Graphs
-{
-    /**
-    * convertMCMgraphToMatrix ()
-    * The function converts a weighted directed graph used in the MCM algorithms
-    * to a sparse amtrix input for Howard's algorithm.
-    */
-    void convertMCMgraphToMatrix(MCMgraph *g, int *IJ, double *A);
+namespace Graphs {
+/**
+ * convertMCMgraphToMatrix ()
+ * The function converts a weighted directed graph used in the MCM algorithms
+ * to a sparse matrix input for Howard's algorithm.
+ */
+void convertMCMgraphToMatrix(MCMgraph *g, int *ij, double *A);
 
+/**
+ * Howard ()
+ * Howard Policy Iteration Algorithm for Max Plus Matrices.
+ *
+ * INPUT of Howard Algorithm:
+ *      ij,A,nnodes,narcs : sparse description of a matrix.
+ *
+ * OUTPUT:
+ *      chi cycle time vector
+ *      v bias
+ *      pi optimal policy
+ *      NIterations: Number of iterations of the algorithm
+ *      NComponents: Number of connected components of the optimal policy
+ *
+ */
+void Howard(int *ij,
+            double *A,
+            int nr_nodes,
+            int nr_arcs,
+            double *chi,
+            double *v,
+            int *policy,
+            int *nr_iterations,
+            int *nr_components);
 
-    /**
-    * Howard ()
-    * Howard Policy Iteration Algorithm for Max Plus Matrices.
-    *
-    * INPUT of Howard Algorithm:
-    *      ij,A,nnodes,narcs : sparse description of a matrix.
-    *
-    * OUTPUT:
-    *      chi cycle time vector
-    *      v bias
-    *      pi optimal policy
-    *      NIterations: Number of iterations of the algorithm
-    *      NComponents: Number of connected components of the optimal policy
-    *
-    */
-    void Howard(int *IJ, double *A, int NNODES, int NARCS, double *CHI, double *V,
-        int *POLICY, int *NITERATIONS, int *NCOMPONENTS);
-
-}
+} // namespace Graphs
 #endif

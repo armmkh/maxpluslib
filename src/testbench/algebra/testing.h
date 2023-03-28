@@ -58,7 +58,7 @@ namespace testing {
 }
 
 
-#define ASSERT_MPMINUSINFINITY( x )                                 \
+#define ASSERT_MP_MINUSINFINITY( x )                                 \
 {                                                                   \
   if( ! MP_ISMINUSINFINITY(x) )                                    \
   {                                                                 \

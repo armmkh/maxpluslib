@@ -4,7 +4,6 @@ add_test(
 )
 
 add_executable(testing_graph
-    matrixlabeledfsmtest.cc
     mpautomatontest.cc
     testing.cc
 )

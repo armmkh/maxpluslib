@@ -1,28 +1,28 @@
 #include <algorithm>
 
 #include "algebra/mptype.h"
-#include "valuetest.h"
 #include "testing.h"
+#include "valuetest.h"
+
 
 using namespace MaxPlus;
 
-
 void ValueTest::Run() {
-    this->test_mptime();
+    this->test_mpTime();
     this->test_Max();
     this->test_Min();
     this->test_BasicArithmetic();
 };
 
 // Test infinity operations.
-void ValueTest::test_mptime() {
-    std::cout << "Running test: mptime"<< std::endl;
+void ValueTest::test_mpTime() {
+    std::cout << "Running test: mpTime" << std::endl;
     ASSERT_EQUAL(1.0, MPTime(1.0));
 }
 
 /// Test max operator.
 void ValueTest::test_Max() {
-    std::cout << "Running test: Max"<< std::endl;
+    std::cout << "Running test: Max" << std::endl;
     // Test normal double values.
     double a = 5.0;
     double b = 3.14;
@@ -40,7 +40,7 @@ void ValueTest::test_Max() {
 
 /// Test min operator.
 void ValueTest::test_Min() {
-    std::cout << "Running test: Min"<< std::endl;
+    std::cout << "Running test: Min" << std::endl;
     // Test normal double values.
     ASSERT_EQUAL(MPTime(3.14), MP_MIN(MPTime(5.0), MPTime(3.14)));
     ASSERT_EQUAL(MPTime(3.14), MP_MIN(MPTime(3.14), MPTime(5.0)));
@@ -55,7 +55,7 @@ void ValueTest::test_Min() {
 
 /// Test basic arithmetic operations.
 void ValueTest::test_BasicArithmetic() {
-    std::cout << "Running test: BasicArithmetic"<< std::endl;
+    std::cout << "Running test: BasicArithmetic" << std::endl;
     MPTime a(3.14);
     MPTime b(6.0);
 
@@ -70,4 +70,3 @@ void ValueTest::test_BasicArithmetic() {
     // Multiplication.
     ASSERT_EQUAL(MPTime(18.84), b * a);
 }
-

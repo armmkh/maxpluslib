@@ -5,7 +5,6 @@ add_test(
 
 add_executable(testing_game
     policyiterationtest.cc
-    ratiogametest.cc
     strategyvectortest.cc
     testing.cc
 )

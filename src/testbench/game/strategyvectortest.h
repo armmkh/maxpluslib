@@ -1,9 +1,8 @@
 #pragma once
 
-#include <algorithm>
 #include "game/mpgameautomaton.h"
 #include "game/strategyvector.h"
-
+#include <algorithm>
 
 using namespace MaxPlus;
 
@@ -17,6 +16,4 @@ public:
     virtual void TearDown();
 
     void testSimpleTest(void);
-
 };
-

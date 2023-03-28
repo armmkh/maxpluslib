@@ -23,20 +23,20 @@
  *
  *  Permission is hereby granted, free of charge, to any person obtaining
  *  a copy of this software and associated documentation files (the “Software”),
- *  to deal in the Software without restriction, including without limitation 
- *  the rights to use, copy, modify, merge, publish, distribute, sublicense, 
- *  and/or sell copies of the Software, and to permit persons to whom the 
+ *  to deal in the Software without restriction, including without limitation
+ *  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ *  and/or sell copies of the Software, and to permit persons to whom the
  *  Software is furnished to do so, subject to the following conditions:
  *
- *  The above copyright notice and this permission notice shall be included 
+ *  The above copyright notice and this permission notice shall be included
  *  in all copies or substantial portions of the Software.
  *
  *  THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
 
@@ -48,36 +48,34 @@
 
 namespace MaxPlus {
 
-    typedef ::FSM::Labeled::State<CId, CString> ELSState;
-    typedef ::FSM::Labeled::Edge<CId, CString> ELSEdge;
-    typedef ::FSM::Labeled::SetOfStates<CId, CString> ELSSetOfStates;
-    typedef ::FSM::Labeled::SetOfEdges<CId, CString> ELSSetOfEdges;
+typedef ::FSM::Labeled::State<CId, CString> ELSState;
+typedef ::FSM::Labeled::Edge<CId, CString> ELSEdge;
+typedef ::FSM::Labeled::SetOfStates<CId, CString> ELSSetOfStates;
+typedef ::FSM::Labeled::SetOfEdges<CId, CString> ELSSetOfEdges;
 
-    // /**
-    //  * Edge labeled scenario FSM.
-    //  */
-    // class EdgeLabeledScenarioFSM : public ::FSM::Labeled::FiniteStateMachine<CId, CString> {
-    // public:
-    //     virtual ~EdgeLabeledScenarioFSM() {};
-    // };
+// /**
+//  * Edge labeled scenario FSM.
+//  */
+// class EdgeLabeledScenarioFSM : public ::FSM::Labeled::FiniteStateMachine<CId, CString> {
+// public:
+//     virtual ~EdgeLabeledScenarioFSM() {};
+// };
 
-    typedef struct MLSEdgeLabel {
-        Matrix *mat;
-        double rew;
-    } MLSEdgeLabel;
+typedef struct MLSEdgeLabel {
+    Matrix *mat;
+    double rew;
+} MLSEdgeLabel;
 
-    typedef ::FSM::Labeled::State<CId, MLSEdgeLabel> MLSState;
-    typedef ::FSM::Labeled::Edge<CId, MLSEdgeLabel> MLSEdge;
-    typedef ::FSM::Labeled::SetOfStates<CId, MLSEdgeLabel> MLSSetOfStates;
-    typedef ::FSM::Labeled::SetOfEdges<CId, MLSEdgeLabel> MLSSetOfEdges;
+typedef ::FSM::Labeled::State<CId, MLSEdgeLabel> MLSState;
+typedef ::FSM::Labeled::Edge<CId, MLSEdgeLabel> MLSEdge;
+typedef ::FSM::Labeled::SetOfStates<CId, MLSEdgeLabel> MLSSetOfStates;
+typedef ::FSM::Labeled::SetOfEdges<CId, MLSEdgeLabel> MLSSetOfEdges;
 
-    /**
-     * Matrix and reward labeled scenario FSM.
-     */
-    class MatrixLabeledScenarioFSM : public ::FSM::Labeled::FiniteStateMachine<CId, MLSEdgeLabel> {
-    };
+/**
+ * Matrix and reward labeled scenario FSM.
+ */
+class MatrixLabeledScenarioFSM : public ::FSM::Labeled::FiniteStateMachine<CId, MLSEdgeLabel> {};
 
-}
+} // namespace MaxPlus
 
-
-#endif //MAXPLUS_GRAPH_MPSTATESPACE_H
+#endif // MAXPLUS_GRAPH_MPSTATESPACE_H

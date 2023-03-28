@@ -13,3 +13,7 @@ CMakeDoxygenDefaults.cmake
 CMakeSettings.json
 /.vs/
 /out/
+.cache
+*.vcxproj
+*.sln
+*.filters
