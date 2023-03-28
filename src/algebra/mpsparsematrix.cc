@@ -131,7 +131,7 @@ SparseVector::SparseVector(const Vector &v, const Sizes &sz) {
 /**
  * vector assignment
  */
-SparseVector SparseVector::operator=(const SparseVector &other) {
+SparseVector& SparseVector::operator=(const SparseVector &other) {
     if (this->getSize() != other.getSize()) {
         throw CException("Vectors of different size in"
                          "SparseVector::operator=");
@@ -621,7 +621,7 @@ void SparseMatrix::put(unsigned int row, unsigned int column, MPTime value) {
     }
 }
 
-SparseMatrix SparseMatrix::operator=(const SparseMatrix &other) {
+SparseMatrix& SparseMatrix::operator=(const SparseMatrix &other) {
     if (this->getRowSize() != other.getRowSize()
         || this->getColumnSize() != other.getColumnSize()) {
         throw CException("Matrices of different size in"

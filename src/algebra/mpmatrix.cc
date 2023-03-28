@@ -39,6 +39,7 @@
  */
 
 #include "algebra/mpmatrix.h"
+#include "algebra/mptype.h"
 #include "base/analysis/mcm/mcmgraph.h"
 #include "base/analysis/mcm/mcmyto.h"
 #include "base/exception/exception.h"
@@ -122,7 +123,7 @@ MPTime Vector::norm() {
  * normalize vector
  */
 MPTime Vector::normalize() {
-    double maxEl = this->norm();
+    MPTime maxEl = this->norm();
 
     if (maxEl == MP_MINUSINFINITY) {
         throw CException("Cannot normalize vector with norm MP_MINUSINFINITY"
@@ -181,8 +182,9 @@ Vector::~Vector() {}
  * Put an entry into the vector. Grows vector if necessary
  */
 void Vector::put(unsigned int row, MPTime value) {
-    if (this->table.size() <= row)
-        this->table.resize(row + 1, 0);
+    if (this->table.size() <= row) {
+        this->table.resize(row + 1);
+    }
     this->table[row] = value;
 }
 
@@ -239,7 +241,7 @@ MPTime Vector::minimalFiniteElement(unsigned int *itsPosition_Ptr) const {
         MPTime val = this->get(row);
         if (MaxPlus::MP_ISMINUSINFINITY(val))
             continue;
-        if (!minEl_initialized || val < minEl) {
+        if (!minEl_initialized || (val < minEl)) {
             minEl = val;
             minEl_initialized = true;
             *itsPosition = row;
@@ -255,7 +257,7 @@ bool Vector::compare(const Vector &v) {
     if (this->getSize() != v.getSize())
         return false;
     for (unsigned int k = 0; k < this->getSize(); k++) {
-        if (fabs(this->get(k) - v.get(k)) > MP_EPSILON)
+        if (fabs(static_cast<CDouble>(this->get(k) - v.get(k))) > static_cast<CDouble>(MP_EPSILON))
             return false;
     }
     return true;
@@ -431,7 +433,7 @@ Vector *Matrix::mp_multiply(const Vector &v) const {
     }
 
     // Allocate space of the resulting vector
-    Vector *res = new Vector(this->getRows());
+    auto *res = new Vector(this->getRows());
 
     // Perform point-wise multiplication
     for (unsigned int i = 0; i < this->getRows(); i++) {
@@ -521,7 +523,7 @@ Matrix *Matrix::mp_maximum(const Matrix &m) const {
  * Raise matrix to a positive integer power >= 1.
  */
 Matrix *Matrix::mp_power(const unsigned int p) const {
-    Matrix *res;
+    Matrix *res = nullptr;
 
     // base case p==1
     if (p == 1) {
@@ -529,7 +531,7 @@ Matrix *Matrix::mp_power(const unsigned int p) const {
     }
 
     // check if p is odd
-    if (p & 1) {
+    if ((p & 1) != 0u) {
         Matrix *m_pow = this->mp_power(p - 1);
         res = this->mp_multiply(*m_pow);
         delete m_pow;
@@ -573,14 +575,14 @@ Matrix *Matrix::getTransposedCopy() const {
  */
 Matrix *Matrix::getSubMatrix(const list<unsigned int> &rowIndices,
                              const list<unsigned int> &colIndices) const {
-    unsigned int NR = (unsigned int)rowIndices.size();
-    unsigned int NC = (unsigned int)colIndices.size();
+    auto NR = static_cast<unsigned int>(rowIndices.size());
+    auto NC = static_cast<unsigned int>(colIndices.size());
     Matrix *newMatrix = makeMatrix(NR, NC);
 
-    list<unsigned int>::const_iterator rit = rowIndices.begin();
+    auto rit = rowIndices.begin();
     for (unsigned int r = 0; r < NR; r++, rit++) {
         unsigned int ri = (*rit);
-        list<unsigned int>::const_iterator cit = colIndices.begin();
+        auto cit = colIndices.begin();
         for (unsigned int c = 0; c < NC; c++, cit++) {
             unsigned int ci = (*cit);
             newMatrix->put(r, c, this->get(ri, ci));
@@ -602,11 +604,11 @@ Matrix *Matrix::getSubMatrix(const list<unsigned int> &indices) const {
  * of the original matrix with the selected indices.
  */
 Matrix *Matrix::getSubMatrixNonSquare(const list<unsigned int> &colIndices) const {
-    unsigned int NC = (unsigned int)colIndices.size();
+    auto NC = static_cast<unsigned int>(colIndices.size());
     Matrix *newMatrix = makeMatrix(this->getRows(), NC);
 
     for (unsigned int r = 0; r < this->getRows(); r++) {
-        list<unsigned int>::const_iterator cit = colIndices.begin();
+        auto cit = colIndices.begin();
         for (unsigned int c = 0; c < NC; c++, cit++) {
             unsigned int ci = (*cit);
             newMatrix->put(r, c, this->get(r, ci));
@@ -647,7 +649,7 @@ void Matrix::add(MPTime increase, Matrix *result) const {
 /**
  * Matrix maximum with existing result matrix.
  */
-void Matrix::maximum(const Matrix *matB, Matrix *result) {
+void Matrix::maximum(const Matrix *matB, Matrix *result) const {
     unsigned int MR = this->getRows();
     unsigned int MC = this->getCols();
     if ((matB->getRows() != MR) || (matB->getCols() != MC) || (result->getRows() != MR)
@@ -728,14 +730,16 @@ MPTime Matrix::largestFiniteElement() const {
     // finite element with the largest absolute value
     // all -INF => 0
     //
-    MPTime largestEl = 0, largestMag = 0;
+    MPTime largestEl = 0;
+    MPTime largestMag = 0;
     unsigned int MR = this->getRows();
     unsigned int MC = this->getCols();
 
     for (unsigned int r = 0; r < MR; r++) {
         for (unsigned int c = 0; c < MC; c++) {
-            if (this->get(r, c) == MP_MINUSINFINITY)
+            if (this->get(r, c) == MP_MINUSINFINITY) {
                 continue;
+            }
 
             MPTime mag = fabs(this->get(r, c));
             if (mag > largestMag) {
@@ -757,15 +761,17 @@ MPTime Matrix::minimalFiniteElement() const {
     unsigned int MR = this->getRows();
     unsigned int MC = this->getCols();
 
-    if (MR == 0 || MC == 0)
+    if (MR == 0 || MC == 0) {
         return MP_MINUSINFINITY;
+    }
 
     MPTime minimalEl = MP_MINUSINFINITY;
 
     for (unsigned int r = 0; r < MR; r++) {
         for (unsigned int c = 0; c < MC; c++) {
-            if (this->get(r, c) == MP_MINUSINFINITY)
+            if (this->get(r, c) == MP_MINUSINFINITY) {
                 continue;
+            }
 
             if (minimalEl == MP_MINUSINFINITY) {
                 minimalEl = this->get(r, c);
@@ -801,8 +807,9 @@ Matrix *Matrix::starClosureMatrix(MPTime posCycleThreshold) const {
  */
 Matrix *Matrix::allPairLongestPathMatrix(MPTime posCycleThreshold, bool implyZeroSelfEdges) const {
     // Floyd-Warshall algorithm
-    if (this->getRows() != this->getCols())
+    if (this->getRows() != this->getCols()) {
         throw CException("Matrix must be square in Matrix::allPaiLongestPathMatrix.");
+    }
     unsigned int N = this->getRows();
 
     Matrix *distMat = this->createCopy();
@@ -811,7 +818,7 @@ Matrix *Matrix::allPairLongestPathMatrix(MPTime posCycleThreshold, bool implyZer
     for (unsigned int k = 0; k < N; k++) {
         for (unsigned int u = 0; u < N; u++) {
             for (unsigned int v = 0; v < N; v++) {
-                MPTime extra = (implyZeroSelfEdges && u == v) ? (MPTime)0 : MP_MINUSINFINITY;
+                MPTime extra = (implyZeroSelfEdges && u == v) ? MPTime(0) : MP_MINUSINFINITY;
                 MPTime path_u2v = MP_MAX(distMat->get(v, u), extra);
                 MPTime path_u2k = distMat->get(k, u);
                 MPTime path_k2v = distMat->get(v, k);
@@ -845,8 +852,9 @@ bool Matrix::allPairLongestPathMatrix(MPTime posCycleThreshold,
                                       bool implyZeroSelfEdges,
                                       Matrix &res) const {
     // Floyd-Warshall algorithm
-    if (this->getRows() != this->getCols())
+    if (this->getRows() != this->getCols()) {
         throw CException("Matrix must be square in Matrix::allPaiLongestPathMatrix.");
+    }
     unsigned int N = this->getRows();
 
     if ((N != res.getRows()) || (N != res.getCols())) {
@@ -865,7 +873,7 @@ bool Matrix::allPairLongestPathMatrix(MPTime posCycleThreshold,
     for (unsigned int k = 0; k < N; k++) {
         for (unsigned int u = 0; u < N; u++) {
             for (unsigned int v = 0; v < N; v++) {
-                MPTime extra = (implyZeroSelfEdges && u == v) ? (MPTime)0 : MP_MINUSINFINITY;
+                MPTime extra = (implyZeroSelfEdges && u == v) ? MPTime(0) : MP_MINUSINFINITY;
                 MPTime path_u2v = MP_MAX(res.get(v, u), extra);
                 MPTime path_u2k = res.get(k, u);
                 MPTime path_k2v = res.get(v, k);
@@ -1051,13 +1059,13 @@ MCMgraph Matrix::mpMatrixToPrecedenceGraph() const {
     CId edgeId = 0;
     uint row = 0;
     uint col = 0;
-    for (auto i = this->table.begin(); i != this->table.end(); i++) {
+    for (auto i : this->table) {
         // add edge is the value is not minus infinity
-        if ((*i) != MP_MINUSINFINITY) {
+        if (i != MP_MINUSINFINITY) {
             MCMedge *e = new MCMedge(edgeId++, true);
             e->src = nodes[col];
             e->dst = nodes[row];
-            e->w = (CDouble)(*i);
+            e->w = (CDouble)i;
             e->d = 1.0;
 
             // Add the edge to the MCM graph and the src and dst node
@@ -1124,13 +1132,12 @@ Matrix::mp_generalized_eigenvectors() const {
             cycleMeans.push_back(mu);
         } else {
             // a SCC without edges is a single node and has no cycle mean
-            criticalNodes.push_back(NULL);
+            criticalNodes.push_back(nullptr);
             cycleMeans.push_back(MP_MINUSINFINITY);
         }
         // for each node in the scc
-        for (auto ni = scc->getNodes().cbegin(); ni != scc->getNodes().cend(); ni++) {
-            auto nn = *ni;
-            auto nnn = precGraph.getNode(sccNodeIdMap[nn->id]);
+        for (auto *nn : scc->getNodes()) {
+            auto *nnn = precGraph.getNode(sccNodeIdMap[nn->id]);
             // map node to SCC index
             sccMap[nnn] = k;
             // map node to the cycle mean of its SCC
@@ -1158,8 +1165,8 @@ Matrix::mp_generalized_eigenvectors() const {
             while (change) {
                 change = false;
                 // for all edges in precGraph
-                for (auto i = precGraph.getEdges().begin(); i != precGraph.getEdges().end(); i++) {
-                    MCMedge &e = **i;
+                for (auto *i : precGraph.getEdges()) {
+                    MCMedge &e = *i;
                     if (trCycleMeans[e.src->id] > trCycleMeans[e.dst->id]) {
                         change = true;
                         trCycleMeans[e.dst->id] =
@@ -1179,11 +1186,12 @@ Matrix::mp_generalized_eigenvectors() const {
                     precGraph.normalizedLongestPaths(criticalNodes[k]->id, muMap);
             // make an eigenvector
             Vector v(this->getCols());
-            for (auto i = lengths.cbegin(); i != lengths.cend(); i++) {
-                CId n = (*i).first;
-                MPTime value = (((MPTime)(*i).second) <= MP_MINUSINFINITY ? MP_MINUSINFINITY
-                                                                          : (MPTime)(*i).second);
-                v.put((unsigned int)n, value);
+            for (auto length : lengths) {
+                CId n = length.first;
+                MPTime value =
+                        ((MPTime(length.second)) <= MP_MINUSINFINITY ? MP_MINUSINFINITY
+                                                                     : MPTime(length.second));
+                v.put(static_cast<unsigned int>(n), value);
             }
 
             // check if it is a generalized eigenvalue
@@ -1198,8 +1206,9 @@ Matrix::mp_generalized_eigenvectors() const {
                     lambda = trCycleMeans[n.id];
                 } else {
                     if ((lambda != MP_MINUSINFINITY) && (trCycleMeans[n.id] != MP_MINUSINFINITY)
-                        && (lambda != trCycleMeans[n.id]))
+                        && (lambda != trCycleMeans[n.id])) {
                         isGeneralized = true;
+                    }
                 }
                 ev.put(l, trCycleMeans[n.id]);
             }
@@ -1213,9 +1222,8 @@ Matrix::mp_generalized_eigenvectors() const {
     }
 
     // the SCC graphs still need to be destroyed
-    for (auto i = sccs.begin(); i != sccs.end(); i++) {
-        MCMgraph *g = *i;
-        delete g;
+    for (auto *g : sccs) {
+         delete g;
     }
 
     return std::make_pair(eigenVectors, genEigenVectors);
@@ -1239,12 +1247,12 @@ Matrix *ExtendedMatrix::getSubMatrix(const list<unsigned int> &rowIndices,
     unsigned int NR = rowIndices.size();
     unsigned int NC = colIndices.size();
     Matrix *newMatrix = makeMatrix(NR, NC);
-    ExtendedMatrix *newExtendedMatrix = dynamic_cast<ExtendedMatrix *>(newMatrix);
+    auto *newExtendedMatrix = dynamic_cast<ExtendedMatrix *>(newMatrix);
 
-    list<unsigned int>::const_iterator rit = rowIndices.begin();
+    auto rit = rowIndices.begin();
     for (unsigned int r = 0; r < NR; r++, rit++) {
         unsigned int ri = (*rit);
-        list<unsigned int>::const_iterator cit = colIndices.begin();
+        auto cit = colIndices.begin();
         for (unsigned int c = 0; c < NC; c++, cit++) {
             unsigned int ci = (*cit);
             std::unordered_set<int> bs = this->getBufferSet(ri, ci);

@@ -51,13 +51,13 @@ namespace MaxPlus {
 
 class Sizes : public std::vector<unsigned int> {
 public:
-    Sizes refineWith(const Sizes &s) const;
-    unsigned int sum(void) const;
+    [[nodiscard]] Sizes refineWith(const Sizes &s) const;
+    [[nodiscard]] unsigned int sum() const;
 };
 
-typedef std::vector<unsigned int> Indices;
+using Indices = std::vector<unsigned int>;
 
-typedef std::vector<std::pair<unsigned int, unsigned int>> Ranges;
+using Ranges = std::vector<std::pair<unsigned int, unsigned int>>;
 
 /**
  * SparseVector, represents a sparse max-plus column vector efficiently.
@@ -65,21 +65,24 @@ typedef std::vector<std::pair<unsigned int, unsigned int>> Ranges;
  */
 class SparseVector {
 public:
-    SparseVector(unsigned int size = 0, MPTime value = MP_MINUSINFINITY);
+    explicit SparseVector(unsigned int size = 0, MPTime value = MP_MINUSINFINITY);
 
-    SparseVector(const std::vector<MPTime> &v);
+    explicit SparseVector(const std::vector<MPTime> &v);
 
     SparseVector(const SparseVector &);
 
     SparseVector(const Vector &, const Sizes &);
 
+    SparseVector(SparseVector &&) = default;
+    SparseVector &operator=(SparseVector &&) = default;
+
     ~SparseVector();
 
     static SparseVector UnitVector(unsigned int size, unsigned int n);
 
-    inline unsigned int getSize(void) const { return (unsigned int)this->size; }
+    [[nodiscard]] inline unsigned int getSize() const { return this->size; }
 
-    MPTime get(unsigned int row) const;
+    [[nodiscard]] MPTime get(unsigned int row) const;
 
     void put(unsigned int row, MPTime value);
     void putAll(unsigned int startRow, unsigned int endRow, MPTime value);
@@ -87,21 +90,21 @@ public:
 
     void toString(CString &outString, double scale = 1.0) const;
 
-    SparseVector operator=(const SparseVector &);
+    SparseVector& operator=(const SparseVector &);
 
-    MPTime norm() const;
+    [[nodiscard]] MPTime norm() const;
 
     void negate();
 
     MPTime normalize();
 
-    MPTime innerProduct(const SparseVector &v) const;
+    [[nodiscard]] MPTime innerProduct(const SparseVector &v) const;
 
-    SparseVector add(MPTime increase) const;
+    [[nodiscard]] SparseVector add(MPTime increase) const;
 
-    SparseVector maximum(const SparseVector &matB) const;
+    [[nodiscard]] SparseVector maximum(const SparseVector &matB) const;
 
-    SparseVector add(const SparseVector &vecB) const;
+    [[nodiscard]] SparseVector add(const SparseVector &vecB) const;
 
     SparseVector operator+=(MPTime increase) const;
 
@@ -109,7 +112,7 @@ public:
 
     SparseVector operator-=(MPTime decrease) const;
 
-    bool compare(const SparseVector &v) const;
+    [[nodiscard]] bool compare(const SparseVector &v) const;
 
     void compress();
 
@@ -117,13 +120,13 @@ private:
     friend class SparseMatrix;
     unsigned int size;
     std::vector<std::pair<unsigned int, MPTime>> table;
-    SparseVector(const unsigned int size, const std::vector<std::pair<unsigned int, MPTime>> &v);
+    SparseVector(unsigned int size, const std::vector<std::pair<unsigned int, MPTime>> &v);
     SparseVector combine(const SparseVector &vecB, MPTime f(MPTime a, MPTime b)) const;
     bool forall(const SparseVector &vecB, bool f(MPTime a, MPTime b)) const;
     std::pair<unsigned int, unsigned int> find(unsigned int row);
-    Vector maxRanges(const Ranges &ranges) const;
-    Vector sample(const Indices &i) const;
-    Sizes getSizes() const;
+    [[nodiscard]] Vector maxRanges(const Ranges &ranges) const;
+    [[nodiscard]] Vector sample(const Indices &i) const;
+    [[nodiscard]] Sizes getSizes() const;
 };
 
 /**
@@ -133,25 +136,28 @@ private:
  **/
 class SparseMatrix {
 public:
-    SparseMatrix(unsigned int rowSize = 0,
+    explicit SparseMatrix(unsigned int rowSize = 0,
                  unsigned int colSize = 0,
                  MPTime value = MP_MINUSINFINITY);
 
     SparseMatrix(const SparseMatrix &);
 
+    SparseMatrix(SparseMatrix &&) = default;
+    SparseMatrix &operator=(SparseMatrix &&) = default;
+
     ~SparseMatrix();
 
     static SparseMatrix IdentityMatrix(unsigned int rowsAndCols);
 
-    inline unsigned int getRowSize(void) const {
+    [[nodiscard]] inline unsigned int getRowSize() const {
         return this->isTransposed ? this->columnSize : this->rowSize;
     }
 
-    inline unsigned int getColumnSize(void) const {
+    [[nodiscard]] inline unsigned int getColumnSize() const {
         return this->isTransposed ? this->rowSize : this->columnSize;
     }
 
-    MPTime get(unsigned int row, unsigned int column) const;
+    [[nodiscard]] MPTime get(unsigned int row, unsigned int column) const;
 
     void put(unsigned int row, unsigned int column, MPTime value);
 
@@ -167,13 +173,13 @@ public:
 
     void insertMatrix(unsigned int startRow, unsigned int startColumn, const SparseMatrix &M);
 
-    SparseMatrix operator=(const SparseMatrix &);
+    SparseMatrix& operator=(const SparseMatrix &);
 
-    MPTime norm() const;
+    [[nodiscard]] MPTime norm() const;
 
     void transpose();
 
-    SparseMatrix transposed() const;
+    [[nodiscard]] SparseMatrix transposed() const;
 
     SparseMatrix add(const SparseMatrix &M);
     SparseMatrix maximum(const SparseMatrix &M);
@@ -187,8 +193,8 @@ public:
 
     MPTime mpEigenvalue();
 
-    typedef std::list<std::pair<SparseVector, CDouble>> EigenvectorList;
-    typedef std::list<std::pair<SparseVector, SparseVector>> GeneralizedEigenvectorList;
+    using EigenvectorList = std::list<std::pair<SparseVector, CDouble>>;
+    using GeneralizedEigenvectorList = std::list<std::pair<SparseVector, SparseVector>>;
     std::pair<EigenvectorList, GeneralizedEigenvectorList> mpGeneralizedEigenvectors();
     EigenvectorList mpEigenvectors();
 
@@ -209,7 +215,7 @@ private:
     Matrix *reduceRows();
     std::pair<Matrix *, Sizes> reduceRowsAndColumns();
     static SparseMatrix expand(const Matrix &M, const Sizes &rszs, const Sizes &cszs);
-    Sizes sizes() const;
+    [[nodiscard]] Sizes sizes() const;
 };
 
 } // namespace MaxPlus

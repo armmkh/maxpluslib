@@ -46,26 +46,31 @@
 #include <unordered_set>
 #include <vector>
 
-using namespace Graphs;
-
 class CString;
 
 namespace MaxPlus {
+
+using namespace Graphs;
 
 /**
  * Vector, represents a max-plus column vector.
  */
 class Vector {
 public:
-    Vector(unsigned int size = 0, MPTime value = MP_MINUSINFINITY);
+    explicit Vector(unsigned int size = 0, MPTime value = MP_MINUSINFINITY);
 
-    Vector(std::vector<MPTime> *v);
+    explicit Vector(std::vector<MPTime> *v);
 
     ~Vector();
 
-    inline unsigned int getSize(void) const { return (unsigned int)this->table.size(); }
+    Vector(Vector &&) = default;
+    Vector &operator=(Vector &&) = default;
 
-    inline MPTime get(unsigned int row) const { return this->table[row]; }
+    [[nodiscard]] inline unsigned int getSize() const {
+        return static_cast<unsigned int>(this->table.size());
+    }
+
+    [[nodiscard]] inline MPTime get(unsigned int row) const { return this->table[row]; }
 
     void put(unsigned int row, MPTime value);
 
@@ -80,7 +85,7 @@ public:
     void negate();
     MPTime normalize();
 
-    Vector *add(MPTime increase) const;
+    [[nodiscard]] Vector *add(MPTime increase) const;
 
     void add(MPTime increase, Vector *result) const;
 
@@ -115,7 +120,7 @@ public:
      * itsPosition returns the index of the (a) smallest finite element is set
      * to a pointer to unsigned int, otherwise set or defaults to NULL
      */
-    MPTime minimalFiniteElement(unsigned int *itsPosition_Ptr = NULL) const;
+    MPTime minimalFiniteElement(unsigned int *itsPosition_Ptr = nullptr) const;
 
 private:
     vector<MPTime> table;
@@ -129,7 +134,7 @@ public:
      * Construct a max-plus matrix of \p N by \p N using the default fill pattern (minus infinity).
      * @param N Number of rows and columns
      */
-    Matrix(unsigned int N);
+    explicit Matrix(unsigned int N);
 
     /**
      * Construct a max-plus matrix of \p nrows by \p nr_cols using the given fill pattern.
@@ -141,16 +146,19 @@ public:
 
     Matrix(unsigned int nrows, unsigned int nr_cols, unsigned int nr_el);
 
+    Matrix(Matrix &&) = default;
+    Matrix &operator=(Matrix &&) = default;
+
     virtual ~Matrix();
 
-    inline unsigned int getRows(void) const { return this->szRows; }
+    [[nodiscard]] inline unsigned int getRows() const { return this->szRows; }
 
-    inline unsigned int getCols(void) const { return this->szCols; }
+    [[nodiscard]] inline unsigned int getCols() const { return this->szCols; }
 
-    unsigned int getSize(void) const;
+    [[nodiscard]] unsigned int getSize() const;
 
-    MPTime get(unsigned int row, unsigned int column) const;
-    Vector getRowVector(unsigned int row) const;
+    [[nodiscard]] MPTime get(unsigned int row, unsigned int column) const;
+    [[nodiscard]] Vector getRowVector(unsigned int row) const;
 
     void put(unsigned int row, unsigned int column, MPTime value);
 
@@ -158,16 +166,16 @@ public:
 
     void pasteRowVector(unsigned int top_row, unsigned int left_column, const Vector *pastedVector);
 
-    virtual Matrix *createCopy() const;
+    [[nodiscard]] virtual Matrix *createCopy() const;
 
-    Matrix *getTransposedCopy() const;
+    [[nodiscard]] Matrix *getTransposedCopy() const;
 
-    virtual Matrix *getSubMatrix(const list<unsigned int> &rowIndices,
-                                 const list<unsigned int> &colIndices) const;
+    [[nodiscard]] virtual Matrix *getSubMatrix(const list<unsigned int> &rowIndices,
+                                               const list<unsigned int> &colIndices) const;
 
-    Matrix *getSubMatrix(const list<unsigned int> &indices) const;
+    [[nodiscard]] Matrix *getSubMatrix(const list<unsigned int> &indices) const;
 
-    Matrix *getSubMatrixNonSquare(const list<unsigned int> &indices) const;
+    [[nodiscard]] Matrix *getSubMatrixNonSquare(const list<unsigned int> &indices) const;
 
     /**
      * Increases the number of rows of the matrix by n and fills the new elements with -\infty.
@@ -179,28 +187,29 @@ public:
     void toLaTeXString(CString &outString, double scale = 1.0) const;
 
     // Algebraic operations.
-    Matrix *add(MPTime increase) const;
+    [[nodiscard]] Matrix *add(MPTime increase) const;
 
     void add(MPTime increase, Matrix *result) const;
 
-    Matrix *mp_sub(const Matrix &m) const;
+    [[nodiscard]] Matrix *mp_sub(const Matrix &m) const;
 
-    Matrix *mp_maximum(const Matrix &m) const;
+    [[nodiscard]] Matrix *mp_maximum(const Matrix &m) const;
 
-    void maximum(const Matrix *matB, Matrix *result);
+    void maximum(const Matrix *matB, Matrix *result) const;
 
-    Vector *mp_multiply(const Vector &v) const;
+    [[nodiscard]] Vector *mp_multiply(const Vector &v) const;
 
-    Matrix *mp_multiply(const Matrix &m) const;
+    [[nodiscard]] Matrix *mp_multiply(const Matrix &m) const;
 
-    Matrix *mp_power(const unsigned int p) const;
+    [[nodiscard]] Matrix *mp_power(unsigned int p) const;
 
-    CDouble mp_eigenvalue() const;
+    [[nodiscard]] CDouble mp_eigenvalue() const;
 
-    typedef std::list<std::pair<Vector, CDouble>> EigenvectorList;
-    typedef std::list<std::pair<Vector, Vector>> GeneralizedEigenvectorList;
-    std::pair<EigenvectorList, GeneralizedEigenvectorList> mp_generalized_eigenvectors() const;
-    EigenvectorList mpEigenvectors() const;
+    using EigenvectorList = std::list<std::pair<Vector, CDouble>>;
+    using GeneralizedEigenvectorList = std::list<std::pair<Vector, Vector>>;
+    [[nodiscard]] std::pair<EigenvectorList, GeneralizedEigenvectorList>
+    mp_generalized_eigenvectors() const;
+    [[nodiscard]] EigenvectorList mpEigenvectors() const;
 
     Matrix &operator+=(MPTime increase) {
         this->add(increase, this);
@@ -224,21 +233,22 @@ public:
      * Return the element having the largest abs() value.
      * @return element having the largest abs() value
      */
-    MPTime largestFiniteElement() const;
-    MPTime minimalFiniteElement() const;
+    [[nodiscard]] MPTime largestFiniteElement() const;
+    [[nodiscard]] MPTime minimalFiniteElement() const;
 
-    Matrix *plusClosureMatrix(MPTime posCycleThreshold = MP_EPSILON) const;
+    [[nodiscard]] Matrix *plusClosureMatrix(MPTime posCycleThreshold = MP_EPSILON) const;
 
-    Matrix *starClosureMatrix(MPTime posCycleThreshold = MP_EPSILON) const;
+    [[nodiscard]] Matrix *starClosureMatrix(MPTime posCycleThreshold = MP_EPSILON) const;
 
-    Matrix *allPairLongestPathMatrix(MPTime posCycleThreshold, bool implyZeroSelfEdges) const;
+    [[nodiscard]] Matrix *allPairLongestPathMatrix(MPTime posCycleThreshold,
+                                                   bool implyZeroSelfEdges) const;
     bool
     allPairLongestPathMatrix(MPTime posCycleThreshold, bool implyZeroSelfEdges, Matrix &res) const;
 
-    MCMgraph mpMatrixToPrecedenceGraph() const;
+    [[nodiscard]] MCMgraph mpMatrixToPrecedenceGraph() const;
 
     // factory methods
-    virtual Matrix *makeMatrix(unsigned int nr_rows, unsigned int nr_cols) const;
+    [[nodiscard]] virtual Matrix *makeMatrix(unsigned int nr_rows, unsigned int nr_cols) const;
 
 private:
     // Implicit copying is not allowed
@@ -250,10 +260,8 @@ private:
     void init(MatrixFill fill);
     void init();
 
-private:
     Matrix();
 
-private:
     vector<MPTime> table;
     unsigned int szRows;
     unsigned int szCols;
@@ -271,11 +279,11 @@ public:
         Matrix(nrows, nr_cols, nr_el) {
         this->bufferSets.reserve(nr_el);
     }
-    ExtendedMatrix(unsigned int N) : Matrix(N) {}
+    explicit ExtendedMatrix(unsigned int N) : Matrix(N) {}
 
-    virtual Matrix *createCopy() const {
+    [[nodiscard]] Matrix *createCopy() const override {
         Matrix *newMatrix = Matrix::createCopy();
-        ExtendedMatrix *newExtendedMatrix = dynamic_cast<ExtendedMatrix *>(newMatrix);
+        auto *newExtendedMatrix = dynamic_cast<ExtendedMatrix *>(newMatrix);
 
         unsigned int nr_els = this->getRows() * this->getCols();
         for (unsigned int pos = 0; pos < nr_els; pos++) {
@@ -286,13 +294,13 @@ public:
     }
 
     void put(unsigned int row, unsigned int column, MPTime value, std::unordered_set<int> &);
-    virtual Matrix *getSubMatrix(const list<unsigned int> &rowIndices,
-                                 const list<unsigned int> &colIndices) const;
+    [[nodiscard]] Matrix *getSubMatrix(const list<unsigned int> &rowIndices,
+                                       const list<unsigned int> &colIndices) const override;
 
     // factory methods
-    virtual Matrix *makeMatrix(unsigned int nr_rows, unsigned int nr_cols) const;
+    [[nodiscard]] Matrix *makeMatrix(unsigned int nr_rows, unsigned int nr_cols) const override;
 
-    std::unordered_set<int> getBufferSet(unsigned int row, unsigned int column) const;
+    [[nodiscard]] std::unordered_set<int> getBufferSet(unsigned int row, unsigned int column) const;
 
 private:
     vector<std::unordered_set<int>> bufferSets;
@@ -305,17 +313,20 @@ private:
 
 class VectorList : private std::vector<Vector *> {
 public:
-    VectorList(unsigned int oneVectorSizeInit);
+    explicit VectorList(unsigned int oneVectorSizeInit);
     ~VectorList();
 
-    const Vector &vectorRefAt(int n) const; // vector at index 'n'
-    Vector &vectorRefAt(int n);
+    VectorList(VectorList &&) = default;
+    VectorList &operator=(VectorList &&) = delete;
 
-    const Vector &lastVectorRef() const; // last vector
+    [[nodiscard]] const Vector &vectorRefAt(unsigned int n) const; // vector at index 'n'
+    Vector &vectorRefAt(unsigned int n);
+
+    [[nodiscard]] const Vector &lastVectorRef() const; // last vector
     Vector &lastVectorRef();
 
-    unsigned int getSize() const; // vector count
-    unsigned int getOneVectorSize() const { return this->oneVectorSize; }
+    [[nodiscard]] unsigned int getSize() const; // vector count
+    [[nodiscard]] unsigned int getOneVectorSize() const { return this->oneVectorSize; }
 
     void grow(); // append one vector place
 
@@ -330,7 +341,6 @@ private:
     VectorList(const VectorList &);
     VectorList &operator=(const VectorList &);
 
-private:
     const unsigned int oneVectorSize;
 };
 
@@ -344,19 +354,21 @@ inline VectorList::~VectorList() {
     }
 }
 
-inline const Vector &VectorList::vectorRefAt(int n) const { return *this->at(n); }
+inline const Vector &VectorList::vectorRefAt(unsigned int n) const { return *this->at(n); }
 
-inline Vector &VectorList::vectorRefAt(int n) { return *this->at(n); }
+inline Vector &VectorList::vectorRefAt(unsigned int n) { return *this->at(n); }
 
 inline const Vector &VectorList::lastVectorRef() const { return *this->at(this->size() - 1); }
 
 inline Vector &VectorList::lastVectorRef() { return *this->at(this->size() - 1); }
 
-inline unsigned int VectorList::getSize() const { return (unsigned int)vector<Vector *>::size(); }
+inline unsigned int VectorList::getSize() const {
+    return static_cast<unsigned int>(vector<Vector *>::size());
+}
 
 inline void VectorList::grow() {
-    unsigned int last = (unsigned int)this->size();
-    this->resize((size_t)(last + 1));
+    auto last = static_cast<unsigned int>(this->size());
+    this->resize(last + 1);
     this->at(last) = new Vector(oneVectorSize, MP_MINUSINFINITY);
 }
 

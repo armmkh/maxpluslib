@@ -43,12 +43,13 @@
 
 #include "../basic_types.h"
 #include "../string/cstring.h"
+#include <exception>
 
 /*
  * CException
  * CException container class.
  */
-class CException {
+class CException: std::exception {
 private:
     CString message;
     CString cause;
