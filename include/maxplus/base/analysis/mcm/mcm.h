@@ -55,7 +55,7 @@ namespace Graphs {
  * algorithm.
  */
 CDouble maximumCycleMeanKarp(const MCMgraph& g);
-CDouble maximumCycleMeanKarpDouble(const MCMgraph& g, const MCMnode *criticalNode = nullptr);
+CDouble maximumCycleMeanKarpDouble(const MCMgraph& g, MCMnode **criticalNode = nullptr);
 
 /**
  * mcmGetAdjacentActors ()

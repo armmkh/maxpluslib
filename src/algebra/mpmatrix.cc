@@ -1099,16 +1099,16 @@ Matrix::mp_generalized_eigenvectors() const {
     stronglyConnectedMCMgraph(precGraph, sccs, true);
 
     // map from number of SCC to SCC
-    std::map<uint, MCMgraph *> sccMapInv;
+    std::map<uint, std::shared_ptr<MCMgraph>> sccMapInv;
 
     // map from node of precGraph to its SCC
-    std::map<MCMnode *, uint> sccMap;
+    std::map<std::weak_ptr<MCMnode>, uint> sccMap;
 
     // map from nodes of precGraph to the cycle mean of its SCC
-    std::map<MCMnode *, MPTime> cycleMeansMap;
+    std::map<std::weak_ptr<MCMnode>, MPTime> cycleMeansMap;
 
     // vector such that element k is a node from precGraph in the critical path of SCC k
-    std::vector<MCMnode *> criticalNodes;
+    std::vector<std::shared_ptr<MCMnode>> criticalNodes;
 
     // vector such that element k is the maximum cycle mean of SCC k
     std::vector<MPTime> cycleMeans;
@@ -1117,7 +1117,7 @@ Matrix::mp_generalized_eigenvectors() const {
     uint k = 0;
     // for each SCC
     for (auto scci = sccs.cbegin(); scci != sccs.cend(); scci++, k++) {
-        MCMgraph *scc = *scci;
+        std::shared_ptr<MCMgraph> scc = *scci;
         sccMapInv[k] = scc;
 
         // MCM calculation requires node relabelling
@@ -1126,8 +1126,8 @@ Matrix::mp_generalized_eigenvectors() const {
 
         if (scc->nrVisibleEdges() > 0) {
             // compute MCM mu and critical node n of scc
-            MCMnode* n;
-            MPTime mu = MPTime(scc->calculateMaximumCycleMeanKarpDouble(&n));
+            MCMnode* n = nullptr;
+            auto mu = MPTime(scc->calculateMaximumCycleMeanKarpDouble(&n));
             criticalNodes.push_back(precGraph.getNode(sccNodeIdMap[n->id]));
             cycleMeans.push_back(mu);
         } else {
@@ -1136,8 +1136,8 @@ Matrix::mp_generalized_eigenvectors() const {
             cycleMeans.push_back(MP_MINUSINFINITY);
         }
         // for each node in the scc
-        for (auto *nn : scc->getNodes()) {
-            auto *nnn = precGraph.getNode(sccNodeIdMap[nn->id]);
+        for (auto nn=precGraph.getNodes().begin(); nn != precGraph.getNodes().end(); nn++) {
+            auto nnn = precGraph.getNode(sccNodeIdMap[(*nn)->id]);
             // map node to SCC index
             sccMap[nnn] = k;
             // map node to the cycle mean of its SCC
@@ -1165,7 +1165,7 @@ Matrix::mp_generalized_eigenvectors() const {
             while (change) {
                 change = false;
                 // for all edges in precGraph
-                for (auto *i : precGraph.getEdges()) {
+                for (auto i : precGraph.getEdges()) {
                     MCMedge &e = *i;
                     if (trCycleMeans[e.src->id] > trCycleMeans[e.dst->id]) {
                         change = true;
@@ -1219,11 +1219,6 @@ Matrix::mp_generalized_eigenvectors() const {
                 eigenVectors.push_back(std::make_pair(v, static_cast<CDouble>(lambda)));
             }
         }
-    }
-
-    // the SCC graphs still need to be destroyed
-    for (auto *g : sccs) {
-        delete g;
     }
 
     return std::make_pair(eigenVectors, genEigenVectors);

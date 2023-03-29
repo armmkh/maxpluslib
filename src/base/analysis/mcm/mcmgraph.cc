@@ -819,7 +819,7 @@ std::shared_ptr<MCMgraph> MCMgraph::pruneEdges() {
 
 CDouble MCMgraph::calculateMaximumCycleMeanKarp() const { return maximumCycleMeanKarp(*this); }
 
-CDouble MCMgraph::calculateMaximumCycleMeanKarpDouble(const MCMnode *criticalNode) const {
+CDouble MCMgraph::calculateMaximumCycleMeanKarpDouble(MCMnode **criticalNode) const {
     return maximumCycleMeanKarpDouble(*this, criticalNode);
 }
 

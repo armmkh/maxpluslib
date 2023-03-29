@@ -42,6 +42,7 @@
 #include "base/analysis/mcm/mcmgraph.h"
 #include "base/math/cmath.h"
 #include <climits>
+#include <memory>
 
 
 namespace Graphs {
@@ -57,10 +58,10 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
     int k, n;
     int *level;
     int **pi, **d;
-    double l, ld;
-    MCMnode *u;
+    CDouble l, ld;
+    std::shared_ptr<MCMnode> u;
     list<int> Q_k;
-    list<MCMnode *> Q_u;
+    list<std::shared_ptr<MCMnode>> Q_u;
 
     // Allocate memory
     n = mcmGraph->nrVisibleNodes();
@@ -88,8 +89,8 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
     Q_u.pop_front();
     do {
         for (MCMedgesIter iter = u->out.begin(); iter != u->out.end(); iter++) {
-            MCMedge *e = *iter;
-            MCMnode *v = e->dst;
+            std::shared_ptr<MCMedge> e = *iter;
+            std::shared_ptr<MCMnode> v = e->dst;
 
             if (level[v->id] < k + 1) {
                 Q_k.push_back(k + 1);
@@ -116,7 +117,7 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
             ld = INT_MAX;
             k = pi[n][u->id];
             while (k > -1) {
-                ld = MIN(ld, (double)(d[n][u->id] - d[k][u->id]) / (double)(n - k));
+                ld = MIN(ld, (CDouble)(d[n][u->id] - d[k][u->id]) / (CDouble)(n - k));
                 k = pi[k][u->id];
             }
             l = MAX(l, ld);

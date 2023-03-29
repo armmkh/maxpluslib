@@ -208,7 +208,7 @@ public:
     std::shared_ptr<MCMgraph> pruneEdges();
 
     [[nodiscard]] CDouble calculateMaximumCycleMeanKarp() const;
-    [[nodiscard]] CDouble calculateMaximumCycleMeanKarpDouble(const MCMnode *criticalNode = nullptr) const;
+    [[nodiscard]] CDouble calculateMaximumCycleMeanKarpDouble(MCMnode** criticalNode = nullptr) const;
 
     [[nodiscard]] CDouble calculateMaximumCycleRatioAndCriticalCycleYoungTarjanOrlin(std::shared_ptr<MCMedge> **cycle = nullptr,
                                                                        uint *len = nullptr);

@@ -53,6 +53,7 @@
 #include "base/exception/exception.h"
 
 #include <math.h>
+#include <memory>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -490,14 +491,15 @@ void Howard(int *ij,
  * The function converts a weighted directed graph used in the MCM algorithms
  * to a sparse matrix input for Howard's algorithm.
  */
-void convertMCMgraphToMatrix(MCMgraph *g, int *ij, double *A) {
+void convertMCMgraphToMatrix(const MCMgraph& g, int *ij, double *A) {
     int k = 0;
-    uint i = 0, j = 0;
-    v_uint mapId(g->getNodes().size());
+    uint i = 0;
+    uint j = 0;
+    v_uint mapId(g.getNodes().size());
 
     // Re-map the id of all visible nodes back to the range [0, g->nrNodes())
-    for (MCMnodesCIter iter = g->getNodes().begin(); iter != g->getNodes().end(); iter++) {
-        MCMnode *n = *iter;
+    for (auto iter = g.getNodes().begin(); iter != g.getNodes().end(); iter++) {
+        const std::shared_ptr<MCMnode>& n = *iter;
 
         if (n->visible) {
             mapId[i] = j;
@@ -507,8 +509,8 @@ void convertMCMgraphToMatrix(MCMgraph *g, int *ij, double *A) {
     }
 
     // Create an entry in the matrices for each edge
-    for (MCMedgesCIter iter = g->getEdges().begin(); iter != g->getEdges().end(); iter++) {
-        MCMedge *e = *iter;
+    for (auto iter = g.getEdges().begin(); iter != g.getEdges().end(); iter++) {
+        const std::shared_ptr<MCMedge>& e = *iter;
 
         // Is the edge a existing edge in the graph?
         if (e->visible) {
