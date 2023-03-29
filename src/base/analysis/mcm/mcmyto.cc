@@ -55,8 +55,8 @@
 
 namespace Graphs {
 
-#define NILN (node *)NULL
-#define NILA (arc *)NULL
+#define NILN (node *)nullptr
+#define NILA (arc *)nullptr
 
 /*
  * d_heap implementation
@@ -262,7 +262,7 @@ static inline item GET_MIN(d_heap *h) {
 
 static inline bool ALLOC_HEAP(d_heap *h, long k) {
     h->items = (item *)malloc(k * sizeof(item));
-    if (h->items == (item *)NULL)
+    if (h->items == (item *)nullptr)
         return false;
     else {
         h->max_size = k;
@@ -335,7 +335,7 @@ static void update_subtree(node *root) {
  *
  * len    - number of elements of "cycle"
  *
- * If cycle or len is a NULL-pointer, then these parameters
+ * If cycle or len is a nullptr-pointer, then these parameters
  * are not assigned a value.
  *
  * Reference
@@ -644,7 +644,7 @@ void mmcycle(graph *gr, double *lambda, arc **cycle, long *len) {
     }
 
     DEALLOC_HEAP(&h);
-    if (cycle != NULL && len != NULL) {
+    if (cycle != nullptr && len != nullptr) {
         *len = 0L;
         if (min_a_ptr != NILA) {
             cycle[(*len)++] = min_a_ptr;
@@ -940,7 +940,7 @@ void mmcycle_robust(graph *gr, double *lambda, arc **cycle, long *len) {
     }
 
     DEALLOC_HEAP(&h);
-    if (cycle != NULL && len != NULL) {
+    if (cycle != nullptr && len != nullptr) {
         *len = 0L;
         if (min_a_ptr != NILA) {
             cycle[(*len)++] = min_a_ptr;
@@ -968,15 +968,15 @@ void mmcycle_robust(graph *gr, double *lambda, arc **cycle, long *len) {
  * to graph input for Young-Tarjan-Orlin's algorithm.
  * It assumes that the id's of the nodes are 0 <= id < number of nodes
  */
-void convertMCMgraphToYTOgraph(MCMgraph *g,
+void convertMCMgraphToYTOgraph(const MCMgraph& g,
                                graph *gr,
-                               double (*costFunction)(MCMedge *e),
-                               double (*transit_timeFunction)(MCMedge *e)) {
+                               double (*costFunction)(std::shared_ptr<MCMedge> e),
+                               double (*transit_timeFunction)(std::shared_ptr<MCMedge> e)) {
     node *x;
     arc *a;
 
-    gr->n_nodes = g->nrVisibleNodes();
-    gr->n_arcs = g->nrVisibleEdges();
+    gr->n_nodes = g.nrVisibleNodes();
+    gr->n_arcs = g.nrVisibleEdges();
     // allocate space for the nodes, plus one for the exta source node that will be added
     gr->nodes = (node *)malloc((gr->n_nodes + 1) * sizeof(node));
     gr->arcs = (arc *)malloc((gr->n_arcs + gr->n_nodes) * sizeof(arc));
@@ -985,13 +985,12 @@ void convertMCMgraphToYTOgraph(MCMgraph *g,
     // keep an index of node id's
     CLookupIntInt nodeIndex;
     uint ind = 0;
-    for (MCMnodesCIter iter = g->getNodes().begin(); iter != g->getNodes().end(); iter++) {
-        MCMnode *n = *iter;
-        nodeIndex.put(n->id, ind);
+    for (const auto& n : g.getNodes()) {
+         nodeIndex.put(n->id, ind);
         x = &((gr->nodes)[ind]);
         x->id = n->id + 1;
-        x->first_arc_out = NULL;
-        x->first_arc_in = NULL;
+        x->first_arc_out = nullptr;
+        x->first_arc_in = nullptr;
 
         // Next
         x++;
@@ -1000,10 +999,9 @@ void convertMCMgraphToYTOgraph(MCMgraph *g,
 
     // create arcs
     a = gr->arcs;
-    for (MCMedgesCIter iter = g->getEdges().begin(); iter != g->getEdges().end(); iter++) {
-        MCMedge *e = *iter;
-        MCMnode *u = e->src;
-        MCMnode *v = e->dst;
+    for (const auto& e : g.getEdges()) {
+         std::shared_ptr<MCMnode> u = e->src;
+        std::shared_ptr<MCMnode> v = e->dst;
 
         a->tail = &(gr->nodes[nodeIndex.get(u->id)]);
         a->head = &(gr->nodes[nodeIndex.get(v->id)]);
@@ -1021,8 +1019,8 @@ void convertMCMgraphToYTOgraph(MCMgraph *g,
     // Create a source node which has an edge to all nodes
     gr->vs = &(gr->nodes[gr->n_nodes]);
     gr->vs->id = 0;
-    gr->vs->first_arc_out = NULL;
-    gr->vs->first_arc_in = NULL;
+    gr->vs->first_arc_out = nullptr;
+    gr->vs->first_arc_in = nullptr;
     for (int i = 0; i < gr->n_nodes; i++) {
         a->cost = 0;
         a->transit_time = 0.0;
@@ -1064,12 +1062,12 @@ void convertMCMgraphToYTOgraph(MCMgraph *g,
         {
             cerr << "vertex: " << x->id << endl;
 
-            for (arc *a = x->first_arc_in; a != NULL; a = a->next_in)
+            for (arc *a = x->first_arc_in; a != nullptr; a = a->next_in)
             {
                 cerr << "   edge from: " << a->tail->id;
                 cerr << " (weight: " << a->cost << ")" << endl;
             }
-            for (arc *a = x->first_arc_out; a != NULL; a = a->next_out)
+            for (arc *a = x->first_arc_out; a != nullptr; a = a->next_out)
             {
                 cerr << "   edge to:   " << a->head->id;
                 cerr << " (weight: " << a->cost << ")" << endl;
@@ -1084,26 +1082,26 @@ void convertMCMgraphToYTOgraph(MCMgraph *g,
  * constOne ()
  * The function returns the unit cost associated with an edge.
  */
-static double constOne(MCMedge *e) { return 1.0; }
+static double constOne(std::shared_ptr<MCMedge> e) { return 1.0; }
 
 /**
  * getWeight ()
  * The function returns the weight associated with an edge.
  */
-double getWeight(MCMedge *e) { return e->w; }
+double getWeight(std::shared_ptr<MCMedge> e) { return e->w; }
 
 /**
  * getDelay ()
  * The function returns the delay associated with an edge.
  */
-double getDelay(MCMedge *e) { return e->d; }
+double getDelay(std::shared_ptr<MCMedge> e) { return e->d; }
 
 /**
  * maxCycleMeanAndCriticalCycleYoungTarjanOrlin ()
  * The function computes the maximum cycle mean of edge weight of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  * It returns both the MCM and a critical cycle
- * The critical cycle is only returned if cycle and len are not NULL. Then *cycle points
+ * The critical cycle is only returned if cycle and len are not nullptr. Then *cycle points
  * to an array of *MCMEdges of the critical cycle and *len indicates the length of the cycle.
  * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
  * in due time.
@@ -1114,7 +1112,7 @@ double getDelay(MCMedge *e) { return e->d; }
  * 3. it is assumed that cycles have a weight > 0 !
  */
 CDouble
-maxCycleMeanAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cycle, uint *len) {
+maxCycleMeanAndCriticalCycleYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len) {
     double min_cr;
     graph ytoGraph;
     arc **ytoCycle;
@@ -1123,7 +1121,7 @@ maxCycleMeanAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cycl
     // Convert the graph to an input graph for the YTO algorithm
     convertMCMgraphToYTOgraph(mcmGraph, &ytoGraph, constOne, getWeight);
 
-    if (cycle != NULL && len != NULL) {
+    if (cycle != nullptr && len != nullptr) {
         // allocate space for the critical cycle
         ytoCycle = (arc **)malloc(sizeof(arc *) * mcmGraph->nrVisibleEdges());
 
@@ -1132,7 +1130,7 @@ maxCycleMeanAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cycl
 
         *len = ytoCycLen;
 
-        *cycle = (MCMedge **)malloc(sizeof(MCMedge *) * (*len));
+        *cycle = (std::shared_ptr<MCMedge> *)malloc(sizeof(std::shared_ptr<MCMedge>) * (*len));
 
         for (uint i = 0; i < *len; i++) {
             (*cycle)[i] = ytoCycle[i]->mcmEdge;
@@ -1142,7 +1140,7 @@ maxCycleMeanAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cycl
 
     } else {
         // Find maximum cycle mean without cycle
-        mmcycle_robust(&ytoGraph, &min_cr, NULL, NULL);
+        mmcycle_robust(&ytoGraph, &min_cr, nullptr, nullptr);
     }
 
     // Cleanup
@@ -1158,8 +1156,8 @@ maxCycleMeanAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cycl
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
 
-CDouble maxCycleMeanYoungTarjanOrlin(MCMgraph *mcmGraph) {
-    return maxCycleMeanAndCriticalCycleYoungTarjanOrlin(mcmGraph, NULL, NULL);
+CDouble maxCycleMeanYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph) {
+    return maxCycleMeanAndCriticalCycleYoungTarjanOrlin(mcmGraph, nullptr, nullptr);
 }
 
 /**
@@ -1168,26 +1166,26 @@ CDouble maxCycleMeanYoungTarjanOrlin(MCMgraph *mcmGraph) {
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  * It returns both the MCR and a critical cycle
  * Since MCM is in C-style code, let's do it the C-way.
- * The critical cycle is only returned if cycle and len are not NULL. Then *cycle points
+ * The critical cycle is only returned if cycle and len are not nullptr. Then *cycle points
  * to an array of MCMEdges of the critical cycle and *len indicates the length of the cycle.
  * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
  * in due time.
  */
 
 CDouble
-maxCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cycle, uint *len) {
+maxCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len) {
     double min_cr;
     graph ytoGraph;
     arc **ytoCycle;
     long ytoCycLen;
 
     // catch special case when the graph has no edges
-    if (mcmGraph->nrVisibleEdges() == 0) {
-        if (len != NULL) {
+    if (mcmGraph.nrVisibleEdges() == 0) {
+        if (len != nullptr) {
             *len = 0;
         }
-        if (cycle != NULL) {
-            *cycle = NULL;
+        if (cycle != nullptr) {
+            *cycle = nullptr;
         }
         return 0.0;
     }
@@ -1195,16 +1193,16 @@ maxCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cyc
     // Convert the graph to an input graph for the YTO algorithm
     convertMCMgraphToYTOgraph(mcmGraph, &ytoGraph, getDelay, getWeight);
 
-    if (cycle != NULL && len != NULL) {
+    if (cycle != nullptr && len != nullptr) {
         // allocate space for the critical cycle
-        ytoCycle = (arc **)malloc(sizeof(arc *) * mcmGraph->nrVisibleEdges());
+        ytoCycle = (arc **)malloc(sizeof(arc *) * mcmGraph.nrVisibleEdges());
 
         // Find maximum cycle ratio
         mmcycle_robust(&ytoGraph, &min_cr, ytoCycle, &ytoCycLen);
 
         *len = ytoCycLen;
 
-        *cycle = (MCMedge **)malloc(sizeof(MCMedge *) * (*len));
+        *cycle = (std::shared_ptr<MCMedge> *)malloc(sizeof(std::shared_ptr<MCMedge>) * (*len));
 
         // note that mmcycle returns the critical cycle following edges backwards
         // therefore reverse the order of the edges.
@@ -1216,7 +1214,7 @@ maxCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cyc
 
     } else {
         // Find maximum cycle ratio without cycle
-        mmcycle_robust(&ytoGraph, &min_cr, NULL, NULL);
+        mmcycle_robust(&ytoGraph, &min_cr, nullptr, nullptr);
     }
 
     // Cleanup
@@ -1232,8 +1230,8 @@ maxCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cyc
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
 
-CDouble maxCycleRatioYoungTarjanOrlin(MCMgraph *mcmGraph) {
-    return maxCycleRatioAndCriticalCycleYoungTarjanOrlin(mcmGraph, NULL, NULL);
+CDouble maxCycleRatioYoungTarjanOrlin(const MCMgraph& mcmGraph) {
+    return maxCycleRatioAndCriticalCycleYoungTarjanOrlin(mcmGraph, nullptr, nullptr);
 }
 
 /**
@@ -1241,14 +1239,14 @@ CDouble maxCycleRatioYoungTarjanOrlin(MCMgraph *mcmGraph) {
  * The function computes the minimum cycle ratio of edge weight over delay of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  * It returns both the MCR and a critical cycle
- * The critical cycle is only returned if cycle and len are not NULL. Then *cycle points
+ * The critical cycle is only returned if cycle and len are not nullptr. Then *cycle points
  * to an array of MCMEdges of the critical cycle and *len indicates the length of the cycle.
  * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
  * in due time.
  */
 
 CDouble
-minCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cycle, uint *len) {
+minCycleRatioAndCriticalCycleYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len) {
     double min_cr;
     graph ytoGraph;
     arc **ytoCycle;
@@ -1257,7 +1255,7 @@ minCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cyc
     // Convert the graph to an input graph for the YTO algorithm
     convertMCMgraphToYTOgraph(mcmGraph, &ytoGraph, getWeight, getDelay);
 
-    if (cycle != NULL && len != NULL) {
+    if (cycle != nullptr && len != nullptr) {
         // allocate space for the critical cycle
         ytoCycle = (arc **)malloc(sizeof(arc *) * mcmGraph->nrVisibleEdges());
 
@@ -1266,7 +1264,7 @@ minCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cyc
 
         *len = ytoCycLen;
 
-        *cycle = (MCMedge **)malloc(sizeof(MCMedge *) * (*len));
+        *cycle = (std::shared_ptr<MCMedge> *)malloc(sizeof(std::shared_ptr<MCMedge>) * (*len));
 
         for (uint i = 0; i < *len; i++) {
             (*cycle)[i] = ytoCycle[i]->mcmEdge;
@@ -1276,7 +1274,7 @@ minCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cyc
 
     } else {
         // Find minimum cycle ratio without cycle
-        mmcycle_robust(&ytoGraph, &min_cr, NULL, NULL);
+        mmcycle_robust(&ytoGraph, &min_cr, nullptr, nullptr);
     }
 
     // Cleanup
@@ -1292,8 +1290,8 @@ minCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cyc
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
 
-CDouble minCycleRatioYoungTarjanOrlin(MCMgraph *mcmGraph) {
-    return minCycleRatioAndCriticalCycleYoungTarjanOrlin(mcmGraph, NULL, NULL);
+CDouble minCycleRatioYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph) {
+    return minCycleRatioAndCriticalCycleYoungTarjanOrlin(mcmGraph, nullptr, nullptr);
 }
 
 } // namespace Graphs

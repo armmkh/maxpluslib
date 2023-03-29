@@ -43,8 +43,10 @@
 
 #include "base/analysis/mcm/mcmgraph.h"
 #include "mptype.h"
+#include <memory>
 #include <unordered_set>
 #include <vector>
+
 
 class CString;
 
@@ -311,13 +313,18 @@ private:
  * More efficient than vector<MaxPlus::Vector>
  ****************************************************/
 
-class VectorList : private std::vector<Vector *> {
+class VectorList : private std::vector<std::unique_ptr<Vector>> {
 public:
     explicit VectorList(unsigned int oneVectorSizeInit);
-    ~VectorList();
+    ~VectorList() = default;
 
     VectorList(VectorList &&) = default;
     VectorList &operator=(VectorList &&) = delete;
+    
+    // Implicit copying is not allowed
+    //  => Intentionally private and not implemented
+    VectorList(const VectorList &)=delete;
+    VectorList &operator=(const VectorList &)=delete;
 
     [[nodiscard]] const Vector &vectorRefAt(unsigned int n) const; // vector at index 'n'
     Vector &vectorRefAt(unsigned int n);
@@ -336,22 +343,11 @@ public:
     //  similar - differs by a constant within a threshold
 
 private:
-    // Implicit copying is not allowed
-    //  => Intentionally private and not implemented
-    VectorList(const VectorList &);
-    VectorList &operator=(const VectorList &);
-
     const unsigned int oneVectorSize;
 };
 
 inline VectorList::VectorList(unsigned int oneVectorSizeInit) : oneVectorSize(oneVectorSizeInit) {
     assert(oneVectorSize > 0);
-}
-
-inline VectorList::~VectorList() {
-    for (unsigned int pos = 0; pos < size(); pos++) {
-        delete this->at(pos);
-    }
 }
 
 inline const Vector &VectorList::vectorRefAt(unsigned int n) const { return *this->at(n); }
@@ -363,13 +359,13 @@ inline const Vector &VectorList::lastVectorRef() const { return *this->at(this->
 inline Vector &VectorList::lastVectorRef() { return *this->at(this->size() - 1); }
 
 inline unsigned int VectorList::getSize() const {
-    return static_cast<unsigned int>(vector<Vector *>::size());
+    return static_cast<unsigned int>(this->size());
 }
 
 inline void VectorList::grow() {
     auto last = static_cast<unsigned int>(this->size());
     this->resize(last + 1);
-    this->at(last) = new Vector(oneVectorSize, MP_MINUSINFINITY);
+    this->insert(this->begin()+last, std::make_unique<Vector>(oneVectorSize, MP_MINUSINFINITY));
 }
 
 } // namespace MaxPlus

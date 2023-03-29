@@ -44,6 +44,7 @@
 #include "base/analysis/mcm/mcmyto.h"
 #include "base/exception/exception.h"
 #include <cmath>
+#include <memory>
 #include <stdlib.h>
 
 using namespace Graphs;
@@ -977,16 +978,16 @@ CDouble Matrix::mp_eigenvalue() const {
     // convert matrix to mcm graph
 
     // Create a new MCM graph
-    MCMgraph *mcmGraph = new MCMgraph();
+    std::shared_ptr<MCMgraph> mcmGraph = std::make_shared<MCMgraph>();
 
     // store vector of nodes
-    vector<MCMnode *> nodes(sz);
+    vector<std::shared_ptr<MCMnode>> nodes(sz);
 
     // Generate ids by counting
     CId id = 0;
     for (uint i = 0; i != sz; i++) {
         // Create an MCM node for this state
-        MCMnode *n = new MCMnode(id, true);
+        std::shared_ptr<MCMnode> n = std::make_shared<MCMnode>(id, true);
         id++;
 
         // Add the node to the MCM graph
@@ -1001,7 +1002,7 @@ CDouble Matrix::mp_eigenvalue() const {
     uint col = 0;
     vector<MPTime>::const_iterator i;
     for (i = this->table.begin(); i != this->table.end(); i++) {
-        MCMedge *e = new MCMedge(edgeId++, true);
+        std::shared_ptr<MCMedge> e = std::make_shared<MCMedge>(edgeId++, true);
         e->src = nodes[col];
         e->dst = nodes[row];
         e->w = static_cast<CDouble>(*i);
@@ -1019,12 +1020,10 @@ CDouble Matrix::mp_eigenvalue() const {
     }
 
     // prune the graph
-    MCMgraph *pruned = mcmGraph->pruneEdges();
-    delete mcmGraph;
+    std::shared_ptr<MCMgraph> pruned = mcmGraph->pruneEdges();
 
     // compute MCM
     CDouble res = pruned->calculateMaximumCycleMeanKarpDouble();
-    delete pruned;
     return res;
 }
 
@@ -1042,13 +1041,13 @@ MCMgraph Matrix::mpMatrixToPrecedenceGraph() const {
     MCMgraph precGraph;
 
     // store vector of nodes
-    vector<MCMnode *> nodes(sz);
+    vector<std::shared_ptr<MCMnode>> nodes(sz);
 
     // Generate ids by counting
     CId id = 0;
     for (uint i = 0; i != sz; i++) {
         // Create an MCM node for state element i
-        MCMnode *n = new MCMnode(id, true);
+        std::shared_ptr<MCMnode> n = std::make_shared<MCMnode>(id, true);
         id++;
 
         // Add the node to the MCM graph
@@ -1063,7 +1062,7 @@ MCMgraph Matrix::mpMatrixToPrecedenceGraph() const {
     for (auto i : this->table) {
         // add edge is the value is not minus infinity
         if (!i.isMinusInfinity()) {
-            MCMedge *e = new MCMedge(edgeId++, true);
+            std::shared_ptr<MCMedge> e = std::make_shared<MCMedge>(edgeId++, true);
             e->src = nodes[col];
             e->dst = nodes[row];
             e->w = (CDouble)i;
@@ -1097,7 +1096,7 @@ Matrix::mp_generalized_eigenvectors() const {
     MCMgraphs sccs;
 
     // compute SCCs including single nodes without edges.
-    stronglyConnectedMCMgraph(&precGraph, sccs, true);
+    stronglyConnectedMCMgraph(precGraph, sccs, true);
 
     // map from number of SCC to SCC
     std::map<uint, MCMgraph *> sccMapInv;
@@ -1127,7 +1126,7 @@ Matrix::mp_generalized_eigenvectors() const {
 
         if (scc->nrVisibleEdges() > 0) {
             // compute MCM mu and critical node n of scc
-            MCMnode *n;
+            MCMnode* n;
             MPTime mu = MPTime(scc->calculateMaximumCycleMeanKarpDouble(&n));
             criticalNodes.push_back(precGraph.getNode(sccNodeIdMap[n->id]));
             cycleMeans.push_back(mu);

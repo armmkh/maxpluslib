@@ -68,7 +68,7 @@ CDouble maximumCycleMeanKarp(MCMgraph *mcmGraph) {
     int k, n;
     long long **d;
     double l, ld;
-    MCMnode *u;
+    std::shared_ptr<MCMnode> u;
 
     // Allocate memory d[n+1][n]
     n = mcmGraph->nrVisibleNodes();
@@ -89,10 +89,10 @@ CDouble maximumCycleMeanKarp(MCMgraph *mcmGraph) {
     for (k = 1; k < n + 1; k++) {
         for (MCMnodesCIter iter = mcmGraph->getNodes().begin(); iter != mcmGraph->getNodes().end();
              iter++) {
-            MCMnode *v = *iter;
+            std::shared_ptr<MCMnode> v = *iter;
 
             for (MCMedgesIter e = v->in.begin(); e != v->in.end(); e++) {
-                MCMnode *u = (*e)->src;
+                std::shared_ptr<MCMnode> u = (*e)->src;
 
                 d[k][v->id] = MAX(d[k][v->id], d[k - 1][u->id] + ((int)(*e)->w));
             }
@@ -130,12 +130,12 @@ CDouble maximumCycleMeanKarp(MCMgraph *mcmGraph) {
  * A critical node is only returned if criticalNode is not NULL.
  */
 
-CDouble maximumCycleMeanKarpDouble(MCMgraph *mcmGraph, MCMnode **criticalNode = NULL) {
+CDouble maximumCycleMeanKarpDouble(std::shared_ptr<MCMgraph> mcmGraph, std::shared_ptr<MCMnode> *criticalNode = NULL) {
     int k, n;
     typedef CDouble *CDoublePtr;
     CDoublePtr *d;
     double l, ld;
-    MCMnode *u;
+    std::shared_ptr<MCMnode> u;
 
     // Allocate memory d[n+1][n]
     n = mcmGraph->nrVisibleNodes();
@@ -156,10 +156,10 @@ CDouble maximumCycleMeanKarpDouble(MCMgraph *mcmGraph, MCMnode **criticalNode = 
     for (k = 1; k < n + 1; k++) {
         for (MCMnodesCIter iter = mcmGraph->getNodes().begin(); iter != mcmGraph->getNodes().end();
              iter++) {
-            MCMnode *v = *iter;
+            std::shared_ptr<MCMnode> v = *iter;
 
             for (MCMedgesIter e = v->in.begin(); e != v->in.end(); e++) {
-                MCMnode *u = (*e)->src;
+                std::shared_ptr<MCMnode> u = (*e)->src;
 
                 d[k][v->id] = MAX(d[k][v->id], d[k - 1][u->id] + ((*e)->w));
             }

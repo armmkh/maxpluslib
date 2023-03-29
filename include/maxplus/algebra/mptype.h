@@ -87,7 +87,7 @@ using MPDelay = MPTime;
 // MP_MAX()
 //==============================
 
-inline MPTime MP_MAX(MPTime a, MPTime b) { return (((CDouble)a) > ((CDouble)b)) ? (a) : (b); }
+inline MPTime MP_MAX(MPTime a, MPTime b) { return (static_cast<CDouble>(a)) > (static_cast<CDouble>(b)) ? (a) : (b); }
 
 inline MPTime MP_MAX(CDouble a, MPTime b) { return MP_MAX(MPTime(a), b); }
 
@@ -99,7 +99,7 @@ inline CDouble MP_MAX(CDouble a, CDouble b) { return CDouble(MP_MAX(MPTime(a), M
 // MP_MIN()
 //==============================
 
-inline MPTime MP_MIN(MPTime a, MPTime b) { return (((CDouble)a) < ((CDouble)b)) ? (a) : (b); }
+inline MPTime MP_MIN(MPTime a, MPTime b) { return (static_cast<CDouble>(a)) < (static_cast<CDouble>(b)) ? (a) : (b); }
 
 inline MPTime MP_MIN(CDouble a, MPTime b) { return MP_MIN(MPTime(a), b); }
 
@@ -168,9 +168,9 @@ inline MPTime operator*(MPTime a, MPTime b) {
     return MPTime(static_cast<CDouble>(a) * static_cast<CDouble>(b));
 }
 
-inline const MPTime operator*(CDouble a, MPTime b) { return MPTime(a) * MPTime(b); }
+inline MPTime operator*(CDouble a, MPTime b) { return MPTime(a) * MPTime(b); }
 
-inline const MPTime operator*(MPTime a, CDouble b) { return MPTime(a) * MPTime(b); }
+inline MPTime operator*(MPTime a, CDouble b) { return MPTime(a) * MPTime(b); }
 
 inline MPTime &MPTime::operator+=(MPTime a) {
     *this = *this + a;
@@ -179,7 +179,7 @@ inline MPTime &MPTime::operator+=(MPTime a) {
 
 inline MPTime &MPTime::operator-=(MPTime a) {
     assert(!a.isMinusInfinity());
-    *this = *this + MPTime(CDouble(-a));
+    *this = *this + (-a);
     return *this;
 }
 

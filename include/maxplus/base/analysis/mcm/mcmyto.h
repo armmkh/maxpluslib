@@ -74,7 +74,7 @@ typedef struct Node {
     struct Arc *v_key;     // pointer to incoming arc with minimum key
 } node;
 
-typedef struct Arc {
+using arc = struct Arc {
     node *tail;
     node *head;
     struct Arc *next_out; // in incidence list of tail node
@@ -84,23 +84,23 @@ typedef struct Arc {
     double transit_time;
     double key;
     long h_pos;       // of arc in heap
-    MCMedge *mcmEdge; // MCMedge from which the arc was constructed in the conversion
-} arc;
+    std::shared_ptr<MCMedge> mcmEdge; // MCMedge from which the arc was constructed in the conversion
+};
 
-typedef struct Graph {
+using graph = struct Graph {
     long n_nodes;
     node *nodes;
     long n_arcs;
     arc *arcs;
     node *vs; // additional node with zero cost outgoing edges
-} graph;
+};
 
 /**
  * mcmYoungTarjanOrlin ()
  * The function computes the maximum cycle mean of edge weight per edge of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
-CDouble maxCycleMeanYoungTarjanOrlin(MCMgraph *mcmGraph);
+CDouble maxCycleMeanYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph);
 
 /**
  * maxCycleMeanAndCriticalCycleYoungTarjanOrlin ()
@@ -113,14 +113,14 @@ CDouble maxCycleMeanYoungTarjanOrlin(MCMgraph *mcmGraph);
  * in due time.
  */
 CDouble
-maxCycleMeanAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cycle, uint *len);
+maxCycleMeanAndCriticalCycleYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len);
 
 /**
  * maxCycleRatioYoungTarjanOrlin ()
  * The function computes the maximum cycle ratio of edge weight over delay of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
-CDouble maxCycleRatioYoungTarjanOrlin(MCMgraph *mcmGraph);
+CDouble maxCycleRatioYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph);
 
 /**
  * maxCycleRatioAndCriticalCycleYoungTarjanOrlin ()
@@ -133,14 +133,14 @@ CDouble maxCycleRatioYoungTarjanOrlin(MCMgraph *mcmGraph);
  * in due time.
  */
 CDouble
-maxCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cycle, uint *len);
+maxCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len);
 
 /**
  * minCycleRatioYoungTarjanOrlin ()
  * The function computes the minimum cycle ratio of edge weight over delay of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
-CDouble minCycleRatioYoungTarjanOrlin(MCMgraph *mcmGraph);
+CDouble minCycleRatioYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph);
 
 /**
  * minCycleRatioAndCriticalCycleYoungTarjanOrlin ()
@@ -153,19 +153,19 @@ CDouble minCycleRatioYoungTarjanOrlin(MCMgraph *mcmGraph);
  * in due time.
  */
 CDouble
-minCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph *mcmGraph, MCMedge ***cycle, uint *len);
+minCycleRatioAndCriticalCycleYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len);
 
 /**
  * getDelay ()
  * The function returns the delay associated with an edge.
  */
-double getDelay(MCMedge *e);
+double getDelay(std::shared_ptr<MCMedge> e);
 
 /**
  * getWeight ()
  * The function returns the weight associated with an edge.
  */
-double getWeight(MCMedge *e);
+double getWeight(std::shared_ptr<MCMedge> e);
 
 /**
  * convertMCMgraphToYTOgraph ()
@@ -173,10 +173,10 @@ double getWeight(MCMedge *e);
  * to graph input for Young-Tarjan-Orlin's algorithm.
  * It assumes that the id's of the nodes are 0 <= id < number of nodes
  */
-void convertMCMgraphToYTOgraph(MCMgraph *g,
+void convertMCMgraphToYTOgraph(std::shared_ptr<MCMgraph> g,
                                graph *gr,
-                               double (*costFunction)(MCMedge *e),
-                               double (*transit_timeFunction)(MCMedge *e));
+                               double (*costFunction)(std::shared_ptr<MCMedge> e),
+                               double (*transit_timeFunction)(std::shared_ptr<MCMedge> e));
 
 /**
  * mmcycle ()
