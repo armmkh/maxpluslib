@@ -32,10 +32,10 @@ void StrategyVectorTest::testSimpleTest(void) {
     mpa->addState(s1);
     mpa->addState(s2);
     mpa->addState(s3);
-    mpa->addEdge(s1, makeRewardEdgeLabel(3.0, new CString("A"), 1.0), s2);
-    mpa->addEdge(s1, makeRewardEdgeLabel(3.0, new CString("A"), 1.0), s3);
-    mpa->addEdge(s2, makeRewardEdgeLabel(1.0, new CString("A"), 1.0), s1);
-    mpa->addEdge(s3, makeRewardEdgeLabel(7.0, new CString("A"), 1.0), s1);
+    mpa->addEdge(s1, makeRewardEdgeLabel(MPDelay(3.0), new CString("A"), 1.0), s2);
+    mpa->addEdge(s1, makeRewardEdgeLabel(MPDelay(3.0), new CString("A"), 1.0), s3);
+    mpa->addEdge(s2, makeRewardEdgeLabel(MPDelay(1.0), new CString("A"), 1.0), s1);
+    mpa->addEdge(s3, makeRewardEdgeLabel(MPDelay(7.0), new CString("A"), 1.0), s1);
     mpa->addV0(s1);
     mpa->addV1(s2);
     mpa->addV1(s3);

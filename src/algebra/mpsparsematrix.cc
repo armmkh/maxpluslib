@@ -40,6 +40,7 @@
 
 #include "algebra/mpsparsematrix.h"
 #include "algebra/mpmatrix.h"
+#include "algebra/mptype.h"
 #include "base/exception/exception.h"
 #include <math.h>
 #include <numeric>
@@ -131,7 +132,7 @@ SparseVector::SparseVector(const Vector &v, const Sizes &sz) {
 /**
  * vector assignment
  */
-SparseVector& SparseVector::operator=(const SparseVector &other) {
+SparseVector &SparseVector::operator=(const SparseVector &other) {
     if (this->getSize() != other.getSize()) {
         throw CException("Vectors of different size in"
                          "SparseVector::operator=");
@@ -142,7 +143,7 @@ SparseVector& SparseVector::operator=(const SparseVector &other) {
 
 SparseVector SparseVector::UnitVector(unsigned int size, unsigned int n) {
     SparseVector result(size);
-    result.put(n, 0.0);
+    result.put(n, MPTime(0.0));
     return result;
 }
 
@@ -175,18 +176,18 @@ MPTime SparseVector::norm() const {
  * normalize vector
  */
 MPTime SparseVector::normalize() {
-    double maxEl = this->norm();
+    MPTime maxEl = this->norm();
 
-    if (maxEl == MP_MINUSINFINITY) {
+    if (maxEl.isMinusInfinity()) {
         throw CException("Cannot normalize vector with norm MP_MINUSINFINITY"
                          "SparseVector::normalize");
-    } else {
-        for (auto &e : this->table) {
-            MPTime x_i = e.second; // MPTime handles -INF correctly
-            x_i = x_i - maxEl;     // overloaded using MP_PLUS
-            e.second = x_i;
-        }
     }
+    for (auto &e : this->table) {
+        MPTime x_i = e.second; // MPTime handles -INF correctly
+        x_i = x_i - maxEl;     // overloaded using MP_PLUS
+        e.second = x_i;
+    }
+
     return maxEl;
 }
 
@@ -441,13 +442,13 @@ SparseVector SparseVector::add(const SparseVector &vecB) const {
  * Compare vectors up to MP_EPSILON
  */
 bool SparseVector::compare(const SparseVector &v) const {
-    return this->forall(v, [](MPTime a, MPTime b) { return fabs(a - b) <= MP_EPSILON; });
+    return this->forall(v, [](MPTime a, MPTime b) { return fabs(static_cast<CDouble>(a) - static_cast<CDouble>(b)) <= static_cast<CDouble>(MP_EPSILON); });
 }
 
 SparseVector SparseVector::operator+=(MPTime increase) const { return this->add(increase); }
 
 SparseVector SparseVector::operator-=(MPTime decrease) const {
-    if (MP_ISMINUSINFINITY(decrease)) {
+    if (decrease.isMinusInfinity()) {
         throw CException("Cannot subtract minus infinity in"
                          "SparseVector::operator-=");
     }
@@ -621,7 +622,7 @@ void SparseMatrix::put(unsigned int row, unsigned int column, MPTime value) {
     }
 }
 
-SparseMatrix& SparseMatrix::operator=(const SparseMatrix &other) {
+SparseMatrix &SparseMatrix::operator=(const SparseMatrix &other) {
     if (this->getRowSize() != other.getRowSize()
         || this->getColumnSize() != other.getColumnSize()) {
         throw CException("Matrices of different size in"
@@ -969,7 +970,7 @@ std::pair<Matrix *, Sizes> SparseMatrix::reduceRowsAndColumns() {
 // identical rows can be eliminated any eigenvector must have identical values for those rows.
 MPTime SparseMatrix::mpEigenvalue() {
     Matrix &M = *(this->reduceRows());
-    MPTime lambda = M.mp_eigenvalue();
+    MPTime lambda = MPTime(M.mp_eigenvalue());
     delete &M;
     return lambda;
 }
@@ -993,8 +994,8 @@ SparseMatrix::mpGeneralizedEigenvectors() {
     Sizes sizes = this->sizes();
     for (const auto &evev : evs) {
         auto ev = evev.first;
-        MPTime lambda = evev.second;
-        evl.push_back(std::make_pair(SparseVector(ev, sizes), lambda));
+        auto lambda = MPTime(evev.second);
+        evl.push_back(std::make_pair(SparseVector(ev, sizes), static_cast<CDouble>(lambda)));
     }
     SparseMatrix::GeneralizedEigenvectorList gevl;
     for (const auto &evev : gevs) {

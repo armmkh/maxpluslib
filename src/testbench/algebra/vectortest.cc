@@ -16,7 +16,7 @@ void VectorTest::test_Infinity(void) {
     vec->put(0, MPTime(4.0));
     vec->put(1, MPTime(5.0));
     vec->put(2, MPTime(6.0));
-    ASSERT_EQUAL(MPTime(4.0), vec->get(0));
-    ASSERT_EQUAL(MPTime(5.0), vec->get(1));
-    ASSERT_EQUAL(MPTime(6.0), vec->get(2));
+    ASSERT_EQUAL(4.0, static_cast<CDouble>(vec->get(0)));
+    ASSERT_EQUAL(5.0, static_cast<CDouble>(vec->get(1)));
+    ASSERT_EQUAL(6.0, static_cast<CDouble>(vec->get(2)));
 }

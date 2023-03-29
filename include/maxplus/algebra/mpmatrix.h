@@ -101,7 +101,7 @@ public:
     }
 
     Vector &operator-=(MPTime decrease) {
-        assert(!MP_ISMINUSINFINITY(decrease));
+        assert(!decrease.isMinusInfinity());
         this->add(-decrease, this);
         return *this;
     }
@@ -217,7 +217,7 @@ public:
     }
 
     Matrix &operator-=(MPTime decrease) {
-        assert(!MP_ISMINUSINFINITY(decrease));
+        assert(!decrease.isMinusInfinity());
         this->add(-decrease, this);
         return *this;
     }

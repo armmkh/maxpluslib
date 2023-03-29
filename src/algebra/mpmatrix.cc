@@ -43,7 +43,7 @@
 #include "base/analysis/mcm/mcmgraph.h"
 #include "base/analysis/mcm/mcmyto.h"
 #include "base/exception/exception.h"
-#include <math.h>
+#include <cmath>
 #include <stdlib.h>
 
 using namespace Graphs;
@@ -239,8 +239,9 @@ MPTime Vector::minimalFiniteElement(unsigned int *itsPosition_Ptr) const {
     bool minEl_initialized = false;
     for (unsigned int row = 0; row < this->getSize(); row++) {
         MPTime val = this->get(row);
-        if (MaxPlus::MP_ISMINUSINFINITY(val))
+        if (val.isMinusInfinity()) {
             continue;
+        }
         if (!minEl_initialized || (val < minEl)) {
             minEl = val;
             minEl_initialized = true;
@@ -730,8 +731,8 @@ MPTime Matrix::largestFiniteElement() const {
     // finite element with the largest absolute value
     // all -INF => 0
     //
-    MPTime largestEl = 0;
-    MPTime largestMag = 0;
+    auto largestEl = MPTime(0.0);
+    auto largestMag = MPTime(0.0);
     unsigned int MR = this->getRows();
     unsigned int MC = this->getCols();
 
@@ -741,7 +742,7 @@ MPTime Matrix::largestFiniteElement() const {
                 continue;
             }
 
-            MPTime mag = fabs(this->get(r, c));
+            MPTime mag = this->get(r, c).fabs();
             if (mag > largestMag) {
                 largestEl = this->get(r, c);
                 largestMag = mag;
@@ -1003,7 +1004,7 @@ CDouble Matrix::mp_eigenvalue() const {
         MCMedge *e = new MCMedge(edgeId++, true);
         e->src = nodes[col];
         e->dst = nodes[row];
-        e->w = (*i);
+        e->w = static_cast<CDouble>(*i);
         e->d = 1.0;
 
         // Add the edge to the MCM graph and the src and dst node
@@ -1061,7 +1062,7 @@ MCMgraph Matrix::mpMatrixToPrecedenceGraph() const {
     uint col = 0;
     for (auto i : this->table) {
         // add edge is the value is not minus infinity
-        if (i != MP_MINUSINFINITY) {
+        if (!i.isMinusInfinity()) {
             MCMedge *e = new MCMedge(edgeId++, true);
             e->src = nodes[col];
             e->dst = nodes[row];
@@ -1127,7 +1128,7 @@ Matrix::mp_generalized_eigenvectors() const {
         if (scc->nrVisibleEdges() > 0) {
             // compute MCM mu and critical node n of scc
             MCMnode *n;
-            MPTime mu = scc->calculateMaximumCycleMeanKarpDouble(&n);
+            MPTime mu = MPTime(scc->calculateMaximumCycleMeanKarpDouble(&n));
             criticalNodes.push_back(precGraph.getNode(sccNodeIdMap[n->id]));
             cycleMeans.push_back(mu);
         } else {
@@ -1151,11 +1152,11 @@ Matrix::mp_generalized_eigenvectors() const {
 
     for (size_t k = 0; k < sccs.size(); k++) {
         // there is one for each SCC with a cycle mean larger than -inf
-        if (cycleMeans[k] != MP_MINUSINFINITY) {
+        if (! cycleMeans[k].isMinusInfinity()) {
             // eigenvector is formed by normalized longest paths from critical node to all other
             // nodes compute transitive cycle means such that all nodes in SCC k and downstream SCCs
             // get a cycle mean that is the maximum if all (reflexive) upstream SCCs
-            std::map<CId, CDouble> trCycleMeans;
+            std::map<CId, MPTime> trCycleMeans;
             // initialize all nodes to undefined (represented by -DBL_MAX), except the root node
             // which is initialized with its own cycle mean
             for (unsigned int n = 0; n != precGraph.getNodes().size(); n++) {
@@ -1178,7 +1179,7 @@ Matrix::mp_generalized_eigenvectors() const {
             // compute normalization map replace MP_MINUSINFINITY by -DBL_MAX
             std::map<CId, CDouble> muMap;
             for (unsigned int n = 0; n < trCycleMeans.size(); n++) {
-                muMap[n] = (trCycleMeans[n] == MP_MINUSINFINITY) ? -DBL_MAX : trCycleMeans[n];
+                muMap[n] = (MPTime(trCycleMeans[n]).isMinusInfinity()) ? -DBL_MAX : static_cast<CDouble>(trCycleMeans[n]);
             }
 
             // compute normalized longest paths
@@ -1205,7 +1206,7 @@ Matrix::mp_generalized_eigenvectors() const {
                 if (lambda == MP_MINUSINFINITY) {
                     lambda = trCycleMeans[n.id];
                 } else {
-                    if ((lambda != MP_MINUSINFINITY) && (trCycleMeans[n.id] != MP_MINUSINFINITY)
+                    if ((!lambda.isMinusInfinity()) && (!trCycleMeans[n.id].isMinusInfinity())
                         && (lambda != trCycleMeans[n.id])) {
                         isGeneralized = true;
                     }
@@ -1216,14 +1217,14 @@ Matrix::mp_generalized_eigenvectors() const {
             if (isGeneralized) {
                 genEigenVectors.push_back(std::make_pair(v, ev));
             } else {
-                eigenVectors.push_back(std::make_pair(v, lambda));
+                eigenVectors.push_back(std::make_pair(v, static_cast<CDouble>(lambda)));
             }
         }
     }
 
     // the SCC graphs still need to be destroyed
     for (auto *g : sccs) {
-         delete g;
+        delete g;
     }
 
     return std::make_pair(eigenVectors, genEigenVectors);

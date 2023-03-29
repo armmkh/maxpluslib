@@ -17,7 +17,7 @@ void ValueTest::Run() {
 // Test infinity operations.
 void ValueTest::test_mpTime() {
     std::cout << "Running test: mpTime" << std::endl;
-    ASSERT_EQUAL(1.0, MPTime(1.0));
+    ASSERT_EQUAL(1.0, static_cast<CDouble>(MPTime(1.0)));
 }
 
 /// Test max operator.
@@ -28,29 +28,29 @@ void ValueTest::test_Max() {
     double b = 3.14;
     double max_ab = 5;
 
-    ASSERT_EQUAL(MPTime(max_ab), MP_MAX(MPTime(a), MPTime(b)));
-    ASSERT_EQUAL(MPTime(max_ab), MP_MAX(MPTime(b), MPTime(a)));
-    ASSERT_EQUAL(MPTime(b), MP_MAX(MPTime(-a), MPTime(b)));
-    ASSERT_EQUAL(MPTime(a), MP_MAX(MPTime(-b), MPTime(a)));
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(max_ab)), static_cast<CDouble>(MP_MAX(MPTime(a), MPTime(b))));
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(max_ab)), static_cast<CDouble>(MP_MAX(MPTime(b), MPTime(a))));
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(b)), static_cast<CDouble>(MP_MAX(MPTime(-a), MPTime(b))));
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(a)), static_cast<CDouble>(MP_MAX(MPTime(-b), MPTime(a))));
 
     // -Infinity case.
-    ASSERT_THROW(MP_ISMINUSINFINITY(MP_MAX(MP_MINUSINFINITY, MP_MINUSINFINITY)));
-    ASSERT_EQUAL(MPTime(3.14), MP_MAX(MPTime(3.14), MP_MINUSINFINITY));
+    ASSERT_THROW((MP_MAX(MP_MINUSINFINITY, MP_MINUSINFINITY)).isMinusInfinity());
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(3.14)), static_cast<CDouble>(MP_MAX(MPTime(3.14), MP_MINUSINFINITY)));
 }
 
 /// Test min operator.
 void ValueTest::test_Min() {
     std::cout << "Running test: Min" << std::endl;
     // Test normal double values.
-    ASSERT_EQUAL(MPTime(3.14), MP_MIN(MPTime(5.0), MPTime(3.14)));
-    ASSERT_EQUAL(MPTime(3.14), MP_MIN(MPTime(3.14), MPTime(5.0)));
-    ASSERT_EQUAL(MPTime(-5.0), MP_MIN(MPTime(-5.0), MPTime(3.14)));
-    ASSERT_EQUAL(MPTime(-3.14), MP_MIN(MPTime(-3.14), MPTime(5.0)));
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(3.14)), static_cast<CDouble>(MP_MIN(MPTime(5.0), MPTime(3.14))));
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(3.14)), static_cast<CDouble>(MP_MIN(MPTime(3.14), MPTime(5.0))));
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(-5.0)), static_cast<CDouble>(MP_MIN(MPTime(-5.0), MPTime(3.14))));
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(-3.14)), static_cast<CDouble>(MP_MIN(MPTime(-3.14), MPTime(5.0))));
 
     // -Infinity case.
-    ASSERT_THROW(MP_ISMINUSINFINITY(MP_MIN(MP_MINUSINFINITY, MP_MINUSINFINITY)));
-    ASSERT_THROW(MP_ISMINUSINFINITY(MP_MIN(MPTime(-3.14), MP_MINUSINFINITY)));
-    ASSERT_THROW(MP_ISMINUSINFINITY(MP_MIN(MPTime(3.14), MP_MINUSINFINITY)));
+    ASSERT_THROW(MP_MIN(MP_MINUSINFINITY, MP_MINUSINFINITY).isMinusInfinity());
+    ASSERT_THROW(MP_MIN(MPTime(-3.14), MP_MINUSINFINITY).isMinusInfinity());
+    ASSERT_THROW(MP_MIN(MPTime(3.14), MP_MINUSINFINITY).isMinusInfinity());
 }
 
 /// Test basic arithmetic operations.
@@ -60,13 +60,13 @@ void ValueTest::test_BasicArithmetic() {
     MPTime b(6.0);
 
     // Addition.
-    ASSERT_EQUAL(MPTime(9.14), a + b);
-    ASSERT_EQUAL(MPTime(9.14), b + a);
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(9.14)), static_cast<CDouble>(a + b));
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(9.14)), static_cast<CDouble>(b + a));
     // Subtraction.
-    ASSERT_EQUAL(MPTime(2.86), b - a);
-    ASSERT_EQUAL(MPTime(-2.86), a - b);
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(2.86)), static_cast<CDouble>(b - a));
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(-2.86)), static_cast<CDouble>(a - b));
     // Multiplication.
-    ASSERT_EQUAL(MPTime(18.84), a * b);
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(18.84)), static_cast<CDouble>(a * b));
     // Multiplication.
-    ASSERT_EQUAL(MPTime(18.84), b * a);
+    ASSERT_EQUAL(static_cast<CDouble>(MPTime(18.84)), static_cast<CDouble>(b * a));
 }

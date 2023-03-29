@@ -45,10 +45,10 @@ void PolicyIterationTest::testPlayer1CycleTest(void) {
     mpa->addState(s3);
     mpa->addState(s4);
 
-    mpa->addEdge(s1, makeRewardEdgeLabel(1.0, new CString("A"), 1.0), s2);
-    mpa->addEdge(s2, makeRewardEdgeLabel(1.0, new CString("A"), 2.0), s3);
-    mpa->addEdge(s3, makeRewardEdgeLabel(1.0, new CString("A"), 3.0), s4);
-    mpa->addEdge(s4, makeRewardEdgeLabel(1.0, new CString("A"), 4.0), s2);
+    mpa->addEdge(s1, makeRewardEdgeLabel(MPDelay(1.0), new CString("A"), 1.0), s2);
+    mpa->addEdge(s2, makeRewardEdgeLabel(MPDelay(1.0), new CString("A"), 2.0), s3);
+    mpa->addEdge(s3, makeRewardEdgeLabel(MPDelay(1.0), new CString("A"), 3.0), s4);
+    mpa->addEdge(s4, makeRewardEdgeLabel(MPDelay(1.0), new CString("A"), 4.0), s2);
 
     PolicyIteration<MPAStateLabel, MPAREdgeLabel> pi;
     PolicyIteration<MPAStateLabel, MPAREdgeLabel>::PolicyIterationResult result = pi.solve(mpa);
@@ -85,10 +85,10 @@ void PolicyIterationTest::testPlayer1CycleTest2(void) {
     mpa->addState(s3);
     mpa->addState(s4);
 
-    mpa->addEdge(s1, makeRewardEdgeLabel(3.0, new CString("A"), 1.0), s2);
-    mpa->addEdge(s2, makeRewardEdgeLabel(3.0, new CString("A"), 2.0), s3);
-    mpa->addEdge(s3, makeRewardEdgeLabel(1.0, new CString("A"), 3.0), s4);
-    mpa->addEdge(s4, makeRewardEdgeLabel(7.0, new CString("A"), 4.0), s2);
+    mpa->addEdge(s1, makeRewardEdgeLabel(MPDelay(3.0), new CString("A"), 1.0), s2);
+    mpa->addEdge(s2, makeRewardEdgeLabel(MPDelay(3.0), new CString("A"), 2.0), s3);
+    mpa->addEdge(s3, makeRewardEdgeLabel(MPDelay(1.0), new CString("A"), 3.0), s4);
+    mpa->addEdge(s4, makeRewardEdgeLabel(MPDelay(7.0), new CString("A"), 4.0), s2);
 
     PolicyIteration<MPAStateLabel, MPAREdgeLabel> *pi =
             new PolicyIteration<MPAStateLabel, MPAREdgeLabel>();
@@ -129,12 +129,12 @@ void PolicyIterationTest::testTwoPlayersTest(void) {
     mpa->addState(s4);
     mpa->addState(s5);
 
-    mpa->addEdge(s1, makeRewardEdgeLabel(1.0, new CString("A"), 0.0), s4);
-    mpa->addEdge(s1, makeRewardEdgeLabel(1.0, new CString("A"), 0.0), s2);
-    mpa->addEdge(s4, makeRewardEdgeLabel(1.0, new CString("A"), 0.0), s5);
-    mpa->addEdge(s5, makeRewardEdgeLabel(2.0, new CString("A"), 1.0), s4);
-    mpa->addEdge(s2, makeRewardEdgeLabel(0.0, new CString("A"), 3.0), s3);
-    mpa->addEdge(s3, makeRewardEdgeLabel(2.0, new CString("A"), 4.0), s2);
+    mpa->addEdge(s1, makeRewardEdgeLabel(MPDelay(1.0), new CString("A"), 0.0), s4);
+    mpa->addEdge(s1, makeRewardEdgeLabel(MPDelay(1.0), new CString("A"), 0.0), s2);
+    mpa->addEdge(s4, makeRewardEdgeLabel(MPDelay(1.0), new CString("A"), 0.0), s5);
+    mpa->addEdge(s5, makeRewardEdgeLabel(MPDelay(2.0), new CString("A"), 1.0), s4);
+    mpa->addEdge(s2, makeRewardEdgeLabel(MPDelay(0.0), new CString("A"), 3.0), s3);
+    mpa->addEdge(s3, makeRewardEdgeLabel(MPDelay(2.0), new CString("A"), 4.0), s2);
 
     PolicyIteration<MPAStateLabel, MPAREdgeLabel> *pi =
             new PolicyIteration<MPAStateLabel, MPAREdgeLabel>();
@@ -167,10 +167,10 @@ void PolicyIterationTest::testSimpleTest(void) {
     mpa->addState(s1);
     mpa->addState(s2);
     mpa->addState(s3);
-    mpa->addEdge(s1, makeRewardEdgeLabel(3.0, new CString("A"), 1.0), s2);
-    mpa->addEdge(s1, makeRewardEdgeLabel(3.0, new CString("A"), 1.0), s3);
-    mpa->addEdge(s2, makeRewardEdgeLabel(1.0, new CString("A"), 1.0), s1);
-    mpa->addEdge(s3, makeRewardEdgeLabel(7.0, new CString("A"), 1.0), s1);
+    mpa->addEdge(s1, makeRewardEdgeLabel(MPDelay(3.0), new CString("A"), 1.0), s2);
+    mpa->addEdge(s1, makeRewardEdgeLabel(MPDelay(3.0), new CString("A"), 1.0), s3);
+    mpa->addEdge(s2, makeRewardEdgeLabel(MPDelay(1.0), new CString("A"), 1.0), s1);
+    mpa->addEdge(s3, makeRewardEdgeLabel(MPDelay(7.0), new CString("A"), 1.0), s1);
     mpa->addV0(s1);
     mpa->addV1(s2);
     mpa->addV1(s3);
@@ -194,7 +194,7 @@ void PolicyIterationTest::testInvalidInputGraphTest(void) {
 
     mpa->addState(s1);
     mpa->addState(s2);
-    mpa->addEdge(s1, makeRewardEdgeLabel(3.0, new CString("A"), 1.0), s2);
+    mpa->addEdge(s1, makeRewardEdgeLabel(MPDelay(3.0), new CString("A"), 1.0), s2);
     mpa->addV0(s1);
     mpa->addV1(s2);
 

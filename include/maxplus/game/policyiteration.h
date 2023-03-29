@@ -65,13 +65,13 @@ namespace MaxPlus {
  * @author Bram van der Sanden
  */
 template <typename SL, typename EL> class PolicyIteration {
-    const double EPSILON = 10e-5;
+    const CDouble EPSILON = 10e-5;
 
 public:
     ~PolicyIteration(){};
 
     struct PolicyIterationResult {
-        std::map<State<SL, EL> *, double> values;
+        std::map<State<SL, EL> *, CDouble> values;
         StrategyVector<SL, EL> strategy;
     };
 
@@ -96,7 +96,7 @@ public:
      * @param epsilon maximum absolute error between two values when they are considered equal
      * @return
      */
-    PolicyIterationResult solve(RatioGame<SL, EL> *game, double epsilon) {
+    PolicyIterationResult solve(RatioGame<SL, EL> *game, CDouble epsilon) {
         if (!checkEachStateHasSuccessor(game)) {
             throw std::runtime_error(
                     "Input game graph is not valid. Some states have no successor.");
@@ -114,23 +114,23 @@ private:
      */
     PolicyIterationResult policyIteration(RatioGame<SL, EL> *game,
                                           StrategyVector<SL, EL> *initialStrategy,
-                                          double epsilon) {
+                                          CDouble epsilon) {
         SetOfStates<SL, EL> *states = game->getStates();
 
         bool improvement = true;
 
         // Initialize distance vector.
-        std::map<State<SL, EL> *, double> distVector = initializeVector(states, (double)INFINITY);
-        std::map<State<SL, EL> *, double> dw2vector = initializeVector(states, (double)INFINITY);
+        std::map<State<SL, EL> *, CDouble> distVector = initializeVector(states, (CDouble)INFINITY);
+        std::map<State<SL, EL> *, CDouble> dw2vector = initializeVector(states, (CDouble)INFINITY);
 
         // Initial ratio vector.
-        std::map<State<SL, EL> *, double> ratioVector = initializeVector(states, (double)-INFINITY);
+        std::map<State<SL, EL> *, CDouble> ratioVector = initializeVector(states, (CDouble)-INFINITY);
 
         // Initialize arbitrary positional strategies.
         StrategyVector<SL, EL> currentStrategy = initialStrategy;
 
         // Initialize state ids.
-        std::map<State<SL, EL> *, double> stateIds;
+        std::map<State<SL, EL> *, CDouble> stateIds;
         int cid = 0;
         typename SetOfStates<SL, EL>::CIter si;
         for (si = states->begin(); si != states->end(); si++) {
@@ -166,19 +166,19 @@ private:
 
                     State<SL, EL> *u = (State<SL, EL> *)e->getDestination();
 
-                    double mw = ratioVector[u];
-                    double w1 = game->getWeight1(e);
-                    double w2 = game->getWeight2(e);
+                    CDouble mw = ratioVector[u];
+                    CDouble w1 = static_cast<CDouble>(game->getWeight1(e));
+                    CDouble w2 = static_cast<CDouble>(game->getWeight2(e));
 
-                    double reweighted = w1 - mw * w2;
+                    CDouble reweighted = w1 - mw * w2;
 
-                    double w2sum_v = dw2vector[v];
-                    double w2sum_u = dw2vector[u] + w2;
+                    CDouble w2sum_v = dw2vector[v];
+                    CDouble w2sum_u = dw2vector[u] + w2;
 
-                    double delta = std::max(w2sum_v, w2sum_u) * epsilon;
+                    CDouble delta = std::max(w2sum_v, w2sum_u) * epsilon;
 
-                    double dv = distVector[v];
-                    double du = distVector[u] + reweighted;
+                    CDouble dv = distVector[v];
+                    CDouble du = distVector[u] + reweighted;
 
                     // Player 0 wants to maximize the ratio.
                     if (lessThan(ratioVector[v], ratioVector[u], epsilon)
@@ -198,10 +198,10 @@ private:
     }
 
     struct Player1Result {
-        std::map<State<SL, EL> *, double> d_i_t;
-        std::map<State<SL, EL> *, double> r_i_t;
+        std::map<State<SL, EL> *, CDouble> d_i_t;
+        std::map<State<SL, EL> *, CDouble> r_i_t;
         StrategyVector<SL, EL> s_i_t;
-        std::map<State<SL, EL> *, double> dw2_i_t;
+        std::map<State<SL, EL> *, CDouble> dw2_i_t;
     };
 
     /**
@@ -221,17 +221,17 @@ private:
      */
     Player1Result improveStrategyPlayer1(RatioGame<SL, EL> *game,
                                          StrategyVector<SL, EL> *currentStrategy,
-                                         std::map<State<SL, EL> *, double> &d_prev,
-                                         std::map<State<SL, EL> *, double> &r_prev,
-                                         std::map<State<SL, EL> *, double> &dw2_prev,
-                                         std::map<State<SL, EL> *, double> &stateIds,
-                                         double epsilon) {
+                                         std::map<State<SL, EL> *, CDouble> &d_prev,
+                                         std::map<State<SL, EL> *, CDouble> &r_prev,
+                                         std::map<State<SL, EL> *, CDouble> &dw2_prev,
+                                         std::map<State<SL, EL> *, CDouble> &stateIds,
+                                         CDouble epsilon) {
 
         // Start strategy improvement of Player 1.
         bool improvement = true;
-        std::map<State<SL, EL> *, double> d_i_t(d_prev);
-        std::map<State<SL, EL> *, double> r_i_t(r_prev);
-        std::map<State<SL, EL> *, double> dw2_i_t(dw2_prev);
+        std::map<State<SL, EL> *, CDouble> d_i_t(d_prev);
+        std::map<State<SL, EL> *, CDouble> r_i_t(r_prev);
+        std::map<State<SL, EL> *, CDouble> dw2_i_t(dw2_prev);
         StrategyVector<SL, EL> *s_i_t = new StrategyVector<SL, EL>(currentStrategy);
 
         while (improvement) {
@@ -259,19 +259,19 @@ private:
 
                     State<SL, EL> *u = (State<SL, EL> *)e->getDestination();
 
-                    double cycleRatio = r_i_t[u];
-                    double w1 = game->getWeight1(e);
-                    double w2 = game->getWeight2(e);
+                    CDouble cycleRatio = r_i_t[u];
+                    CDouble w1 = static_cast<CDouble>(game->getWeight1(e));
+                    CDouble w2 = static_cast<CDouble>(game->getWeight2(e));
 
-                    double reweighted = w1 - cycleRatio * w2;
+                    CDouble reweighted = w1 - cycleRatio * w2;
 
-                    double w2sum_v = dw2_i_t[v];
-                    double w2sum_u = dw2_i_t[u] + w2;
+                    CDouble w2sum_v = dw2_i_t[v];
+                    CDouble w2sum_u = dw2_i_t[u] + w2;
 
-                    double delta = std::max(w2sum_v, w2sum_u) * epsilon;
+                    CDouble delta = std::max(w2sum_v, w2sum_u) * epsilon;
 
-                    double dv = d_i_t[v];
-                    double du = d_i_t[u] + reweighted;
+                    CDouble dv = d_i_t[v];
+                    CDouble du = d_i_t[u] + reweighted;
 
                     if (greaterThan(r_i_t[v], r_i_t[u], epsilon)
                         || (equalTo(r_i_t[v], r_i_t[u], epsilon)
@@ -295,9 +295,9 @@ private:
     }
 
     struct StrategyEvaluation {
-        std::map<State<SL, EL> *, double> d_i_t;
-        std::map<State<SL, EL> *, double> r_i_t;
-        std::map<State<SL, EL> *, double> dw2_i_t;
+        std::map<State<SL, EL> *, CDouble> d_i_t;
+        std::map<State<SL, EL> *, CDouble> r_i_t;
+        std::map<State<SL, EL> *, CDouble> dw2_i_t;
     };
 
     /**
@@ -315,14 +315,14 @@ private:
      */
     StrategyEvaluation evaluateStrategy(RatioGame<SL, EL> *game,
                                         StrategyVector<SL, EL> *currentStrategy,
-                                        std::map<State<SL, EL> *, double> &distanceVector,
-                                        std::map<State<SL, EL> *, double> &ratioVector,
-                                        std::map<State<SL, EL> *, double> &dw2,
-                                        std::map<State<SL, EL> *, double> &stateIds,
-                                        double epsilon) {
+                                        std::map<State<SL, EL> *, CDouble> &distanceVector,
+                                        std::map<State<SL, EL> *, CDouble> &ratioVector,
+                                        std::map<State<SL, EL> *, CDouble> &dw2,
+                                        std::map<State<SL, EL> *, CDouble> &stateIds,
+                                        CDouble epsilon) {
         // Find the selected vertex in each cycle, and store the ratio value.
         CycleResult cycleResult = findCyclesInRestrictedGraph(game, currentStrategy, stateIds);
-        std::map<State<SL, EL> *, double> r_i_t = cycleResult.valueMap;
+        std::map<State<SL, EL> *, CDouble> r_i_t = cycleResult.valueMap;
 
         // Calculate the values for both vectors given the selected vertices
         // and the ratio of each cycle.
@@ -345,7 +345,7 @@ private:
 
     struct CycleResult {
         SetOfStates<SL, EL> *states;
-        std::map<State<SL, EL> *, double> valueMap;
+        std::map<State<SL, EL> *, CDouble> valueMap;
     };
 
     /**
@@ -360,7 +360,7 @@ private:
      */
     CycleResult findCyclesInRestrictedGraph(RatioGame<SL, EL> *game,
                                             StrategyVector<SL, EL> *currentStrategy,
-                                            std::map<State<SL, EL> *, double> &stateIds) {
+                                            std::map<State<SL, EL> *, CDouble> &stateIds) {
         SetOfStates<SL, EL> *states = game->getStates();
         State<SL, EL> *BOTTOM_VERTEX = nullptr;
 
@@ -370,7 +370,7 @@ private:
         std::map<State<SL, EL> *, State<SL, EL> *> visited =
                 initializeVector(states, BOTTOM_VERTEX);
 
-        std::map<State<SL, EL> *, double> r_i_t;
+        std::map<State<SL, EL> *, CDouble> r_i_t;
 
         typename SetOfStates<SL, EL>::CIter si;
         for (si = states->begin(); si != states->end(); si++) {
@@ -388,8 +388,8 @@ private:
 
                     // Initialize both numerator and denominator.
                     Edge<SL, EL> *e = game->getEdge(u, currentStrategy->getSuccessor(u));
-                    double w1sum = game->getWeight1(e);
-                    double w2sum = game->getWeight2(e);
+                    CDouble w1sum = static_cast<CDouble>(game->getWeight1(e));
+                    CDouble w2sum = static_cast<CDouble>(game->getWeight2(e));
 
                     while (x != u) {
                         // Find the vertex with the lowest id for unique
@@ -399,8 +399,8 @@ private:
                             v_s = x;
                         }
                         Edge<SL, EL> *x_succ = game->getEdge(x, currentStrategy->getSuccessor(x));
-                        double w1 = game->getWeight1(x_succ);
-                        double w2 = game->getWeight2(x_succ);
+                        CDouble w1 = static_cast<CDouble>(game->getWeight1(x_succ));
+                        CDouble w2 = static_cast<CDouble>(game->getWeight2(x_succ));
 
                         w1sum += w1;
                         w2sum += w2;
@@ -421,9 +421,9 @@ private:
     }
 
     struct DistanceResult {
-        std::map<State<SL, EL> *, double> d_i_t;
-        std::map<State<SL, EL> *, double> r_i_t;
-        std::map<State<SL, EL> *, double> dw2;
+        std::map<State<SL, EL> *, CDouble> d_i_t;
+        std::map<State<SL, EL> *, CDouble> r_i_t;
+        std::map<State<SL, EL> *, CDouble> dw2;
     };
 
     /**
@@ -442,19 +442,19 @@ private:
     DistanceResult computeDistances(RatioGame<SL, EL> *game,
                                     StrategyVector<SL, EL> *currentStrategy,
                                     SetOfStates<SL, EL> *selectedStates,
-                                    std::map<State<SL, EL> *, double> &r_i_t,
-                                    std::map<State<SL, EL> *, double> &d_prev,
-                                    std::map<State<SL, EL> *, double> &r_prev,
-                                    std::map<State<SL, EL> *, double> &dw2_prev,
-                                    double epsilon) {
+                                    std::map<State<SL, EL> *, CDouble> &r_i_t,
+                                    std::map<State<SL, EL> *, CDouble> &d_prev,
+                                    std::map<State<SL, EL> *, CDouble> &r_prev,
+                                    std::map<State<SL, EL> *, CDouble> &dw2_prev,
+                                    CDouble epsilon) {
         SetOfStates<SL, EL> *states = game->getStates();
 
         std::stack<State<SL, EL> *> stack;
         // Initialize visited vector.
         std::map<State<SL, EL> *, bool> visited = initializeVector(states, false);
         // Initialize selected states.
-        std::map<State<SL, EL> *, double> d_i_t;
-        std::map<State<SL, EL> *, double> dw2;
+        std::map<State<SL, EL> *, CDouble> d_i_t;
+        std::map<State<SL, EL> *, CDouble> dw2;
 
         // For all selected states.
         typename SetOfStates<SL, EL>::CIter ssi;
@@ -485,12 +485,12 @@ private:
                     State<SL, EL> *x = stack.top();
                     stack.pop();
                     Edge<SL, EL> *e = game->getEdge(x, u);
-                    double w1 = game->getWeight1(e);
-                    double w2 = game->getWeight2(e);
+                    CDouble w1 = static_cast<CDouble>(game->getWeight1(e));
+                    CDouble w2 = static_cast<CDouble>(game->getWeight2(e));
 
-                    double cycleRatio = r_i_t[u];
+                    CDouble cycleRatio = r_i_t[u];
 
-                    double reweighted = w1 - cycleRatio * w2;
+                    CDouble reweighted = w1 - cycleRatio * w2;
 
                     // Update cycle ratio.
                     r_i_t[x] = cycleRatio;
@@ -553,13 +553,13 @@ private:
         return vector;
     }
 
-    bool equalTo(double a, double b, double epsilon) {
+    bool equalTo(CDouble a, CDouble b, CDouble epsilon) {
         return a == b ? true : std::abs(a - b) < epsilon;
     }
 
-    bool greaterThan(double a, double b, double epsilon) { return a - b > epsilon; }
+    bool greaterThan(CDouble a, CDouble b, CDouble epsilon) { return a - b > epsilon; }
 
-    bool lessThan(double a, double b, double epsilon) { return b - a > epsilon; }
+    bool lessThan(CDouble a, CDouble b, CDouble epsilon) { return b - a > epsilon; }
 };
 } // namespace MaxPlus
 

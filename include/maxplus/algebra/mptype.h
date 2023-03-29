@@ -47,6 +47,7 @@
 #include "base/basic_types.h"
 #include "base/string/cstring.h"
 #include <cassert>
+#include <cmath>
 
 #define MPTIME_MAXVAL 1.0e+30
 #define MPTIME_MIN_INF_VAL -1.0e+20
@@ -55,16 +56,26 @@ namespace MaxPlus {
 
 using MPThroughput = CDouble;
 
+class MPTime;
+CString timeToString(MPTime val);
+
 class MPTime {
 public:
     explicit MPTime(CDouble val = MPTIME_MAXVAL) : myVal(val) {}
 
     explicit operator CDouble() const { return myVal; }
+    explicit operator CString() const { return timeToString(*this); }
     MPTime &operator-();
     MPTime &operator+=(MPTime a);
     MPTime &operator-=(MPTime a);
     bool operator==(MPTime a) const;
-    bool operator<(MPTime b) const;
+    bool operator!=(MPTime a) const;
+    bool operator<(MPTime a) const;
+    bool operator>(MPTime a) const;
+    bool operator<=(MPTime a) const;
+    bool operator>=(MPTime a) const;
+    [[nodiscard]] bool isMinusInfinity() const;
+    [[nodiscard]] MPTime fabs() const;
 
 private:
     CDouble myVal;
@@ -103,12 +114,23 @@ inline CDouble MP_MIN(CDouble a, CDouble b) { return CDouble(MP_MIN(MPTime(a), M
 // the quick and dirty way of representing -infinity
 const MPTime MP_MINUSINFINITY = MPTime(-1.0e+30);
 
-inline bool MP_ISMINUSINFINITY(MPTime a) { return ((CDouble)a) < MPTIME_MIN_INF_VAL; }
-inline bool MP_ISMINUSINFINITY_VAL(CDouble a) { return a < MPTIME_MIN_INF_VAL; }
+inline bool MP_ISMINUSINFINITY(CDouble a) { return a < MPTIME_MIN_INF_VAL; }
+
+inline MPTime MP_PLUS(CDouble a, CDouble b) {
+    return (MP_ISMINUSINFINITY(a) || MP_ISMINUSINFINITY(b)) ? MP_MINUSINFINITY
+                                                                    : MPTime(static_cast<CDouble>(a) + static_cast<CDouble>(b));
+}
+
+inline MPTime MP_PLUS(MPTime a, CDouble b) {
+    return MP_PLUS(static_cast<CDouble>(a), b);
+}
+
+inline MPTime MP_PLUS(CDouble a, MPTime b) {
+    return MP_PLUS(a, static_cast<CDouble>(b));
+}
 
 inline MPTime MP_PLUS(MPTime a, MPTime b) {
-    return (MP_ISMINUSINFINITY(a) || MP_ISMINUSINFINITY(b)) ? MP_MINUSINFINITY
-                                                                    : MPTime(a + b);
+    return MP_PLUS(static_cast<CDouble>(a), static_cast<CDouble>(b));
 }
 
 // MaxPlus epsilon (used to compare floating point numbers for equality)
@@ -117,10 +139,10 @@ const MPTime MP_EPSILON = MPTime(1e-10);
 //==============================
 // MPTime operators
 //==============================
-inline MPTime operator+(MPTime a, MPTime b) { return MP_PLUS((CDouble)a, (CDouble)b); }
+inline MPTime operator+(MPTime a, MPTime b) { return MP_PLUS(a, b); }
 
 inline MPTime operator-(MPTime a, MPTime b) {
-    assert(!MP_ISMINUSINFINITY(b));
+    assert(!b.isMinusInfinity());
     return a + MPTime(-b);
 }
 
@@ -129,17 +151,17 @@ inline MPTime operator-(MPTime a, CDouble b) { return MPTime(a) - MPTime(b); }
 inline MPTime operator-(CDouble a, MPTime b) { return MPTime(a) - MPTime(b); }
 
 inline MPTime &MPTime::operator-() {
-    assert(!MP_ISMINUSINFINITY(*this));
+    assert(!this->isMinusInfinity());
     myVal = -myVal;
     return *this;
 }
 
 inline MPTime operator*(MPTime a, MPTime b) {
-    if (MP_ISMINUSINFINITY(a)) {
+    if (a.isMinusInfinity()) {
         assert(((CDouble)b) > 0.0);
         return MP_MINUSINFINITY;
     }
-    if (MP_ISMINUSINFINITY(b)) {
+    if (b.isMinusInfinity()) {
         assert(((CDouble)a) > 0.0);
         return MP_MINUSINFINITY;
     }
@@ -156,7 +178,7 @@ inline MPTime &MPTime::operator+=(MPTime a) {
 }
 
 inline MPTime &MPTime::operator-=(MPTime a) {
-    assert(!MP_ISMINUSINFINITY(a));
+    assert(!a.isMinusInfinity());
     *this = *this + MPTime(CDouble(-a));
     return *this;
 }
@@ -165,8 +187,32 @@ inline bool MPTime::operator==(MPTime a) const {
     return this->myVal == a.myVal;
 }
 
+inline bool MPTime::operator!=(MPTime a) const {
+    return this->myVal != a.myVal;
+}
+
 inline bool MPTime::operator<(MPTime a) const {
     return this->myVal < a.myVal;
+}
+
+inline bool MPTime::operator>(MPTime a) const {
+    return this->myVal > a.myVal;
+}
+
+inline bool MPTime::operator<=(MPTime a) const {
+    return this->myVal <= a.myVal;
+}
+
+inline bool MPTime::operator>=(MPTime a) const {
+    return this->myVal >= a.myVal;
+}
+
+inline bool MPTime::isMinusInfinity() const {
+    return MP_ISMINUSINFINITY(this->myVal);
+}
+
+inline MPTime MPTime::fabs() const {
+    return MPTime(std::fabs(this->myVal));
 }
 
 //==============================
@@ -174,22 +220,22 @@ inline bool MPTime::operator<(MPTime a) const {
 //==============================
 
 inline CString timeToString(MPTime val) {
-    // We intentionally dont use MP_ISMINUSINFINITY(val) here,
+    // We intentionally dont use isMinusInfinity() here,
     // so that we can expose the unwanted "impure" infinities here.
     //
-    if (MP_ISMINUSINFINITY(val)) {
+    if (static_cast<CDouble>(val)==MPTIME_MIN_INF_VAL) {
         return {"-mp_inf"};
     }
     return {static_cast<CDouble>(val)};
 }
 inline CString timeToMatlabString(MPTime val) {
-    if (MP_ISMINUSINFINITY(val)) {
+    if (val.isMinusInfinity()) {
         return {"-Inf"};
     }
     return {static_cast<CDouble>(val)};
 }
 inline CString timeToLaTeXString(MPTime val) {
-    if (MP_ISMINUSINFINITY(val)) {
+    if (val.isMinusInfinity()) {
         return {"-\\infty{}"};
     }
     return {static_cast<CDouble>(val)};

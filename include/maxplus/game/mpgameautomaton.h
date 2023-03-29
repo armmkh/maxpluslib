@@ -72,7 +72,7 @@ public:
 
     void addV1(MPARState *s) { this->setV1->insert(s); }
 
-    MPTime getWeight1(const MPAREdge *e) const { return e->label.reward; }
+    MPTime getWeight1(const MPAREdge *e) const { return MPTime(e->label.reward); }
 
     MPTime getWeight2(const MPAREdge *e) const { return e->label.delay; }
 
