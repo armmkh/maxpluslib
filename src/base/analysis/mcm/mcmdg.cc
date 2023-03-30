@@ -88,7 +88,7 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
     u = Q_u.front();
     Q_u.pop_front();
     do {
-        for (MCMedgesIter iter = u->out.begin(); iter != u->out.end(); iter++) {
+        for (auto iter = u->out.begin(); iter != u->out.end(); iter++) {
             std::shared_ptr<MCMedge> e = *iter;
             std::shared_ptr<MCMnode> v = e->dst;
 
@@ -109,7 +109,7 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
 
     // Compute lambda using Karp's theorem
     l = -INT_MAX;
-    for (MCMnodesCIter iter = mcmGraph->getNodes().begin(); iter != mcmGraph->getNodes().end();
+    for (auto iter = mcmGraph->getNodes().begin(); iter != mcmGraph->getNodes().end();
          iter++) {
         u = *iter;
 
