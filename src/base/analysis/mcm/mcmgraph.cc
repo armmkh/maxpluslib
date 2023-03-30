@@ -105,7 +105,7 @@ static void splitMCMedgeToSequence(std::shared_ptr<MCMgraph> g, std::shared_ptr<
 
     // Remove e from the set of edges its source node is connected to
     // and add eN to this list
-    for (MCMedgesIter iter = e->src->out.begin(); iter != e->src->out.end(); iter++) {
+    for (auto iter = e->src->out.begin(); iter != e->src->out.end(); iter++) {
         if ((*iter)->id == e->id) {
             e->src->out.erase(iter);
             break;
@@ -156,7 +156,7 @@ static void addLongestDelayEdgeForNode(std::shared_ptr<MCMgraph> g, std::shared_
     // Remove node n from Q and add it to S (only when edge e is no
     // self-edge)
     if (e->dst->id != n->id) {
-        for (MCMnodesIter iter = Q.begin(); iter != Q.end(); iter++) {
+        for (auto iter = Q.begin(); iter != Q.end(); iter++) {
             if ((*iter)->id == n->id) {
                 // Is edge e
                 Q.erase(iter);
@@ -172,7 +172,7 @@ static void addLongestDelayEdgeForNode(std::shared_ptr<MCMgraph> g, std::shared_
 
         // Find node u in Q with largest distance
         dMax = -1;
-        for (MCMnodesIter iter = Q.begin(); iter != Q.end(); iter++) {
+        for (auto iter = Q.begin(); iter != Q.end(); iter++) {
             if (d[(*iter)->id] > dMax) {
                 u = *iter;
                 dMax = d[u->id];
@@ -184,7 +184,7 @@ static void addLongestDelayEdgeForNode(std::shared_ptr<MCMgraph> g, std::shared_
             break;
 
         // Remove node u from Q and add it to S
-        for (MCMnodesIter iter = Q.begin(); iter != Q.end(); iter++) {
+        for (auto iter = Q.begin(); iter != Q.end(); iter++) {
             if ((*iter)->id == u->id) {
                 Q.erase(iter);
                 break;
@@ -195,7 +195,7 @@ static void addLongestDelayEdgeForNode(std::shared_ptr<MCMgraph> g, std::shared_
 #if __VISITED_NODES__
         // Visited node u before?
         if (visit[u->id] != nullptr) {
-            for (MCMnodesIter iter = g->nodes.begin(); iter != g->nodes.end(); iter++) {
+            for (auto iter = g->nodes.begin(); iter != g->nodes.end(); iter++) {
                 MCMnode *v = *iter;
 
                 // Node v reachable from u in the past?
@@ -211,7 +211,7 @@ static void addLongestDelayEdgeForNode(std::shared_ptr<MCMgraph> g, std::shared_
 #endif
 
         // Relax all nodes v adjacent to u (connected via edges with no tokens)
-        for (MCMedgesIter iter = u->out.begin(); iter != u->out.end(); iter++) {
+        for (auto iter = u->out.begin(); iter != u->out.end(); iter++) {
             std::shared_ptr<MCMedge> e = *iter;
             std::shared_ptr<MCMnode> v = e->dst;
 
@@ -241,7 +241,7 @@ static void addLongestDelayEdgeForNode(std::shared_ptr<MCMgraph> g, std::shared_
 
     // Add an edge between the node n and any node m reachable from n
     // with a weight equal to the longest path from n to m
-    for (MCMnodesIter iter = S.begin(); iter != S.end(); iter++) {
+    for (auto iter = S.begin(); iter != S.end(); iter++) {
         std::shared_ptr<MCMnode> m = *iter;
 
         // Node m reachable from n and not connected directly to n via e?
@@ -272,7 +272,7 @@ void addLongestDelayEdgesToMCMgraph(std::shared_ptr<MCMgraph> g) {
     // Find longest path between a node n and a node m
     // over all sequences of edges in which only the
     // first edge may contain a delay
-    for (MCMedgesCIter iter = g->getEdges().begin(); iter != g->getEdges().end(); iter++) {
+    for (auto iter = g->getEdges().begin(); iter != g->getEdges().end(); iter++) {
         std::shared_ptr<MCMedge> e = *iter;
 
         // More then one delay on the edge?
@@ -289,7 +289,7 @@ void addLongestDelayEdgesToMCMgraph(std::shared_ptr<MCMgraph> g) {
     // Find longest path between a node n and a node m
     // over all sequences of edges in which only the
     // first edge may contain a delay
-    for (MCMedgesCIter iter = g->getEdges().begin(); iter != g->getEdges().end(); iter++) {
+    for (auto iter = g->getEdges().begin(); iter != g->getEdges().end(); iter++) {
         std::shared_ptr<MCMedge> e = *iter;
 
         // Initial tokens on edge?
@@ -304,7 +304,7 @@ void addLongestDelayEdgesToMCMgraph(std::shared_ptr<MCMgraph> g) {
     }
 
     // Hide all edges which do not contain a delay
-    for (MCMedgesCIter iter = g->getEdges().begin(); iter != g->getEdges().end(); iter++) {
+    for (auto iter = g->getEdges().begin(); iter != g->getEdges().end(); iter++) {
         std::shared_ptr<MCMedge> e = *iter;
 
         // No initial tokens on edge?
@@ -323,18 +323,18 @@ void addLongestDelayEdgesToMCMgraph(std::shared_ptr<MCMgraph> g) {
  * graph is transposed and the function returns a list with nodes
  * which are directly reachable from a in the transposed graph.
  */
-static MCMnodes getAdjacentNodes(std::shared_ptr<MCMnode> a, bool transpose) {
+static MCMnodes getAdjacentNodes(const MCMnode& a, bool transpose) {
     MCMnodes nodes;
 
     if (!transpose) {
-        for (MCMedgesIter iter = a->out.begin(); iter != a->out.end(); iter++) {
+        for (auto iter = a.out.begin(); iter != a.out.end(); iter++) {
             std::shared_ptr<MCMedge> e = *iter;
 
             if (e->visible)
                 nodes.push_back(e->dst);
         }
     } else {
-        for (MCMedgesIter iter = a->in.begin(); iter != a->in.end(); iter++) {
+        for (auto iter = a.in.begin(); iter != a.in.end(); iter++) {
             std::shared_ptr<MCMedge> e = *iter;
 
             if (e->visible)
@@ -356,7 +356,7 @@ static std::shared_ptr<MCMnode> getNextNode(const MCMnodes &nodes, v_int &order)
     int orderA = -1;
 
     // Find actor with largest order
-    for (MCMnodesCIter iter = nodes.begin(); iter != nodes.end(); iter++) {
+    for (auto iter = nodes.begin(); iter != nodes.end(); iter++) {
         std::shared_ptr<MCMnode> b = *iter;
 
         if (orderA < order[b->id]) {
@@ -377,32 +377,32 @@ static std::shared_ptr<MCMnode> getNextNode(const MCMnodes &nodes, v_int &order)
  * The visitor function of the DFS algorithm.
  */
 static void
-dfsVisit(std::shared_ptr<MCMnode> u, int &time, v_int &color, v_int &d, v_int &f, std::shared_ptr<MCMnode> *pi, bool transpose) {
+dfsVisit(const MCMnode& u, int &time, v_int &color, v_int &d, v_int &f, const MCMnode **pi, bool transpose) {
     // color[u] <- gray
-    color[u->id] = 1;
+    color[u.id] = 1;
 
     // d[u] <- time <- time + 1
     time++;
-    d[u->id] = time;
+    d[u.id] = time;
 
     // for each v in Adj(e)
     MCMnodes adj = getAdjacentNodes(u, transpose);
-    for (MCMnodesIter iter = adj.begin(); iter != adj.end(); iter++) {
-        std::shared_ptr<MCMnode> v = *iter;
+    for (auto iter = adj.begin(); iter != adj.end(); iter++) {
+        MCMnode* v = (*iter).get();
 
         // do if color[v] = white
         if (color[v->id] == 0) {
-            pi[v->id] = u;
-            dfsVisit(v, time, color, d, f, pi, transpose);
+            pi[v->id] = &u;
+            dfsVisit(*v, time, color, d, f, pi, transpose);
         }
     }
 
     // color[u] <- black
-    color[u->id] = 2;
+    color[u.id] = 2;
 
     // f[u] <- time <- time + 1
     time++;
-    f[u->id] = time;
+    f[u.id] = time;
 }
 
 /**
@@ -417,7 +417,7 @@ dfsVisit(std::shared_ptr<MCMnode> u, int &time, v_int &color, v_int &d, v_int &f
  * is visited, its order is set to -1. At the end, all actors must have
  * order -1 (i.e. all actors are visited).
  */
-void dfsMCMgraph(const MCMgraph& g, v_int &d, v_int &f, std::shared_ptr<MCMnode> *pi, bool transpose) {
+void dfsMCMgraph(const MCMgraph& g, v_int &d, v_int &f, const MCMnode **pi, bool transpose) {
     int time;
 
     // for each u in G do order[u] <- f[u]
@@ -441,7 +441,7 @@ void dfsMCMgraph(const MCMgraph& g, v_int &d, v_int &f, std::shared_ptr<MCMnode>
 
         // if color[u] = white
         if (color[a->id] == 0)
-            dfsVisit(a, time, color, d, f, pi, transpose);
+            dfsVisit(*a, time, color, d, f, pi, transpose);
     }
 }
 
@@ -451,22 +451,22 @@ void dfsMCMgraph(const MCMgraph& g, v_int &d, v_int &f, std::shared_ptr<MCMnode>
  * also creates copies for all edges between this node and all nodes
  * already in the component.
  */
-static void addNodeToComponent(std::shared_ptr<MCMnode> n, std::shared_ptr<MCMgraph> comp) {
+static void addNodeToComponent(const MCMnode& n, std::shared_ptr<MCMgraph> comp) {
     std::shared_ptr<MCMnode> m;
 
     // Create a copy of n and add it to the component
-    m = std::make_shared<MCMnode>(n->id, true);
+    m = std::make_shared<MCMnode>(n.id, true);
     comp->addNode(m);
 
     // Check all edges of n for inclusion in the component, first the outgoing edges...
-    for (MCMedgesIter iter = n->out.begin(); iter != n->out.end(); iter++) {
+    for (auto iter = n.out.begin(); iter != n.out.end(); iter++) {
         std::shared_ptr<MCMedge> e = *iter;
 
         if (!e->visible)
             continue;
 
         // Is destination node in the component?
-        for (MCMnodesCIter iterN = comp->getNodes().begin(); iterN != comp->getNodes().end();
+        for (auto iterN = comp->getNodes().begin(); iterN != comp->getNodes().end();
              iterN++) {
             if (e->dst->id == (*iterN)->id) {
                 // Add a copy of the edge to the component
@@ -482,11 +482,11 @@ static void addNodeToComponent(std::shared_ptr<MCMnode> n, std::shared_ptr<MCMgr
     }
     // ... and now the incoming edges. We must now skip the self edges since they have been included
     // in the previous loop already
-    for (MCMedgesIter iter = n->in.begin(); iter != n->in.end(); iter++) {
+    for (auto iter = n.in.begin(); iter != n.in.end(); iter++) {
         std::shared_ptr<MCMedge> e = *iter;
 
         // Is source node in the component?
-        for (MCMnodesCIter iterN = comp->getNodes().begin(); iterN != comp->getNodes().end();
+        for (auto iterN = comp->getNodes().begin(); iterN != comp->getNodes().end();
              iterN++) {
             // if the source node is in the component and it is not a self-edge
             if ((e->src->id == (*iterN)->id) && (e->src->id != e->dst->id)) {
@@ -508,17 +508,17 @@ static void addNodeToComponent(std::shared_ptr<MCMnode> n, std::shared_ptr<MCMgr
  * The function visits all children of the actor 'u'. The parent-child
  * relation is given via the vector 'pi'.
  */
-static bool treeVisitChildren(const MCMgraph& g, std::shared_ptr<MCMnode> *pi, std::shared_ptr<MCMnode> u, std::shared_ptr<MCMgraph> comp) {
+static bool treeVisitChildren(const MCMgraph& g, const MCMnode **pi, MCMnode* u, std::shared_ptr<MCMgraph> comp) {
     bool children = false;
 
     for (uint i = 0; i < g.getNodes().size(); i++) {
         // Node v points to node u (i.e. v is a child of u)?
         if (pi[i] != nullptr && pi[i]->id == u->id) {
-            std::shared_ptr<MCMnode> v = nullptr;
+            MCMnode* v = nullptr;
 
-            for (MCMnodesCIter iter = g.getNodes().begin(); iter != g.getNodes().end(); iter++) {
+            for (auto iter = g.getNodes().begin(); iter != g.getNodes().end(); iter++) {
                 if ((*iter)->id == i) {
-                    v = *iter;
+                    v = (*iter).get();
                     break;
                 }
             }
@@ -526,7 +526,7 @@ static bool treeVisitChildren(const MCMgraph& g, std::shared_ptr<MCMnode> *pi, s
 
             // Add node v to the component
             v->visible = true;
-            addNodeToComponent(v, comp);
+            addNodeToComponent(*v, comp);
             children = true;
 
             // Find all children of v in the tree
@@ -543,20 +543,20 @@ static bool treeVisitChildren(const MCMgraph& g, std::shared_ptr<MCMnode> *pi, s
  * this, it performs depth-first walk on the forest given by 'pi'.
  */
 static void findComponentsInMCMgraph(const MCMgraph& g,
-                                     std::shared_ptr<MCMnode> *pi,
+                                     const MCMnode **pi,
                                      MCMgraphs &components,
                                      bool includeComponentsWithoutEdges = false) {
     std::shared_ptr<MCMgraph> comp;
 
     // Set all node as invisible
-    for (MCMnodesCIter iter = g.getNodes().begin(); iter != g.getNodes().end(); iter++) {
+    for (auto iter = g.getNodes().begin(); iter != g.getNodes().end(); iter++) {
         std::shared_ptr<MCMnode> n = *iter;
 
         n->visible = false;
     }
 
     // Find the strongly connected component and make all of its nodes visible
-    for (MCMnodesCIter iter = g.getNodes().begin(); iter != g.getNodes().end(); iter++) {
+    for (auto iter = g.getNodes().begin(); iter != g.getNodes().end(); iter++) {
         std::shared_ptr<MCMnode> n = *iter;
 
         if (pi[n->id] == nullptr) {
@@ -564,25 +564,25 @@ static void findComponentsInMCMgraph(const MCMgraph& g,
             comp = std::make_shared<MCMgraph>();
 
             // Find all children of n in the tree
-            if (treeVisitChildren(g, pi, n, comp)) {
+            if (treeVisitChildren(g, pi, n.get(), comp)) {
                 // Node n has children, so it belongs to the strongly
                 // connected component
                 n->visible = true;
-                addNodeToComponent(n, comp);
+                addNodeToComponent(*n, comp);
             } else {
                 if (!includeComponentsWithoutEdges) {
                     // Node n may have a self-loop making it a strongly
                     // connected component
-                    for (MCMedgesIter iterE = n->in.begin(); iterE != n->in.end(); iterE++) {
+                    for (auto iterE = n->in.begin(); iterE != n->in.end(); iterE++) {
                         // Is edge a self-loop?
                         if ((*iterE)->src->id == n->id) {
                             n->visible = true;
-                            addNodeToComponent(n, comp);
+                            addNodeToComponent(*n, comp);
                         }
                     }
                 } else {
                     n->visible = true;
-                    addNodeToComponent(n, comp);
+                    addNodeToComponent(*n, comp);
                 }
             }
 
@@ -593,7 +593,7 @@ static void findComponentsInMCMgraph(const MCMgraph& g,
     }
 
     // Make all edges to invisible nodes also invisible
-    for (MCMedgesCIter iter = g.getEdges().begin(); iter != g.getEdges().end(); iter++) {
+    for (auto iter = g.getEdges().begin(); iter != g.getEdges().end(); iter++) {
         std::shared_ptr<MCMedge> e = *iter;
 
         if (e->visible)
@@ -619,7 +619,7 @@ void stronglyConnectedMCMgraph(const MCMgraph& g,
     // Initialize
     v_int d(g.nrVisibleNodes());
     v_int f(g.nrVisibleNodes(), 0);
-    std::shared_ptr<MCMnode> *pi = (std::shared_ptr<MCMnode> *)malloc(sizeof(std::shared_ptr<MCMnode>) * g.nrVisibleNodes());
+    const MCMnode **pi = (const MCMnode **)malloc(sizeof(MCMnode*) * g.nrVisibleNodes());
     ASSERT(pi != nullptr, "Failed malloc");
 
     // Call dfs(g) to compute f[u] for each u
@@ -634,7 +634,7 @@ void stronglyConnectedMCMgraph(const MCMgraph& g,
     //// Print the MCM graph in dot-format
     // cerr << "digraph g {" << endl;
     // cerr << "    size=\"7,10\";" << endl;
-    // for (MCMedgesIter iter = g->edges.begin(); iter != g->edges.end(); iter++)
+    // for (auto iter = g->edges.begin(); iter != g->edges.end(); iter++)
     //{
     //     MCMedge *e = *iter;
 
@@ -659,7 +659,7 @@ void relabelMCMgraph(std::shared_ptr<MCMgraph> g) {
     uint nodeId = 0, edgeId = 0;
 
     // Relabel nodes
-    for (MCMnodesCIter iter = g->getNodes().begin(); iter != g->getNodes().end(); iter++) {
+    for (auto iter = g->getNodes().begin(); iter != g->getNodes().end(); iter++) {
         std::shared_ptr<MCMnode> n = *iter;
 
         if (n->visible) {
@@ -669,7 +669,7 @@ void relabelMCMgraph(std::shared_ptr<MCMgraph> g) {
     }
 
     // Relabel edges
-    for (MCMedgesCIter iter = g->getEdges().begin(); iter != g->getEdges().end(); iter++) {
+    for (auto iter = g->getEdges().begin(); iter != g->getEdges().end(); iter++) {
         std::shared_ptr<MCMedge> e = *iter;
 
         if (e->visible) {
@@ -679,14 +679,14 @@ void relabelMCMgraph(std::shared_ptr<MCMgraph> g) {
     }
 
     // Remove edges from nodes
-    for (MCMnodesCIter iter = g->getNodes().begin(); iter != g->getNodes().end(); iter++) {
+    for (auto iter = g->getNodes().begin(); iter != g->getNodes().end(); iter++) {
         std::shared_ptr<MCMnode> n = *iter;
 
         if (!n->visible)
             continue;
 
-        for (MCMedgesIter iterE = n->in.begin(); iterE != n->in.end();) {
-            MCMedgesIter iterEN = iterE;
+        for (auto iterE = n->in.begin(); iterE != n->in.end();) {
+            auto iterEN = iterE;
 
             // Next iterator
             iterE++;
@@ -696,8 +696,8 @@ void relabelMCMgraph(std::shared_ptr<MCMgraph> g) {
                 n->in.erase(iterEN);
         }
 
-        for (MCMedgesIter iterE = n->out.begin(); iterE != n->out.end();) {
-            MCMedgesIter iterEN = iterE;
+        for (auto iterE = n->out.begin(); iterE != n->out.end();) {
+            auto iterEN = iterE;
 
             // Next iterator
             iterE++;
@@ -709,8 +709,8 @@ void relabelMCMgraph(std::shared_ptr<MCMgraph> g) {
     }
 
     // Remove nodes from graph
-    for (MCMnodesCIter iter = g->getNodes().begin(); iter != g->getNodes().end();) {
-        MCMnodesCIter iterN = iter;
+    for (auto iter = g->getNodes().begin(); iter != g->getNodes().end();) {
+        auto iterN = iter;
 
         // Next iterator
         iter++;
@@ -720,8 +720,8 @@ void relabelMCMgraph(std::shared_ptr<MCMgraph> g) {
     }
 
     // Remove edges from graph
-    for (MCMedgesCIter iter = g->getEdges().begin(); iter != g->getEdges().end();) {
-        MCMedgesCIter iterE = iter;
+    for (auto iter = g->getEdges().begin(); iter != g->getEdges().end();) {
+        auto iterE = iter;
 
         // Next iterator
         iter++;

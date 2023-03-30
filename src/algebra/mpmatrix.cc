@@ -1102,10 +1102,10 @@ Matrix::mp_generalized_eigenvectors() const {
     std::map<uint, std::shared_ptr<MCMgraph>> sccMapInv;
 
     // map from node of precGraph to its SCC
-    std::map<std::weak_ptr<MCMnode>, uint> sccMap;
+    std::map<std::shared_ptr<MCMnode>, uint> sccMap;
 
     // map from nodes of precGraph to the cycle mean of its SCC
-    std::map<std::weak_ptr<MCMnode>, MPTime> cycleMeansMap;
+    std::map<std::shared_ptr<MCMnode>, MPTime> cycleMeansMap;
 
     // vector such that element k is a node from precGraph in the critical path of SCC k
     std::vector<std::shared_ptr<MCMnode>> criticalNodes;

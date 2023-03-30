@@ -62,8 +62,6 @@ public:
 };
 
 using MCMedges = list<std::shared_ptr<MCMedge>>;
-using MCMedgesIter = MCMedges::iterator;
-using MCMedgesCIter = MCMedges::const_iterator;
 
 class MCMnode {
 public:
@@ -80,8 +78,6 @@ struct MCMNodeLess {
 };
 
 using MCMnodes = list<std::shared_ptr<MCMnode>>;
-using MCMnodesIter = MCMnodes::iterator;
-using MCMnodesCIter = MCMnodes::const_iterator;
 
 class MCMgraph {
 public:

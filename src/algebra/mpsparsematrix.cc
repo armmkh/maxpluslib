@@ -1003,7 +1003,6 @@ SparseMatrix::mpGeneralizedEigenvectors() {
         Vector lambda = evev.second;
         gevl.push_back(std::make_pair(SparseVector(ev, sizes), SparseVector(lambda, sizes)));
     }
-
     return std::make_pair(evl, gevl);
 }
 

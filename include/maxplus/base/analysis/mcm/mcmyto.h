@@ -113,7 +113,7 @@ CDouble maxCycleMeanYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph);
  * in due time.
  */
 CDouble
-maxCycleMeanAndCriticalCycleYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len);
+maxCycleMeanAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len);
 
 /**
  * maxCycleRatioYoungTarjanOrlin ()
@@ -153,7 +153,7 @@ CDouble minCycleRatioYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph);
  * in due time.
  */
 CDouble
-minCycleRatioAndCriticalCycleYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len);
+minCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len);
 
 /**
  * getDelay ()
@@ -173,7 +173,7 @@ double getWeight(std::shared_ptr<MCMedge> e);
  * to graph input for Young-Tarjan-Orlin's algorithm.
  * It assumes that the id's of the nodes are 0 <= id < number of nodes
  */
-void convertMCMgraphToYTOgraph(std::shared_ptr<MCMgraph> g,
+void convertMCMgraphToYTOgraph(const MCMgraph& g,
                                graph *gr,
                                double (*costFunction)(std::shared_ptr<MCMedge> e),
                                double (*transit_timeFunction)(std::shared_ptr<MCMedge> e));
