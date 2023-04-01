@@ -110,7 +110,7 @@ inline MPAEdgeLabel makeMPAEdgeLabel(MPDelay delay, CString *scenario) {
 using MPAState = ::FSM::Labeled::State<MPAStateLabel, MPAEdgeLabel>;
 using MPAEdge = ::FSM::Labeled::Edge<MPAStateLabel, MPAEdgeLabel>;
 using MPASetOfStates = ::FSM::Labeled::SetOfStates<MPAStateLabel, MPAEdgeLabel>;
-using MPASetOfEdges = ::FSM::Labeled::SetOfEdges<MPAStateLabel, MPAEdgeLabel>;
+using MPASetOfEdges = ::FSM::Abstract::SetOfEdges;
 
 /**
  * A max-plus automaton
@@ -145,8 +145,8 @@ inline MPAREdgeLabel makeRewardEdgeLabel(MPDelay d, CString *sc, CDouble r) {
 using MPARState = ::FSM::Labeled::State<MPAStateLabel, MPAREdgeLabel>;
 using MPAREdge = ::FSM::Labeled::Edge<MPAStateLabel, MPAREdgeLabel>;
 using MPARSetOfStates = ::FSM::Labeled::SetOfStates<MPAStateLabel, MPAREdgeLabel>;
-using MPARSetOfEdges = ::FSM::Labeled::SetOfEdges<MPAStateLabel, MPAREdgeLabel>;
-using MPARCycle = ::FSM::Labeled::SetOfEdgeRefs<MPAStateLabel, MPAREdgeLabel>;
+using MPARSetOfEdges = ::FSM::Abstract::SetOfEdges;
+using MPARCycle = ::FSM::Abstract::SetOfEdgeRefs;
 
 /**
  * A max-plus automaton with rewards. In addition to the usual max-plus automaton,

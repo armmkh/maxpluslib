@@ -41,6 +41,7 @@
 #ifndef BASE_MAXPLUS_GAME_POLICYITERATION_H
 #define BASE_MAXPLUS_GAME_POLICYITERATION_H
 
+#include "base/fsm/fsm.h"
 #include "ratiogame.h"
 #include "strategyvector.h"
 #include <algorithm> // std::max
@@ -163,9 +164,8 @@ private:
                 // Source vertex.
                 auto v = dynamic_cast<State<SL, EL> *>(si);
                 // Outgoing edges.
-                auto es = dynamic_cast<const SetOfEdgeRefs<SL, EL>&>(v->getOutgoingEdges());
-                typename SetOfEdges<SL, EL>::CIter ei;
-                for (auto& ei: es) {
+                auto es = dynamic_cast<const FSM::Abstract::SetOfEdgeRefs&>(v->getOutgoingEdges());
+                for (const auto& ei: es) {
                     auto e = dynamic_cast<Edge<SL, EL>*>(ei);
 
                     const auto& u = dynamic_cast<const State<SL, EL>*>(&(e->getDestination()));
@@ -255,8 +255,8 @@ private:
                 auto v = dynamic_cast<State<SL, EL>*>(si);
 
                 // Outgoing edges.
-                auto& es = dynamic_cast<const SetOfEdgeRefs<SL, EL>&>(v->getOutgoingEdges());
-                for (auto& ei: es) {
+                const auto& es = dynamic_cast<const FSM::Abstract::SetOfEdgeRefs&>(v->getOutgoingEdges());
+                for (const auto& ei: es) {
                     auto e = dynamic_cast<Edge<SL, EL> *>(ei);
 
                     auto u = dynamic_cast<const State<SL, EL> *>(&(e->getDestination()));
@@ -346,7 +346,7 @@ private:
     }
 
     struct CycleResult {
-        std::shared_ptr<SetOfStateRefs<SL, EL>> states;
+        std::shared_ptr<FSM::Abstract::SetOfStateRefs> states;
         std::map<const State<SL, EL> *, CDouble> valueMap;
     };
 
@@ -366,7 +366,7 @@ private:
         SetOfStates<SL, EL>& states = game->getStates();
         const State<SL, EL> *BOTTOM_VERTEX = nullptr;
 
-        std::shared_ptr<SetOfStateRefs<SL, EL>> selectedVertices = std::make_shared<SetOfStateRefs<SL, EL>>();
+        std::shared_ptr<FSM::Abstract::SetOfStateRefs> selectedVertices = std::make_shared<FSM::Abstract::SetOfStateRefs>();
 
         // Initially, all vertices are unvisited.
         std::map<const State<SL, EL> *, const State<SL, EL> *> visited =
@@ -443,7 +443,7 @@ private:
      */
     DistanceResult computeDistances(RatioGame<SL, EL> *game,
                                     StrategyVector<SL, EL> *currentStrategy,
-                                    std::shared_ptr<SetOfStateRefs<SL, EL>> selectedStates,
+                                    std::shared_ptr<FSM::Abstract::SetOfStateRefs> selectedStates,
                                     std::map<const State<SL, EL> *, CDouble> &r_i_t,
                                     std::map<const State<SL, EL> *, CDouble> &d_prev,
                                     std::map<const State<SL, EL> *, CDouble> &r_prev,
@@ -528,7 +528,7 @@ private:
             // For each state fetch its outgoing edges.
             auto& src = dynamic_cast<State<SL, EL>&>(*si);
             std::cout << "Checkpoint checkEachStateHasSuccessorL2" << std::endl;
-            const auto& es = dynamic_cast<const SetOfEdgeRefs<SL,EL>&>(src.getOutgoingEdges());
+            const auto& es = dynamic_cast<const FSM::Abstract::SetOfEdgeRefs&>(src.getOutgoingEdges());
             std::cout << "Checkpoint checkEachStateHasSuccessorL3" << std::endl;
 
             // Check whether there are any outgoing edges.

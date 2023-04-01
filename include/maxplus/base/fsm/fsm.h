@@ -334,17 +334,17 @@ public:
     EdgeLabelType label;
 };
 
-template <typename StateLabelType, typename EdgeLabelType>
-class SetOfEdges : public Abstract::SetOfEdges {
-public:
-    using CIter = typename SetOfEdges<StateLabelType, EdgeLabelType>::const_iterator;
-};
+// template <typename StateLabelType, typename EdgeLabelType>
+// class SetOfEdges : public Abstract::SetOfEdges {
+// public:
+//     using CIter = typename Abstract::SetOfEdges::const_iterator;
+// };
 
-template <typename StateLabelType, typename EdgeLabelType>
-class SetOfEdgeRefs : public Abstract::SetOfEdgeRefs {
-public:
-    using CIter = typename SetOfEdgeRefs<StateLabelType, EdgeLabelType>::const_iterator;
-};
+// template <typename StateLabelType, typename EdgeLabelType>
+// class SetOfEdgeRefs : public Abstract::SetOfEdgeRefs {
+// public:
+//     using CIter = typename Abstract::SetOfEdgeRefs::const_iterator;
+// };
 
 template <typename StateLabelType, typename EdgeLabelType>
 class SetOfStates : public Abstract::SetOfStates {
@@ -364,11 +364,11 @@ public:
     }
 };
 
-template <typename StateLabelType, typename EdgeLabelType>
-class SetOfStateRefs : public Abstract::SetOfStateRefs {
-public:
-    using CIter = typename SetOfStateRefs::const_iterator;
-};
+// template <typename StateLabelType, typename EdgeLabelType>
+// class SetOfStateRefs : public Abstract::SetOfStateRefs {
+// public:
+//     using CIter = typename SetOfStateRefs::const_iterator;
+// };
 
 template <typename StateLabelType, typename EdgeLabelType> class State : public Abstract::State {
 public:
@@ -381,14 +381,13 @@ public:
     [[nodiscard]] const StateLabelType &getLabel() const { return this->stateLabel; }
 
     // return all next states reachable via an edge labelled l
-    std::shared_ptr<SetOfStateRefs<StateLabelType, EdgeLabelType>>
+    std::shared_ptr<Abstract::SetOfStateRefs>
     nextStatesOfEdgeLabel(const EdgeLabelType l) {
-        auto result = std::make_shared<SetOfStateRefs<StateLabelType, EdgeLabelType>>();
-        auto es = static_cast<SetOfEdgeRefs<StateLabelType, EdgeLabelType> &>(
+        auto result = std::make_shared<Abstract::SetOfStateRefs>();
+        auto es = static_cast<const Abstract::SetOfEdgeRefs &>(
                 this->getOutgoingEdges());
-        typename SetOfEdgeRefs<StateLabelType, EdgeLabelType>::CIter i;
-        for (i = es.begin(); i != es.end(); i++) {
-            auto *e = static_cast<Edge<StateLabelType, EdgeLabelType> *>(*i);
+        for (auto& i: es) {
+            auto *e = static_cast<Edge<StateLabelType, EdgeLabelType> *>(i);
             if (e->label == l) {
                 result->insert(&(e->getDestination()));
             }
@@ -399,11 +398,10 @@ public:
     // return an arbitrary next state reachable via an edge labelled l
     // or null if no such state exists
     State<StateLabelType, EdgeLabelType> *nextStateOfEdgeLabel(const EdgeLabelType l) {
-        auto es = static_cast<SetOfEdgeRefs<StateLabelType, EdgeLabelType> &>(
+        auto es = static_cast<const Abstract::SetOfEdgeRefs &>(
                 this->getOutgoingEdges());
-        typename SetOfEdgeRefs<StateLabelType, EdgeLabelType>::CIter i;
-        for (i = es.begin(); i != es.end(); i++) {
-            Edge<StateLabelType, EdgeLabelType> *e = *i;
+        for (auto& i: es) {
+            Edge<StateLabelType, EdgeLabelType> *e = i;
             if (e->label == l) {
                 return e->getDestination();
             }
@@ -417,7 +415,7 @@ class FiniteStateMachine : public Abstract::FiniteStateMachine {
 
 private:
     SetOfStates<StateLabelType, EdgeLabelType> states;
-    SetOfEdges<StateLabelType, EdgeLabelType> edges;
+    Abstract::SetOfEdges edges;
     const State<StateLabelType, EdgeLabelType> *initialState;
 
 public:
@@ -444,7 +442,6 @@ public:
                                                  EdgeLabelType lbl,
                                                  State<StateLabelType, EdgeLabelType> &dst) {
         bool added = false;
-        typename SetOfEdges<StateLabelType, EdgeLabelType>::CIter i;
         auto ep = std::make_shared<Edge<StateLabelType, EdgeLabelType>>(src, lbl, dst);
         auto& e = *ep;
         this->edges[e.getId()] = std::move(ep);
@@ -458,7 +455,7 @@ public:
 
     void removeState(const State<StateLabelType, EdgeLabelType>& s) {
         // remove related edges
-        SetOfEdgeRefs<StateLabelType, EdgeLabelType> edgesToRemove;
+        Abstract::SetOfEdgeRefs edgesToRemove;
         for(auto& it: this->edges) {
             auto& e = *(it.second);
             auto src = dynamic_cast<const State<StateLabelType, EdgeLabelType>&>(e.getSource());
@@ -520,12 +517,12 @@ public:
 
     SetOfStates<StateLabelType, EdgeLabelType> &getStates() { return this->states; };
 
-    SetOfEdges<StateLabelType, EdgeLabelType> &getEdges() { return this->edges; };
+    Abstract::SetOfEdges &getEdges() { return this->edges; };
 
     Edge<StateLabelType, EdgeLabelType> *
     getEdge(const State<StateLabelType, EdgeLabelType> &source,
             const State<StateLabelType, EdgeLabelType> &target) {
-        auto e = static_cast<const SetOfEdgeRefs<StateLabelType, EdgeLabelType> &>(
+        auto e = static_cast<const Abstract::SetOfEdgeRefs &>(
                 source.getOutgoingEdges());
 
         // collect all labels in edges of s
@@ -578,12 +575,12 @@ public:
             if (s->stateLabel == src) {
                 State<StateLabelType, EdgeLabelType> &srcState = this->getStateLabeled(src);
 
-                const SetOfEdgeRefs<StateLabelType, EdgeLabelType> &outgoingEdges =
-                        static_cast<const SetOfEdges<StateLabelType, EdgeLabelType> &>(
+                const Abstract::SetOfEdgeRefs &outgoingEdges =
+                        static_cast<const Abstract::SetOfEdgeRefs &>(
                                 srcState.getOutgoingEdges());
 
-                for (auto it : outgoingEdges) {
-                    auto e = *it;
+                for (auto& it : outgoingEdges) {
+                    auto e = dynamic_cast<const Edge<StateLabelType, EdgeLabelType> *>(it);
                     auto dstState = e->getDestination();
                     if (e->label == lbl && dstState->getLabel() == dst) {
                         found = e;
@@ -602,12 +599,12 @@ public:
         result = std::make_shared<FiniteStateMachine<StateLabelType, EdgeLabelType>>();
 
         // maintain map of sets of states to the corresponding new states.
-        std::map<const SetOfStateRefs<StateLabelType, EdgeLabelType> &,
+        std::map<const Abstract::SetOfStateRefs &,
                  State<StateLabelType, EdgeLabelType> *>
                 newStatesMap;
 
         // queue of states that need to be further explored.
-        std::list<std::shared_ptr<SetOfStateRefs<StateLabelType, EdgeLabelType>>> unprocessed;
+        std::list<std::shared_ptr<Abstract::SetOfStateRefs>> unprocessed;
 
         // create initial state
         std::shared_ptr<SetOfStates<StateLabelType, EdgeLabelType>> initialStateSet;
@@ -624,12 +621,12 @@ public:
         unprocessed.push_back(initialStateSet);
 
         while (!unprocessed.empty()) {
-            std::shared_ptr<SetOfStateRefs<StateLabelType, EdgeLabelType>> Q = *unprocessed.begin();
-            unprocessed->erase(unprocessed.begin());
+            Abstract::SetOfStateRefs Q = *(*(unprocessed.begin()));
+            unprocessed.erase(unprocessed.begin());
 
             // get all outgoing labels
             std::set<EdgeLabelType> labels;
-            for (auto i : Q) {
+            for (const auto *i : Q) {
                 auto s = *i;
                 this->insertOutgoingLabels(s, labels);
             }
@@ -639,18 +636,18 @@ public:
                 EdgeLabelType l = *j;
 
                 // collect image state in Qnext
-                std::shared_ptr<SetOfStateRefs<StateLabelType, EdgeLabelType>> Qnext =
-                        std::make_shared<SetOfStateRefs<StateLabelType, EdgeLabelType>>();
+                std::shared_ptr<Abstract::SetOfStateRefs> Qnext =
+                        std::make_shared<Abstract::SetOfStateRefs>();
 
                 // for every state s in Q
-                for (auto i : *Q) {
-                    auto s = *i;
-                    std::shared_ptr<SetOfStateRefs<StateLabelType, EdgeLabelType>> l_img =
-                            s->nextStatesOfEdgeLabel(l);
+                for (const auto *i : Q) {
+                    const auto& s = dynamic_cast<State<StateLabelType, EdgeLabelType> &>(*i);
+                    std::shared_ptr<Abstract::SetOfStateRefs> l_img =
+                            s.nextStatesOfEdgeLabel(l);
 
                     // add all l-images from s to Qnext
-                    for (auto k : *l_img) {
-                        auto *simg = *k;
+                    for (auto& k : *l_img) {
+                        auto *simg = k;
                         Qnext->insert(simg);
                     }
                 }
@@ -670,7 +667,7 @@ public:
                 }
 
                 // add an edge in the new fsm
-                result->addEdge(newStatesMap[*Q], l, ns);
+                result->addEdge(newStatesMap[Q], l, ns);
             }
         }
 
@@ -686,19 +683,19 @@ public:
         // partition refinement algorithm
 
         // generate a vector of equivalence classes
-        std::shared_ptr<std::list<std::shared_ptr<SetOfStateRefs<StateLabelType, EdgeLabelType>>>>
+        std::shared_ptr<std::list<std::shared_ptr<Abstract::SetOfStateRefs>>>
                 eqClasses = std::make_shared<std::list<
-                        std::shared_ptr<SetOfStateRefs<StateLabelType, EdgeLabelType>>>>();
+                        std::shared_ptr<Abstract::SetOfStateRefs>>>();
 
         // populate it with s set of all states
-        std::shared_ptr<SetOfStateRefs<StateLabelType, EdgeLabelType>> initialClass =
-                std::make_shared<SetOfStateRefs<StateLabelType, EdgeLabelType>>(
+        std::shared_ptr<Abstract::SetOfStateRefs> initialClass =
+                std::make_shared<Abstract::SetOfStateRefs>(
                         *(this->getStates()));
         eqClasses->push_back(initialClass);
 
         // initially map all state to the initial class
         EquivalenceMap eqMap;
-        for (auto si : initialClass) {
+        for (const auto *si : *initialClass) {
             eqMap[*si] = initialClass;
         }
 
@@ -708,13 +705,13 @@ public:
             changed = false;
 
             std::shared_ptr<
-                    std::list<std::shared_ptr<SetOfStateRefs<StateLabelType, EdgeLabelType>>>>
+                    std::list<std::shared_ptr<Abstract::SetOfStateRefs>>>
                     newEqClasses = std::make_shared<std::list<
-                            std::shared_ptr<SetOfStateRefs<StateLabelType, EdgeLabelType>>>>();
+                            std::shared_ptr<Abstract::SetOfStateRefs>>>();
 
             // for every potential equivalence class
-            for (auto ic : eqClasses) {
-                SetOfStateRefs<StateLabelType, EdgeLabelType> *_class = *ic;
+            for (const auto& ic : *eqClasses) {
+                std::shared_ptr<Abstract::SetOfStateRefs> _class = ic;
 
                 typename SetOfStates<StateLabelType, EdgeLabelType>::iterator i;
                 i = _class->begin();
@@ -724,10 +721,10 @@ public:
                 State<StateLabelType, EdgeLabelType> *s2 = nullptr;
                 s1 = *i;
 
-                std::shared_ptr<SetOfStateRefs<StateLabelType, EdgeLabelType>> equivSet =
-                        std::make_shared<SetOfStateRefs<StateLabelType, EdgeLabelType>>();
-                std::shared_ptr<SetOfStateRefs<StateLabelType, EdgeLabelType>> remainingSet =
-                        std::make_shared<SetOfStateRefs<StateLabelType, EdgeLabelType>>();
+                std::shared_ptr<Abstract::SetOfStateRefs> equivSet =
+                        std::make_shared<Abstract::SetOfStateRefs>();
+                std::shared_ptr<Abstract::SetOfStateRefs> remainingSet =
+                        std::make_shared<Abstract::SetOfStateRefs>();
                 equivSet->insert(s1);
 
                 // check whether all other states can go with the same label to
@@ -760,11 +757,11 @@ public:
                 std::make_shared<FiniteStateMachine<StateLabelType, EdgeLabelType>>();
 
         // make a state for every equivalence class
-        std::map<SetOfStateRefs<StateLabelType, EdgeLabelType> *,
+        std::map<Abstract::SetOfStateRefs *,
                  State<StateLabelType, EdgeLabelType> *>
                 newStateMap;
         CId sid = 0;
-        for (auto cli : eqClasses) {
+        for (const auto& cli : *eqClasses) {
             std::shared_ptr<State<StateLabelType, EdgeLabelType>> ns =
                     std::make_shared<State<StateLabelType, EdgeLabelType>>(sid);
             result->addState(ns);
@@ -773,13 +770,13 @@ public:
         }
 
         // make the appropriate edges
-        for (auto cli : eqClasses) {
+        for (const auto& cli : *eqClasses) {
             // take a representative state
-            auto s = *((*cli)->begin());
+            const auto *s = *(cli->begin());
             auto es = s->getOutgoingEdges();
             // for every outgoing edge
-            for (auto edi : es) {
-                auto ed = *edi;
+            for (auto *edi : es) {
+                auto ed = dynamic_cast<Edge<StateLabelType, EdgeLabelType>*>(edi);
                 result->addEdge(
                         newStateMap[*cli], ed->label, newStateMap[eqMap[ed->getDestination()]]);
             }
@@ -794,11 +791,11 @@ public:
 private:
     void insertOutgoingLabels(State<StateLabelType, EdgeLabelType> *s,
                               std::set<EdgeLabelType> &labels) {
-        const SetOfEdgeRefs<StateLabelType, EdgeLabelType> &e = s->getOutgoingEdges();
+        const Abstract::SetOfEdgeRefs &e = s->getOutgoingEdges();
 
         // collect all labels in edges of s
-        for (auto i : e) {
-            auto *ed = *i;
+        for (auto *i : e) {
+            auto *ed = dynamic_cast<Edge<StateLabelType, EdgeLabelType>*>(i);
             labels.insert(ed->label);
         }
     };
@@ -853,9 +850,9 @@ private:
 using ELSState = ::FSM::Labeled::State<CId, CString>;
 using ELSEdge = ::FSM::Labeled::Edge<CId, CString>;
 using ELSSetOfStates = ::FSM::Labeled::SetOfStates<CId, CString>;
-using ELSSetOfEdges = ::FSM::Labeled::SetOfEdges<CId, CString>;
-using ELSSetOfStateRefs = ::FSM::Labeled::SetOfStateRefs<CId, CString>;
-using ELSSetOfEdgeRefs = ::FSM::Labeled::SetOfEdgeRefs<CId, CString>;
+using ELSSetOfEdges = ::FSM::Abstract::SetOfEdges;
+using ELSSetOfStateRefs = ::FSM::Abstract::SetOfStateRefs;
+using ELSSetOfEdgeRefs = ::FSM::Abstract::SetOfEdgeRefs;
 
 class EdgeLabeledScenarioFSM : public ::FSM::Labeled::FiniteStateMachine<CId, CString> {
 public:
@@ -874,18 +871,18 @@ namespace StateStringLabeled {
 // make an FSM class with unlabeled edges, based on the labeled one with some dummy char labels
 //
 
-class SetOfEdges : public Labeled::SetOfEdges<CString, char> {};
-class SetOfEdgeRefs : public Labeled::SetOfEdgeRefs<CString, char> {};
+// class SetOfEdges : public Labeled::SetOfEdges<CString, char> {};
+// class SetOfEdgeRefs : public Labeled::SetOfEdgeRefs<CString, char> {};
 
-class SetOfStates : public Labeled::SetOfStates<CString, char> {};
-class SetOfStateRefs : public Labeled::SetOfStateRefs<CString, char> {};
+// class SetOfStates : public Labeled::SetOfStates<CString, char> {};
+// class SetOfStateRefs : public Labeled::SetOfStateRefs<CString, char> {};
 
 class State : public Labeled::State<CString, char> {
 public:
     explicit State(const CString &withLabel) : Labeled::State<CString, char>(withLabel) {}
 
-    const SetOfEdgeRefs &getOutgoingEdges() {
-        return dynamic_cast<const SetOfEdgeRefs &>(
+    const Abstract::SetOfEdgeRefs &getOutgoingEdges() {
+        return dynamic_cast<const Abstract::SetOfEdgeRefs &>(
                 Labeled::State<CString, char>::getOutgoingEdges());
     }
 };
@@ -905,7 +902,7 @@ public:
 
     void addEdgeLabeled(const CString &src, const CString &dst);
 
-    std::shared_ptr<SetOfStateRefs> reachableStates();
+    std::shared_ptr<Abstract::SetOfStateRefs> reachableStates();
 };
 
 class Edge : public Labeled::Edge<CString, char> {};

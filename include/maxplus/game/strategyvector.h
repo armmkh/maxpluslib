@@ -41,6 +41,7 @@
 #ifndef MAXPLUS_GAME_STRATEGYVECTOR_H
 #define MAXPLUS_GAME_STRATEGYVECTOR_H
 
+#include "base/fsm/fsm.h"
 #include "ratiogame.h"
 #include <utility>
 
@@ -80,7 +81,7 @@ public:
             auto& si = *(it.second);
             // Source vertex.
             auto& src = dynamic_cast<State<SL, EL>&>(si);
-            auto& es = dynamic_cast<const SetOfEdgeRefs<SL, EL>&>(src.getOutgoingEdges());
+            auto& es = dynamic_cast<const FSM::Abstract::SetOfEdgeRefs&>(src.getOutgoingEdges());
 
             // Find the first outgoing edge, and get the target.
             auto *e = dynamic_cast<Edge<SL, EL> *>(*es.begin());

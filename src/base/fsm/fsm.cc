@@ -117,8 +117,8 @@ void FiniteStateMachine::addEdgeLabeled(const CString &src, const CString &dst) 
     Labeled::FiniteStateMachine<CString, char>::addEdge(s_src, 'X', s_dst);
 }
 
-std::shared_ptr<SetOfStateRefs> FiniteStateMachine::reachableStates() {
-    return std::static_pointer_cast<SetOfStateRefs>(
+std::shared_ptr<Abstract::SetOfStateRefs> FiniteStateMachine::reachableStates() {
+    return std::static_pointer_cast<Abstract::SetOfStateRefs>(
             Labeled::FiniteStateMachine<CString, char>::reachableStates());
 }
 

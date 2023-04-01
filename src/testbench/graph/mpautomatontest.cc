@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <base/basic_types.h>
 
+#include "base/fsm/fsm.h"
 #include "mpautomatontest.h"
 
 #include "graph/mpautomaton.h"
@@ -32,7 +33,7 @@ void MPAutomatonTest::testCreateFSM(void) {
     mpa->addEdge(*s2, makeRewardEdgeLabel(MPTime(1.0), new CString("A"), 1.0), *s1);
     mpa->addEdge(*s3, makeRewardEdgeLabel(MPTime(7.0), new CString("A"), 1.0), *s1);
 
-    auto es = dynamic_cast<const SetOfEdgeRefs<MPAStateLabel, MPAREdgeLabel> &>(
+    auto es = dynamic_cast<const FSM::Abstract::SetOfEdgeRefs &>(
             s1->getOutgoingEdges());
     for (const auto &i : es) {
         auto *e = dynamic_cast<Edge<MPAStateLabel, MPAREdgeLabel> *>(i);
