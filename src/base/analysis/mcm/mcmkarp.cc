@@ -67,7 +67,7 @@ namespace Graphs {
 CDouble maximumCycleMeanKarp(const MCMgraph& mcmGraph) {
     int k, n;
     long long **d;
-    double l, ld;
+    CDouble l, ld;
     std::shared_ptr<MCMnode> u;
 
     // Allocate memory d[n+1][n]
@@ -106,7 +106,7 @@ CDouble maximumCycleMeanKarp(const MCMgraph& mcmGraph) {
         u = *iter;
         ld = INT_MAX;
         for (k = 0; k < n; k++) {
-            ld = MIN(ld, (double)(d[n][u->id] - d[k][u->id]) / (double)(n - k));
+            ld = MIN(ld, (CDouble)(d[n][u->id] - d[k][u->id]) / (CDouble)(n - k));
         }
         l = MAX(l, ld);
     }
@@ -134,7 +134,7 @@ CDouble maximumCycleMeanKarpDouble(const MCMgraph& mcmGraph, MCMnode **criticalN
     int k, n;
     typedef CDouble *CDoublePtr;
     CDoublePtr *d;
-    double l, ld;
+    CDouble l, ld;
     std::shared_ptr<MCMnode> u;
 
     // Allocate memory d[n+1][n]
@@ -173,7 +173,7 @@ CDouble maximumCycleMeanKarpDouble(const MCMgraph& mcmGraph, MCMnode **criticalN
         u = *iter;
         ld = DBL_MAX;
         for (k = 0; k < n; k++) {
-            CDouble nld = (d[n][u->id] - d[k][u->id]) / (double)(n - k);
+            CDouble nld = (d[n][u->id] - d[k][u->id]) / (CDouble)(n - k);
             if (nld < ld) {
                 ld = nld;
             }

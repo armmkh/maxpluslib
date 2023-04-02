@@ -45,22 +45,26 @@
 #include "../math/cmath.h"
 #include "../string/cstring.h"
 #include <climits>
+#include <cstdint>
 
 class CFraction {
 public:
     // Constructor
-    CFraction(const int num = 0, const int den = 1) {
-        this->num = num;
-        this->den = den;
-        fraction = true;
-        if (den != 0)
-            val = (double)(num) / (double)(den);
-        else
-            val = 0.0;
+    explicit CFraction(const int num = 0, const int den = 1) : num(num), den(den) {
+        if (den != 0) {
+            this->val = static_cast<CDouble>(num) / static_cast<CDouble>(den);
+        } else {
+            this->val = 0.0;
+        }
     };
-    CFraction(const double v) { doubleToFraction(v, INFINITY); };
-    CFraction(CString &f) {
-        fraction = true;
+
+    CFraction(const CFraction &f) = default;
+
+    explicit CFraction(const CDouble v) : num(0), den(0), val(0.0) {
+        CDoubleToFraction(v, INFINITY);
+    };
+
+    explicit CFraction(CString &f) {
         if (f.find('/') == CString::npos) {
             num = f;
             den = 1;
@@ -68,53 +72,60 @@ public:
             num = CString(f.substr(0, f.find('/')));
             den = CString(f.substr(f.find('/') + 1));
         }
-        val = ((double)num) / (double)den;
+        val = static_cast<CDouble>(num) / static_cast<CDouble>(den);
     };
 
     // Destructor
-    ~CFraction(){};
+    ~CFraction() = default;
+
+    CFraction &operator=(const CFraction &other) = delete;
+    CFraction(CFraction &&) = default;
+    CFraction &operator=(CFraction &&) = delete;
 
     // Fraction contains a real fraction?
-    bool isFraction() const { return fraction; };
+    [[nodiscard]] bool isFraction() const { return fraction; };
 
     // Fractional parts
-    long long int numerator() const { return num; };
-    long long int denominator() const { return den; };
+    [[nodiscard]] std::int64_t numerator() const { return num; };
+    [[nodiscard]] std::int64_t denominator() const { return den; };
 
     // Real value
-    double value() const { return val; };
+    [[nodiscard]] CDouble value() const { return val; };
 
-    // Convert double to fraction
-    void doubleToFraction(const double v, const double precision = 1e-15) {
+    // Convert CDouble to fraction
+    void CDoubleToFraction(const CDouble v, const CDouble precision = 1e-15) {
         if (precision == INFINITY) {
             fraction = false;
             num = 0;
             den = 1;
             val = v;
         } else {
-            long long int i, a = 0, b = 0;
+            std::int64_t i = 0;
+            std::int64_t a = 0;
+            std::int64_t b = 0;
 
             // Floating point number
             val = v;
 
             // Separate integer part from the fractional part
-            long long int whole = (long long int)(val + precision);
-            val -= whole;
+            auto whole = static_cast<std::int64_t>(val + precision);
+            val -= static_cast<CDouble>(whole);
             val = fabs(val);
-            double frac = val;
-            double diff = frac;
+            CDouble frac = val;
+            CDouble diff = frac;
             num = 1;
             den = 0;
 
             // Compute fraction as sum of reciprocals
             while (diff >= precision) {
                 val = 1.0 / val;
-                i = (long long int)(val + precision);
-                val -= i;
-                if (a)
+                i = static_cast<std::int64_t>(val + precision);
+                val -= static_cast<CDouble>(i);
+                if (a != 0) {
                     num = i * num + b;
-                den = (long long int)(num / frac + 0.5);
-                diff = fabs((double)num / den - frac);
+                }
+                den = lround(static_cast<CDouble>(num) / frac);
+                diff = fabs(static_cast<CDouble>(num) / static_cast<CDouble>(den) - frac);
                 b = a;
                 a = num;
             }
@@ -131,61 +142,65 @@ public:
             // Add integer part to numerator
             num = whole * den + num;
 
-            // Compute double value based on fraction
-            val = (double)(num) / (double)(den);
+            // Compute CDouble value based on fraction
+            val = static_cast<CDouble>(num) / static_cast<CDouble>(den);
             fraction = true;
         }
     };
 
     // Lowest term
-    CFraction lowestTerm() const {
+    [[nodiscard]] CFraction lowestTerm() const {
         CFraction tmp;
-        long long int g = gcd(num, den);
+        std::int64_t g = gcd(num, den);
         tmp.num = num / g;
         tmp.den = den / g;
-        tmp.val = ((double)tmp.num) / (double)tmp.den;
+        tmp.val = (static_cast<CDouble>(tmp.num)) / static_cast<CDouble>(tmp.den);
         return tmp;
     }
 
     // Operators
-    CFraction operator+(const CFraction &rhs) {
+    CFraction operator+(const CFraction &rhs) const {
         CFraction tmp;
 
-        if (!isFraction() || !rhs.isFraction())
+        if (!isFraction() || !rhs.isFraction()) {
             return CFraction(value() + rhs.value());
+        }
 
         tmp.num = rhs.den * num + den * rhs.num;
         tmp.den = den * rhs.den;
         return tmp.lowestTerm();
     }
 
-    CFraction operator-(const CFraction &rhs) {
+    CFraction operator-(const CFraction &rhs) const {
         CFraction tmp;
 
-        if (!isFraction() || !rhs.isFraction())
+        if (!isFraction() || !rhs.isFraction()) {
             return CFraction(value() - rhs.value());
+        }
 
         tmp.num = rhs.den * num - den * rhs.num;
         tmp.den = den * rhs.den;
         return tmp.lowestTerm();
     }
 
-    CFraction operator*(const CFraction &rhs) {
+    CFraction operator*(const CFraction &rhs) const {
         CFraction tmp;
 
-        if (!isFraction() || !rhs.isFraction())
+        if (!isFraction() || !rhs.isFraction()) {
             return CFraction(value() * rhs.value());
+        }
 
         tmp.num = num * rhs.num;
         tmp.den = den * rhs.den;
         return tmp.lowestTerm();
     }
 
-    CFraction operator/(const CFraction &rhs) {
+    CFraction operator/(const CFraction &rhs) const {
         CFraction tmp;
 
-        if (!isFraction() || !rhs.isFraction())
+        if (!isFraction() || !rhs.isFraction()) {
             return CFraction(value() / rhs.value());
+        }
 
         tmp.num = num * rhs.den;
         tmp.den = den * rhs.num;
@@ -193,62 +208,57 @@ public:
     }
 
     bool operator==(const CFraction &rhs) const {
-        if (!isFraction() || !rhs.isFraction())
+        if (!isFraction() || !rhs.isFraction()) {
             return value() == rhs.value();
+        }
 
-        if (den == 0 && rhs.den == 0 && num == rhs.num)
+        if (den == 0 && rhs.den == 0 && num == rhs.num) {
             return true;
+        }
 
-        if (den == 0 || rhs.den == 0)
+        if (den == 0 || rhs.den == 0) {
             return false;
+        }
 
         CFraction r = rhs.lowestTerm();
         CFraction l = lowestTerm();
 
-        if (r.den == l.den && r.num == l.num)
-            return true;
-
-        return false;
+        return r.den == l.den && r.num == l.num;
     }
 
-    bool operator!=(const CFraction &rhs) {
-        if (*this == rhs)
-            return false;
+    bool operator!=(const CFraction &rhs) const { return !(*this == rhs); }
 
-        return true;
-    }
+    bool operator>(const CFraction &rhs) const {
+        std::int64_t l = lcm(den, rhs.den);
 
-    bool operator>(const CFraction &rhs) {
-        long long int l = lcm(den, rhs.den);
-
-        if (!isFraction() || !rhs.isFraction())
+        if (!isFraction() || !rhs.isFraction()) {
             return value() > rhs.value();
+        }
 
-        if (den == 0 || rhs.den == 0)
+        if (den == 0 || rhs.den == 0) {
             return false;
-        if (num == LLONG_MAX)
+        }
+        if (num == std::numeric_limits<std::int64_t>::max()) {
             return true;
-        if ((num * (l / den)) > (rhs.num * (l / rhs.den)))
+        }
+        if ((num * (l / den)) > (rhs.num * (l / rhs.den))) {
             return true;
+        }
 
         return false;
     }
 
-    bool operator<(const CFraction &rhs) {
-        if (*this == rhs || *this > rhs)
-            return false;
+    bool operator<(const CFraction &rhs) const { return !(*this == rhs || *this > rhs); }
 
-        return true;
-    }
-
-    ostream &print(ostream &out) {
+    std::ostream &print(std::ostream &out) const {
         if (isFraction()) {
-            if (denominator() == 0)
+            if (denominator() == 0) {
                 out << "NaN";
-            else if (denominator() == 1)
+            } else if (denominator() == 1) {
                 out << numerator();
-            else
+            } else {
                 out << numerator() << "/" << denominator();
+            }
         } else {
             out << value();
         }
@@ -256,17 +266,17 @@ public:
         return out;
     }
 
-    friend ostream &operator<<(ostream &out, CFraction &f) { return f.print(out); };
+    friend std::ostream &operator<<(std::ostream &out, CFraction &f) { return f.print(out); };
 
 private:
-    bool fraction;
-    double val;
-    long long int num;
-    long long int den;
+    bool fraction{true};
+    CDouble val;
+    std::int64_t num;
+    std::int64_t den;
 };
 
-typedef vector<CFraction> CFractions;
-typedef CFractions::iterator CFractionsIter;
-typedef CFractions::const_iterator CFractionsCIter;
+using CFractions = std::vector<CFraction>;
+using CFractionsIter = CFractions::iterator;
+using CFractionsCIter = CFractions::const_iterator;
 
 #endif

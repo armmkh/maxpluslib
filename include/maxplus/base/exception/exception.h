@@ -49,43 +49,50 @@
  * CException
  * CException container class.
  */
-class CException: std::exception {
+class CException : std::exception {
 private:
     CString message;
     CString cause;
 
 public:
     // Constructor
-    CException(const CString message) : message(message), cause() {}
+    explicit CException(const CString &message) : message(message) {}
 
-    CException(const CString message, CException &e) : message(message) {
+    CException(const CString &message, CException &e) : message(message) {
         cause = "    caused by: " + e.getMessage();
-        if (!e.getCause().empty())
+        if (!e.getCause().empty()) {
             cause += "\n" + e.getCause();
+        }
     }
 
     CException(const CException &e) : message(e.getMessage()), cause(e.getCause()) {}
 
     // Destructor
-    virtual ~CException(){};
+    ~CException() override = default;
+
+    CException &operator=(const CException &other) = delete;
+    CException(CException &&) = delete;
+    CException &operator=(CException &&) = delete;
 
     // Message
-    const CString getMessage() const { return message; }
+    [[nodiscard]] CString getMessage() const { return message; }
 
     // Cause
-    const CString getCause() const { return cause; }
+    [[nodiscard]] CString getCause() const { return cause; }
 
     // Report
-    ostream &report(ostream &stream) const {
-        if (!getMessage().empty())
+    std::ostream &report(std::ostream &stream) const {
+        if (!getMessage().empty()) {
             stream << getMessage() << std::endl;
-        if (!getCause().empty())
+        }
+        if (!getCause().empty()) {
             stream << getCause();
+        }
 
         return stream;
     }
 
-    friend ostream &operator<<(ostream &stream, const CException &e);
+    friend std::ostream &operator<<(std::ostream &stream, const CException &e);
 };
 
 #define ASSERT(condition, msg)                                                                     \

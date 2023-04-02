@@ -57,28 +57,25 @@ namespace MaxPlus {
 class MaxPlusGameAutomatonWithRewards : public MaxPlusAutomatonWithRewards,
                                         public RatioGame<MPAStateLabel, MPAREdgeLabel> {
 public:
-    MaxPlusGameAutomatonWithRewards() {
-        this->setV0 = new std::set<MPARState *>();
-        this->setV1 = new std::set<MPARState *>();
-    }
+    MaxPlusGameAutomatonWithRewards() { }
 
-    virtual ~MaxPlusGameAutomatonWithRewards(){};
+     ~MaxPlusGameAutomatonWithRewards() override= default;;
 
-    std::set<MPARState *> *getV0() const { return this->setV0; }
+    std::set<MPARState *>& getV0() override { return this->setV0; }
 
-    std::set<MPARState *> *getV1() const { return this->setV1; }
+    std::set<MPARState *> &getV1() override { return this->setV1; }
 
-    void addV0(MPARState *s) { this->setV0->insert(s); }
+    void addV0(MPARState *s) { this->setV0.insert(s); }
 
-    void addV1(MPARState *s) { this->setV1->insert(s); }
+    void addV1(MPARState *s) { this->setV1.insert(s); }
 
-    MPTime getWeight1(const MPAREdge *e) const { return MPTime(e->label.reward); }
+    MPTime getWeight1(const MPAREdge *e) const override { return MPTime(e->label.reward); }
 
-    MPTime getWeight2(const MPAREdge *e) const { return e->label.delay; }
+    MPTime getWeight2(const MPAREdge *e) const override { return e->label.delay; }
 
 private:
-    std::set<MPARState *> *setV0;
-    std::set<MPARState *> *setV1;
+    std::set<MPARState *> setV0;
+    std::set<MPARState *> setV1;
 };
 } // namespace MaxPlus
 

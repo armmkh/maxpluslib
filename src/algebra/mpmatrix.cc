@@ -192,7 +192,7 @@ void Vector::put(unsigned int row, MPTime value) {
 /**
  * String representation of vector
  */
-void Vector::toString(CString &outString, double scale) const {
+void Vector::toString(CString &outString, CDouble scale) const {
     outString = "";
     for (unsigned int row = 0; row < this->getSize(); row++) {
         outString += timeToString(scale * this->get(row)) + " ";
@@ -575,8 +575,8 @@ Matrix *Matrix::getTransposedCopy() const {
 /**
  * Make sub matrix with indices in list.
  */
-Matrix *Matrix::getSubMatrix(const list<unsigned int> &rowIndices,
-                             const list<unsigned int> &colIndices) const {
+Matrix *Matrix::getSubMatrix(const std::list<unsigned int> &rowIndices,
+                             const std::list<unsigned int> &colIndices) const {
     auto NR = static_cast<unsigned int>(rowIndices.size());
     auto NC = static_cast<unsigned int>(colIndices.size());
     Matrix *newMatrix = makeMatrix(NR, NC);
@@ -596,7 +596,7 @@ Matrix *Matrix::getSubMatrix(const list<unsigned int> &rowIndices,
 /**
  * Make sub matrix with indices in list from square matrix
  */
-Matrix *Matrix::getSubMatrix(const list<unsigned int> &indices) const {
+Matrix *Matrix::getSubMatrix(const std::list<unsigned int> &indices) const {
     assert(this->getRows() == this->getCols());
     return this->getSubMatrix(indices, indices);
 }
@@ -605,7 +605,7 @@ Matrix *Matrix::getSubMatrix(const list<unsigned int> &indices) const {
  * Make sub matrix with indices in list for non-square matrix. The new matrix only keeps the columns
  * of the original matrix with the selected indices.
  */
-Matrix *Matrix::getSubMatrixNonSquare(const list<unsigned int> &colIndices) const {
+Matrix *Matrix::getSubMatrixNonSquare(const std::list<unsigned int> &colIndices) const {
     auto NC = static_cast<unsigned int>(colIndices.size());
     Matrix *newMatrix = makeMatrix(this->getRows(), NC);
 
@@ -670,7 +670,7 @@ void Matrix::maximum(const Matrix *matB, Matrix *result) const {
 /**
  * Matrix to string.
  */
-void Matrix::toString(CString &outString, double scale) const {
+void Matrix::toString(CString &outString, CDouble scale) const {
     outString = "";
     unsigned int MR = this->getRows();
     unsigned int MC = this->getCols();
@@ -685,7 +685,7 @@ void Matrix::toString(CString &outString, double scale) const {
 /**
  * Matrix to string.
  */
-void Matrix::toMatlabString(CString &outString, double scale) const {
+void Matrix::toMatlabString(CString &outString, CDouble scale) const {
     outString = "";
     unsigned int MR = this->getRows();
     unsigned int MC = this->getCols();
@@ -706,7 +706,7 @@ void Matrix::toMatlabString(CString &outString, double scale) const {
 /**
  * Matrix to LaTex string.
  */
-void Matrix::toLaTeXString(CString &outString, double scale) const {
+void Matrix::toLaTeXString(CString &outString, CDouble scale) const {
     outString = "";
     unsigned int MR = this->getRows();
     unsigned int MC = this->getCols();
@@ -838,7 +838,7 @@ Matrix *Matrix::allPairLongestPathMatrix(MPTime posCycleThreshold, bool implyZer
         if (distMat->get(k, k) > posCycleThreshold) {
             CString tmp;
             distMat->toString(tmp, 1.0e-06);
-            cout << tmp << endl;
+            std::cout << tmp << std::endl;
             throw CException("Positive cycle!");
         }
     }
@@ -909,7 +909,7 @@ Matrix *Matrix::makeMatrix(unsigned int nr_rows, unsigned int nr_cols) const {
 /**
  * VectorList::toString()
  */
-void VectorList::toString(CString &outString, double scale) const {
+void VectorList::toString(CString &outString, CDouble scale) const {
     outString = "";
     for (unsigned int i = 0; i < this->getSize(); i++) {
         CString vec_str;
@@ -926,7 +926,7 @@ void VectorList::toString(CString &outString, double scale) const {
 //   * test if list contains a vector which differs to vecX by less than threshold
 //* implementation incomplete!
 //   */
-//  bool VectorList::findSimilar(const Vector &vecX, double threshold) const
+//  bool VectorList::findSimilar(const Vector &vecX, CDouble threshold) const
 //  {
 
 //      // similar - differs by a constant within a threshold
@@ -939,8 +939,8 @@ void VectorList::toString(CString &outString, double scale) const {
 //          assert(vecY.getSize() == this->oneVectorSize);
 
 //          // determine min and max difference
-//          double minDiff = 0;
-//          double maxDiff = 0;
+//          CDouble minDiff = 0;
+//          CDouble maxDiff = 0;
 //          bool min_def = false;
 //          bool max_def = false;
 //          for (unsigned int j = 0; j < this->oneVectorSize; j++)
@@ -981,7 +981,7 @@ CDouble Matrix::mp_eigenvalue() const {
     std::shared_ptr<MCMgraph> mcmGraph = std::make_shared<MCMgraph>();
 
     // store vector of nodes
-    vector<std::shared_ptr<MCMnode>> nodes(sz);
+    std::vector<std::shared_ptr<MCMnode>> nodes(sz);
 
     // Generate ids by counting
     CId id = 0;
@@ -1000,7 +1000,7 @@ CDouble Matrix::mp_eigenvalue() const {
     CId edgeId = 0;
     uint row = 0;
     uint col = 0;
-    vector<MPTime>::const_iterator i;
+    std::vector<MPTime>::const_iterator i;
     for (i = this->table.begin(); i != this->table.end(); i++) {
         std::shared_ptr<MCMedge> e = std::make_shared<MCMedge>(edgeId++, true);
         e->src = nodes[col];
@@ -1041,7 +1041,7 @@ MCMgraph Matrix::mpMatrixToPrecedenceGraph() const {
     MCMgraph precGraph;
 
     // store vector of nodes
-    vector<std::shared_ptr<MCMnode>> nodes(sz);
+    std::vector<std::shared_ptr<MCMnode>> nodes(sz);
 
     // Generate ids by counting
     CId id = 0;
@@ -1237,8 +1237,8 @@ void ExtendedMatrix::put(unsigned int row,
     this->bufferSets[row * this->getCols() + column] = bs;
 }
 
-Matrix *ExtendedMatrix::getSubMatrix(const list<unsigned int> &rowIndices,
-                                     const list<unsigned int> &colIndices) const {
+Matrix *ExtendedMatrix::getSubMatrix(const std::list<unsigned int> &rowIndices,
+                                     const std::list<unsigned int> &colIndices) const {
     unsigned int NR = rowIndices.size();
     unsigned int NC = colIndices.size();
     Matrix *newMatrix = makeMatrix(NR, NC);

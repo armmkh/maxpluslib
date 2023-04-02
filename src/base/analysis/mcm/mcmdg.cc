@@ -60,8 +60,8 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
     int **pi, **d;
     CDouble l, ld;
     std::shared_ptr<MCMnode> u;
-    list<int> Q_k;
-    list<std::shared_ptr<MCMnode>> Q_u;
+    std::list<int> Q_k;
+    std::list<std::shared_ptr<MCMnode>> Q_u;
 
     // Allocate memory
     n = mcmGraph->nrVisibleNodes();

@@ -195,7 +195,7 @@ MPTime SparseVector::normalize() {
  * add scalar to vector
  */
 SparseVector SparseVector::add(MPTime increase) const {
-    vector<std::pair<unsigned int, MPTime>> newTable;
+    std::vector<std::pair<unsigned int, MPTime>> newTable;
     unsigned int k = 0;
     while (k < this->table.size()) {
         newTable.push_back(std::make_pair(this->table[k].first, this->table[k].second + increase));
@@ -209,7 +209,7 @@ SparseVector SparseVector::add(MPTime increase) const {
 SparseVector SparseVector::combine(const SparseVector &vecB, MPTime f(MPTime a, MPTime b)) const {
     assert(vecB.getSize() == this->getSize());
 
-    vector<std::pair<unsigned int, MPTime>> newTable;
+    std::vector<std::pair<unsigned int, MPTime>> newTable;
     unsigned int k1 = 0;
     unsigned int k2 = 0;
     unsigned int m1 = 0;
@@ -420,7 +420,7 @@ MPTime SparseVector::get(unsigned int row) const {
 /**
  * String representation of vector
  */
-void SparseVector::toString(CString &outString, double scale) const {
+void SparseVector::toString(CString &outString, CDouble scale) const {
     outString = "[";
     for (auto k = this->table.begin(); k < this->table.end(); k++) {
         if (k != this->table.begin()) {
@@ -456,7 +456,7 @@ SparseVector SparseVector::operator-=(MPTime decrease) const {
 }
 
 void SparseVector::compress() {
-    vector<std::pair<unsigned int, MPTime>> newTable;
+    std::vector<std::pair<unsigned int, MPTime>> newTable;
     unsigned int k = 0;
     while (k < this->table.size()) {
         unsigned int m = k + 1;
@@ -705,7 +705,7 @@ void SparseMatrix::putAll(unsigned int startRow,
 
     auto last = insertEnd.first < this->table.size() ? this->table.begin() + insertEnd.first + 1
                                                      : this->table.end();
-    vector<std::pair<unsigned int, SparseVector>> v(this->table.begin() + insertStart.first, last);
+    std::vector<std::pair<unsigned int, SparseVector>> v(this->table.begin() + insertStart.first, last);
     this->table.erase(this->table.begin() + insertStart.first, last);
 
     unsigned int i = insertStart.first;
@@ -764,7 +764,7 @@ void SparseMatrix::insertMatrix(unsigned int startRow,
 
     auto last = insertEnd.first < this->table.size() ? this->table.begin() + insertEnd.first + 1
                                                      : this->table.end();
-    vector<std::pair<unsigned int, SparseVector>> v(this->table.begin() + insertStart.first, last);
+    std::vector<std::pair<unsigned int, SparseVector>> v(this->table.begin() + insertStart.first, last);
     this->table.erase(this->table.begin() + insertStart.first, last);
 
     unsigned int i = insertStart.first;
@@ -857,7 +857,7 @@ void SparseMatrix::compress() {
         e.second.compress();
     }
 
-    vector<std::pair<unsigned int, SparseVector>> newTable;
+    std::vector<std::pair<unsigned int, SparseVector>> newTable;
     unsigned int k = 0;
     while (k < this->table.size()) {
         unsigned int m = k + 1;
@@ -875,7 +875,7 @@ void SparseMatrix::compress() {
 /**
  * String representation of matrix
  */
-void SparseMatrix::toString(CString &outString, double scale) const {
+void SparseMatrix::toString(CString &outString, CDouble scale) const {
     outString = "";
     if (this->isTransposed) {
         outString += "Transposed of ";

@@ -44,17 +44,18 @@
 #include "graph/doubleweightedgraph.h"
 #include <set>
 
-using namespace ::FSM::Labeled;
 
 namespace MaxPlus {
 
+using namespace ::FSM::Labeled;
+
 template <typename SL, typename EL> class RatioGame : virtual public DoubleWeightedGraph<SL, EL> {
 public:
-    virtual inline ~RatioGame() {}
+    virtual inline ~RatioGame() = default;
 
-    virtual std::set<State<SL, EL> *> *getV0() const = 0;
+    virtual std::set<State<SL, EL> *>& getV0() = 0;
 
-    virtual std::set<State<SL, EL> *> *getV1() const = 0;
+    virtual std::set<State<SL, EL> *>& getV1() = 0;
 };
 
 }; // namespace MaxPlus

@@ -39,6 +39,8 @@
  */
 
 #include "base/fsm/fsm.h"
+#include <memory>
+#include <string>
 
 namespace FSM {
 
@@ -48,45 +50,37 @@ CId FSM::Abstract::WithUniqueID::nextID = 0;
 void EdgeLabeledScenarioFSM::removeDanglingStates() {
 
     // temporary sets of states and edges
-    ELSSetOfEdges edgesToBeRemoved;
-    ELSSetOfStates statesToBeRemoved;
+    ELSSetOfEdgeRefs edgesToBeRemoved;
+    ELSSetOfStateRefs statesToBeRemoved;
 
-    ELSSetOfStates *elsStates = this->getStates();
-    ELSSetOfEdges *elsEdges = this->getEdges();
+    ELSSetOfStates &elsStates = this->getStates();
+    ELSSetOfEdges &elsEdges = this->getEdges();
 
     /*go through all edges and find all edges that end in
     dangling states. Also store dangling states.*/
-    for (ELSSetOfEdges::iterator it = elsEdges->begin(); it != elsEdges->end(); it++) {
-
-        ELSEdge *e = (ELSEdge *)*it;
-        ELSState *s = (ELSState *)e->getDestination();
-        ELSSetOfEdges *oEdges = (ELSSetOfEdges *)s->getOutgoingEdges();
-        if (oEdges->size() == 0) {
-            edgesToBeRemoved.insert(e);
-            statesToBeRemoved.insert(s);
+    for(const auto& it: elsEdges){
+        auto& e = *(it.second);
+        const auto& s = dynamic_cast<const ELSState&>(e.getDestination());
+        const auto &oEdges = dynamic_cast<const ELSSetOfEdgeRefs &>(s.getOutgoingEdges());
+        if (oEdges.empty()) {
+            edgesToBeRemoved.insert(&e);
+            statesToBeRemoved.insert(&s);
         }
     }
 
-    while (edgesToBeRemoved.size() != 0) {
+    while (!edgesToBeRemoved.empty()) {
 
         // remove dangling states
-        for (ELSSetOfStates::iterator sr_it = statesToBeRemoved.begin();
-             sr_it != statesToBeRemoved.end();
-             sr_it++) {
-            elsStates->erase(*sr_it);
-            delete *sr_it;
+        for (const auto &s : statesToBeRemoved) {
+            this->removeState(dynamic_cast<const ELSState&>(*s));
         }
 
         // remove edges ending in dangling states
         // remove edges ending in dangling states from the outgoing edges of their source states
-        for (ELSSetOfEdges::iterator er_it = edgesToBeRemoved.begin();
-             er_it != edgesToBeRemoved.end();
-             er_it++) {
-            ELSEdge *e = (ELSEdge *)*er_it;
-            elsEdges->erase(e);
-            ELSState *s = (ELSState *)e->getSource();
-            s->removeOutgoingEdge(e);
-            delete e;
+        for (const auto & e : edgesToBeRemoved) {
+            this->removeEdge(dynamic_cast<const ELSEdge&>(*e));
+            auto s = e->getSource();
+            s.removeOutgoingEdge(*e);
         }
 
         // empty the temporary sets
@@ -98,14 +92,14 @@ void EdgeLabeledScenarioFSM::removeDanglingStates() {
 
         /*go through all edges and find all edges that end in
         dangling states. Also store dangling states.*/
-        for (ELSSetOfEdges::iterator it = elsEdges->begin(); it != elsEdges->end(); it++) {
-
-            ELSEdge *e = (ELSEdge *)*it;
-            ELSState *s = (ELSState *)e->getDestination();
-            ELSSetOfEdges *oEdges = (ELSSetOfEdges *)s->getOutgoingEdges();
-            if (oEdges->size() == 0) {
-                edgesToBeRemoved.insert(e);
-                statesToBeRemoved.insert(s);
+        for (const auto & it : elsEdges) {
+            const auto& elsEdge = *(it.second);
+            auto e = dynamic_cast<const ELSEdge&>(elsEdge);
+            auto s = dynamic_cast<const ELSState&>(e.getDestination());
+            const auto &oEdges = (s.getOutgoingEdges());
+            if (oEdges.empty()) {
+                edgesToBeRemoved.insert(&e);
+                statesToBeRemoved.insert(&s);
             }
         }
     }
@@ -114,44 +108,40 @@ void EdgeLabeledScenarioFSM::removeDanglingStates() {
 namespace StateStringLabeled {
 
 void FiniteStateMachine::addStateLabeled(const CString &sl) {
-    StateStringLabeled::State *s = new StateStringLabeled::State(sl);
-    this->addState(s);
+    this->addState(sl);
 }
 
 void FiniteStateMachine::addEdgeLabeled(const CString &src, const CString &dst) {
-    Labeled::State<CString, char> *s_src = this->getStateLabeled(src);
-    Labeled::State<CString, char> *s_dst = this->getStateLabeled(dst);
+    Labeled::State<CString, char>& s_src = this->getStateLabeled(src);
+    Labeled::State<CString, char>& s_dst = this->getStateLabeled(dst);
     Labeled::FiniteStateMachine<CString, char>::addEdge(s_src, 'X', s_dst);
 }
 
-SetOfStates *FiniteStateMachine::reachableStates(void) {
-    return (SetOfStates *)Labeled::FiniteStateMachine<CString, char>::reachableStates();
+std::shared_ptr<SetOfStateRefs> FiniteStateMachine::reachableStates() {
+    return std::static_pointer_cast<SetOfStateRefs>(
+            Labeled::FiniteStateMachine<CString, char>::reachableStates());
 }
 
 void FiniteStateMachine::setInitialStateLabeled(const CString &sl) {
-    this->setInitialState(this->getStateLabeled(sl));
+    this->setInitialState(sl);
 }
 
 } // namespace StateStringLabeled
 
 namespace Product {
 
-State *FiniteStateMachine::getInitialState() {
-    return new State(this->fsm_a->getInitialState(), this->fsm_b->getInitialState(), this);
-}
-
-Abstract::SetOfEdges *State::getOutgoingEdges() {
+const Abstract::SetOfEdges &State::getOutgoingEdges() {
     if (!outgoingEdgesDone) {
         // compute outgoing edges
-        const Abstract::SetOfEdges *oea = this->sa->getOutgoingEdges();
-        const Abstract::SetOfEdges *oeb = this->sb->getOutgoingEdges();
-        Abstract::SetOfEdges::const_iterator i = oea->begin();
-        Abstract::SetOfEdges::const_iterator j = oeb->begin();
-        while (i != oea->end()) {
-            while (j != oeb->end()) {
-                if (this->fsm->matchEdges(*i, *j)) {
-                    Abstract::Edge *e = this->fsm->ensureEdge(*i, *j);
-                    this->outgoingEdges->insert(e);
+        const Abstract::SetOfEdgeRefs &oea = this->sa->getOutgoingEdges();
+        const Abstract::SetOfEdgeRefs &oeb = this->sb->getOutgoingEdges();
+        auto i = oea.begin();
+        auto j = oeb.begin();
+        while (i != oea.end()) {
+            while (j != oeb.end()) {
+                if (this->fsm->matchEdges(*(*i), *(*j))) {
+                    std::shared_ptr<Abstract::Edge> e = this->fsm->ensureEdge(*(*i), *(*j));
+                    this->insertOutgoingEdge(*e);
                 }
                 j++;
             }
@@ -159,7 +149,7 @@ Abstract::SetOfEdges *State::getOutgoingEdges() {
         }
         outgoingEdgesDone = true;
     }
-    return this->outgoingEdges;
+    return this->getOutgoingEdges();
 }
 } // namespace Product
 

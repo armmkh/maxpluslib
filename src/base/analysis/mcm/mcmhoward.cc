@@ -67,11 +67,11 @@ namespace Graphs {
 #define EPSILON -HUGE_VAL
 
 static int *ij;
-static double *a;
+static CDouble *a;
 static int nr_nodes;
 static int narcs;
-static double *chi;
-static double *v;
+static CDouble *chi;
+static CDouble *v;
 static int *pi;
 static int *NIterations;
 static int *NComponents;
@@ -92,14 +92,14 @@ static int *pi_inv_elem = NULL;
 /* pi_inv_last[i]= last inverse of i */
 static int *pi_inv_last = NULL;
 
-static double *c = NULL;
-static double *v_aux = NULL;
-static double *new_c = NULL;
-static double *new_chi = NULL;
+static CDouble *c = NULL;
+static CDouble *v_aux = NULL;
+static CDouble *new_c = NULL;
+static CDouble *new_chi = NULL;
 static int *visited = NULL;
 static int *component = NULL;
-static double lambda = 0;
-static double epsilon = 0;
+static CDouble lambda = 0;
+static CDouble epsilon = 0;
 static int color = 1;
 
 /**
@@ -107,9 +107,9 @@ static int color = 1;
  * The termination tests are performed up to an epsilon constant, which is fixed
  * heuristically by the following routine.
  */
-static void Epsilon(double *a, int narcs, double *epsilon) {
+static void Epsilon(CDouble *a, int narcs, CDouble *epsilon) {
     int i;
-    double MAX, MIN;
+    CDouble MAX, MIN;
 
     MAX = a[0];
     MIN = a[0];
@@ -208,7 +208,7 @@ static void New_Depth_First_Label(int i) {
 
 static void Visit_From(int initial_point, int color) {
     int index, newindex, i;
-    double weight;
+    CDouble weight;
     int length;
 
     index = initial_point;
@@ -283,7 +283,7 @@ static void First_Order_Improvement(int *improved) {
 
 static void Second_Order_Improvement(int *improved) {
     int i;
-    double w;
+    CDouble w;
     if (*NComponents > 1) {
         for (i = 0; i < narcs; i++) {
             /* arc i is critical */
@@ -332,10 +332,10 @@ static void Allocate_Memory() {
     pi_inv_last = (int *)calloc(nr_nodes, sizeof(int));
     visited = (int *)calloc(nr_nodes, sizeof(int));
     component = (int *)calloc(nr_nodes, sizeof(int));
-    c = (double *)calloc(nr_nodes, sizeof(double));
-    new_c = (double *)calloc(nr_nodes, sizeof(double));
-    v_aux = (double *)calloc(nr_nodes, sizeof(double));
-    new_chi = (double *)calloc(nr_nodes, sizeof(double));
+    c = (CDouble *)calloc(nr_nodes, sizeof(CDouble));
+    new_c = (CDouble *)calloc(nr_nodes, sizeof(CDouble));
+    v_aux = (CDouble *)calloc(nr_nodes, sizeof(CDouble));
+    new_chi = (CDouble *)calloc(nr_nodes, sizeof(CDouble));
 
     if ((new_chi == NULL) || (v_aux == NULL) || (new_c == NULL) || (c == NULL)
         || (component == NULL) || (visited == NULL) || (pi_inv_idx == NULL) || (pi_inv_succ == NULL)
@@ -385,11 +385,11 @@ static void Security_Check() {
 }
 
 static void Import_Arguments(int *ij,
-                             double *A,
+                             CDouble *A,
                              int nr_nodes,
                              int nr_arc,
-                             double *chi,
-                             double *v,
+                             CDouble *chi,
+                             CDouble *v,
                              int *policy,
                              int *nr_iterations,
                              int *nr_components) {
@@ -444,23 +444,23 @@ static void End_Message() {
  * int *ij;       array of integers of size 2*narcs
  *                for (0 <=k <narcs), the arc numbered k  goes from
  *                IJ[k][0] =(IJ[2k]) to IJ[k][1] (=IJ[2k+1])
- * double *A;     array of double of size narcs
+ * CDouble *A;     array of CDouble of size narcs
  *                A[k]=weight of the arc numbered k
  *
  * OUTPUT VARIABLES
- * double *v;   array of double of size nr_nodes (the bias vector)
- * double *chi; array of double of size nr_nodes (the cycle time vector)
+ * CDouble *v;   array of CDouble of size nr_nodes (the bias vector)
+ * CDouble *chi; array of CDouble of size nr_nodes (the cycle time vector)
  * int *POLICY; array of integer of size nr_nodes (an optimal policy)
  * int nr_iterations; the number of iterations of the algorithm
  * int nr_components; the number of connected components of the optimal
  *               policy which is returned.
  */
 void Howard(int *ij,
-            double *A,
+            CDouble *A,
             int nr_nodes,
             int nr_arcs,
-            double *chi,
-            double *v,
+            CDouble *chi,
+            CDouble *v,
             int *policy,
             int *nr_iterations,
             int *nr_components) {
@@ -491,7 +491,7 @@ void Howard(int *ij,
  * The function converts a weighted directed graph used in the MCM algorithms
  * to a sparse matrix input for Howard's algorithm.
  */
-void convertMCMgraphToMatrix(const MCMgraph& g, int *ij, double *A) {
+void convertMCMgraphToMatrix(const MCMgraph& g, int *ij, CDouble *A) {
     int k = 0;
     uint i = 0;
     uint j = 0;

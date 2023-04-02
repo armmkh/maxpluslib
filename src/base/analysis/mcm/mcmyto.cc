@@ -97,7 +97,7 @@ typedef struct D_heap {
 #endif
 
 static inline long minChild(long x, d_heap *h) {
-    double min;
+    CDouble min;
     long k, k_min, upb;
 
     k_min = -1;
@@ -119,8 +119,8 @@ static inline long minChild(long x, d_heap *h) {
     return (k_min);
 }
 
-static inline long minChildRobust(long x, d_heap *h, double epsilon) {
-    double min;
+static inline long minChildRobust(long x, d_heap *h, CDouble epsilon) {
+    CDouble min;
     long k, k_min, upb;
 
     k_min = -1;
@@ -157,7 +157,7 @@ static inline void SiftDown(d_heap *h, item i, long x) {
     i->h_pos = x;
 }
 
-static inline void SiftDownRobust(d_heap *h, item i, long x, double epsilon) {
+static inline void SiftDownRobust(d_heap *h, item i, long x, CDouble epsilon) {
     long c, cc;
 
     c = minChildRobust(x, h, epsilon);
@@ -186,7 +186,7 @@ static inline void SiftUp(d_heap *h, item i, long x) {
     i->h_pos = x;
 }
 
-static inline void SiftUpRobust(d_heap *h, item i, long x, double epsilon) {
+static inline void SiftUpRobust(d_heap *h, item i, long x, CDouble epsilon) {
     long p;
 
     p = (x == 0) ? -1 : (x - 1) / dh;
@@ -205,7 +205,7 @@ static inline void INSERT(d_heap *h, item i) {
     ++(h->size);
 }
 
-static inline void INSERT_ROBUST(d_heap *h, item i, double epsilon) {
+static inline void INSERT_ROBUST(d_heap *h, item i, CDouble epsilon) {
     SiftUpRobust(h, i, h->size, epsilon);
     ++(h->size);
 }
@@ -228,7 +228,7 @@ static inline void DELETE(d_heap *h, item i) {
     }
 }
 
-static inline void DELETE_ROBUST(d_heap *h, item i, double epsilon) {
+static inline void DELETE_ROBUST(d_heap *h, item i, CDouble epsilon) {
     item j;
 
     j = h->items[h->size - 1];
@@ -401,8 +401,8 @@ static void update_subtree(node *root) {
  *
  * 9) goto (6);
  */
-void mmcycle(graph *gr, double *lambda, arc **cycle, long *len) {
-    double min, infty, a_key;
+void mmcycle(graph *gr, CDouble *lambda, arc **cycle, long *len) {
+    CDouble min, infty, a_key;
     arc *a_ptr, *par_a_ptr, *vmin_a_ptr, *min_a_ptr;
     node *s_ptr, *uptr, *v_ptr, *w_ptr;
     bool foundCycle;
@@ -444,8 +444,8 @@ void mmcycle(graph *gr, double *lambda, arc **cycle, long *len) {
     // requires that there are no cycles with zero transit time!
     // Also, determine epsilon value on transit times, cost and cost/time ratios
     // as a constant fraction of the smallest observed values
-    double total_cost_plus_one = 1.0L;
-    double min_transit_time = DBL_MAX;
+    CDouble total_cost_plus_one = 1.0L;
+    CDouble min_transit_time = DBL_MAX;
     for (a_ptr = &(gr->arcs[gr->n_arcs - 1L]); a_ptr >= gr->arcs; a_ptr--) {
         // add costs to total cost
         total_cost_plus_one += fabs(a_ptr->cost);
@@ -586,8 +586,8 @@ void mmcycle(graph *gr, double *lambda, arc **cycle, long *len) {
                     uptr = a_ptr->tail;
                     a_ptr->key =
                             uptr->transit_time_t + a_ptr->transit_time > v_ptr->transit_time_t
-                                    ? (double)(uptr->cost_t + a_ptr->cost - v_ptr->cost_t)
-                                              / (double)(uptr->transit_time_t + a_ptr->transit_time
+                                    ? (CDouble)(uptr->cost_t + a_ptr->cost - v_ptr->cost_t)
+                                              / (CDouble)(uptr->transit_time_t + a_ptr->transit_time
                                                          - v_ptr->transit_time_t)
                                     : infty;
 
@@ -617,8 +617,8 @@ void mmcycle(graph *gr, double *lambda, arc **cycle, long *len) {
                 if (!a_ptr->in_tree && !a_ptr->head->in_list) {
                     w_ptr = a_ptr->head;
                     a_key = v_ptr->transit_time_t + a_ptr->transit_time > w_ptr->transit_time_t
-                                    ? (double)(v_ptr->cost_t + a_ptr->cost - w_ptr->cost_t)
-                                              / (double)(v_ptr->transit_time_t + a_ptr->transit_time
+                                    ? (CDouble)(v_ptr->cost_t + a_ptr->cost - w_ptr->cost_t)
+                                              / (CDouble)(v_ptr->transit_time_t + a_ptr->transit_time
                                                          - w_ptr->transit_time_t)
                                     : infty;
 
@@ -684,9 +684,9 @@ void mmcycle(graph *gr, double *lambda, arc **cycle, long *len) {
  * TODO: see if the algorithms can be unified to remove duplicate code
  **/
 
-void mmcycle_robust(graph *gr, double *lambda, arc **cycle, long *len) {
-    const double MCR_EPSILON_RATIO = 1.0e-8L;
-    double min, infty, a_key;
+void mmcycle_robust(graph *gr, CDouble *lambda, arc **cycle, long *len) {
+    const CDouble MCR_EPSILON_RATIO = 1.0e-8L;
+    CDouble min, infty, a_key;
     arc *a_ptr, *par_a_ptr, *vmin_a_ptr, *min_a_ptr;
     node *s_ptr, *uptr, *v_ptr, *w_ptr;
     bool foundCycle;
@@ -728,9 +728,9 @@ void mmcycle_robust(graph *gr, double *lambda, arc **cycle, long *len) {
     // requires that there are no cycles with zero transit time!
     // Also, determine epsilon value on transit times, cost and cost/time ratios
     // as a constant fraction of the smallest observed values
-    double total_cost_plus_one = 1.0L;
-    double min_transit_time = DBL_MAX;
-    double min_cost = DBL_MAX;
+    CDouble total_cost_plus_one = 1.0L;
+    CDouble min_transit_time = DBL_MAX;
+    CDouble min_cost = DBL_MAX;
     for (a_ptr = &(gr->arcs[gr->n_arcs - 1L]); a_ptr >= gr->arcs; a_ptr--) {
         // add costs to total cost
         total_cost_plus_one += fabs(a_ptr->cost);
@@ -748,8 +748,8 @@ void mmcycle_robust(graph *gr, double *lambda, arc **cycle, long *len) {
         }
     }
     infty = total_cost_plus_one / min_transit_time;
-    double epsilon_transit_time = MCR_EPSILON_RATIO * min_transit_time;
-    double epsilon_cost_time_ratio = MCR_EPSILON_RATIO * (min_cost / min_transit_time);
+    CDouble epsilon_transit_time = MCR_EPSILON_RATIO * min_transit_time;
+    CDouble epsilon_cost_time_ratio = MCR_EPSILON_RATIO * (min_cost / min_transit_time);
 
     // initial keys of non tree edges are equal to arc costs
     for (a_ptr = &(gr->arcs[gr->n_arcs - 1L]); a_ptr >= gr->arcs; a_ptr--) {
@@ -970,8 +970,8 @@ void mmcycle_robust(graph *gr, double *lambda, arc **cycle, long *len) {
  */
 void convertMCMgraphToYTOgraph(const MCMgraph& g,
                                graph *gr,
-                               double (*costFunction)(std::shared_ptr<MCMedge> e),
-                               double (*transit_timeFunction)(std::shared_ptr<MCMedge> e)) {
+                               CDouble (*costFunction)(std::shared_ptr<MCMedge> e),
+                               CDouble (*transit_timeFunction)(std::shared_ptr<MCMedge> e)) {
     node *x;
     arc *a;
 
@@ -1082,19 +1082,19 @@ void convertMCMgraphToYTOgraph(const MCMgraph& g,
  * constOne ()
  * The function returns the unit cost associated with an edge.
  */
-static double constOne(std::shared_ptr<MCMedge> e) { return 1.0; }
+static CDouble constOne(std::shared_ptr<MCMedge> e) { return 1.0; }
 
 /**
  * getWeight ()
  * The function returns the weight associated with an edge.
  */
-double getWeight(std::shared_ptr<MCMedge> e) { return e->w; }
+CDouble getWeight(std::shared_ptr<MCMedge> e) { return e->w; }
 
 /**
  * getDelay ()
  * The function returns the delay associated with an edge.
  */
-double getDelay(std::shared_ptr<MCMedge> e) { return e->d; }
+CDouble getDelay(std::shared_ptr<MCMedge> e) { return e->d; }
 
 /**
  * maxCycleMeanAndCriticalCycleYoungTarjanOrlin ()
@@ -1113,7 +1113,7 @@ double getDelay(std::shared_ptr<MCMedge> e) { return e->d; }
  */
 CDouble
 maxCycleMeanAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len) {
-    double min_cr;
+    CDouble min_cr;
     graph ytoGraph;
     arc **ytoCycle;
     long ytoCycLen;
@@ -1174,7 +1174,7 @@ CDouble maxCycleMeanYoungTarjanOrlin(const MCMgraph& mcmGraph) {
 
 CDouble
 maxCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len) {
-    double min_cr;
+    CDouble min_cr;
     graph ytoGraph;
     arc **ytoCycle;
     long ytoCycLen;
@@ -1247,7 +1247,7 @@ CDouble maxCycleRatioYoungTarjanOrlin(const MCMgraph& mcmGraph) {
 
 CDouble
 minCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len) {
-    double min_cr;
+    CDouble min_cr;
     graph ytoGraph;
     arc **ytoCycle;
     long ytoCycLen;

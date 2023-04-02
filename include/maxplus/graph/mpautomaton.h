@@ -46,17 +46,16 @@
 #include "base/fsm/fsm.h"
 #include "maxplus/algebra/mptype.h"
 
-using namespace ::FSM::Labeled;
-
 namespace MaxPlus {
 
+using namespace ::FSM::Labeled;
 /**
  * MPA state is labeled with the FSM state ID, and the token number.
  */
-typedef struct {
+using MPAStateLabel = struct {
     CId id;
     unsigned int tokenNr;
-} MPAStateLabel;
+};
 
 /**
  * Create a new state label.
@@ -78,20 +77,22 @@ inline bool operator==(MPAStateLabel s, MPAStateLabel t) {
  * Compare MPA state labels using a lexicographical ordering.
  */
 inline bool operator<(MPAStateLabel s, MPAStateLabel t) {
-    if (s.id < t.id)
+    if (s.id < t.id) {
         return true;
-    if (s.id > t.id)
+    }
+    if (s.id > t.id) {
         return false;
+    }
     return s.tokenNr < t.tokenNr;
 }
 
 /**
  * An MPA edge is labeled with a delay and a scenario name.
  */
-typedef struct MPAEdgeLabel {
+using MPAEdgeLabel = struct MPAEdgeLabel {
     MPDelay delay;
     CString *scenario{nullptr};
-} MPAEdgeLabel;
+};
 
 /**
  * Create a new edge label
@@ -106,10 +107,10 @@ inline MPAEdgeLabel makeMPAEdgeLabel(MPDelay delay, CString *scenario) {
 }
 
 // Types for edges and states and sets.
-typedef ::FSM::Labeled::State<MPAStateLabel, MPAEdgeLabel> MPAState;
-typedef ::FSM::Labeled::Edge<MPAStateLabel, MPAEdgeLabel> MPAEdge;
-typedef ::FSM::Labeled::SetOfStates<MPAStateLabel, MPAEdgeLabel> MPASetOfStates;
-typedef ::FSM::Labeled::SetOfEdges<MPAStateLabel, MPAEdgeLabel> MPASetOfEdges;
+using MPAState = ::FSM::Labeled::State<MPAStateLabel, MPAEdgeLabel>;
+using MPAEdge = ::FSM::Labeled::Edge<MPAStateLabel, MPAEdgeLabel>;
+using MPASetOfStates = ::FSM::Labeled::SetOfStates<MPAStateLabel, MPAEdgeLabel>;
+using MPASetOfEdges = ::FSM::Labeled::SetOfEdges<MPAStateLabel, MPAEdgeLabel>;
 
 /**
  * A max-plus automaton
@@ -117,17 +118,17 @@ typedef ::FSM::Labeled::SetOfEdges<MPAStateLabel, MPAEdgeLabel> MPASetOfEdges;
 class MaxPlusAutomaton : public ::FSM::Labeled::FiniteStateMachine<MPAStateLabel, MPAEdgeLabel> {
 public:
     // Destructor.
-    virtual ~MaxPlusAutomaton(){};
+     ~MaxPlusAutomaton() override= default;;
 };
 
 /**
  * An edge label type for a max-plus automaton with rewards
  */
-typedef struct MPAREdgeLabel {
+using MPAREdgeLabel = struct MPAREdgeLabel {
     MPDelay delay;
     CString *scenario{nullptr};
     CDouble reward{0.0};
-} MPAREdgeLabel;
+};
 
 /**
  * Support for easy construction of a edge label with rewards.
@@ -141,11 +142,11 @@ inline MPAREdgeLabel makeRewardEdgeLabel(MPDelay d, CString *sc, CDouble r) {
 }
 
 // Types of states, edges, sets and cycle of an MPA with rewards.
-typedef ::FSM::Labeled::State<MPAStateLabel, MPAREdgeLabel> MPARState;
-typedef ::FSM::Labeled::Edge<MPAStateLabel, MPAREdgeLabel> MPAREdge;
-typedef ::FSM::Labeled::SetOfStates<MPAStateLabel, MPAREdgeLabel> MPARSetOfStates;
-typedef ::FSM::Labeled::SetOfEdges<MPAStateLabel, MPAREdgeLabel> MPARSetOfEdges;
-typedef ::FSM::Labeled::ListOfEdges<MPAStateLabel, MPAREdgeLabel> MPARCycle;
+using MPARState = ::FSM::Labeled::State<MPAStateLabel, MPAREdgeLabel>;
+using MPAREdge = ::FSM::Labeled::Edge<MPAStateLabel, MPAREdgeLabel>;
+using MPARSetOfStates = ::FSM::Labeled::SetOfStates<MPAStateLabel, MPAREdgeLabel>;
+using MPARSetOfEdges = ::FSM::Labeled::SetOfEdges<MPAStateLabel, MPAREdgeLabel>;
+using MPARCycle = ::FSM::Labeled::SetOfEdgeRefs<MPAStateLabel, MPAREdgeLabel>;
 
 /**
  * A max-plus automaton with rewards. In addition to the usual max-plus automaton,
@@ -155,9 +156,9 @@ class MaxPlusAutomatonWithRewards
     : virtual public ::FSM::Labeled::FiniteStateMachine<MPAStateLabel, MPAREdgeLabel> {
 public:
     // Destructor.
-    virtual ~MaxPlusAutomatonWithRewards(){};
+     ~MaxPlusAutomatonWithRewards() override= default;;
     // compute the maximum cycle ratio of delay over progress
-    CDouble calculateMCR(void);
+    CDouble calculateMCR();
     // compute the maximum cycle ratio of delay over progress and also return a critical cycle
     CDouble calculateMCRAndCycle(MPARCycle **cycle);
 };

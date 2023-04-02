@@ -55,7 +55,7 @@
 class CString;
 
 // Types
-typedef list<CString> CStrings;
+typedef std::list<CString> CStrings;
 typedef CStrings::iterator CStringsIter;
 
 /**
@@ -81,7 +81,7 @@ public:
     CString(const unsigned long long int n);
 
     // Constructor (floating number)
-    CString(const double n);
+    CString(const CDouble n);
 
     // Destructor
     ~CString();
@@ -94,7 +94,7 @@ public:
     CString &operator+=(const long int n);
     CString &operator+=(const unsigned long int n);
     CString &operator+=(const long long int n);
-    CString &operator+=(const double n);
+    CString &operator+=(const CDouble n);
 
     // Character access
     char operator[](int n) { return (c_str())[n]; };
@@ -103,7 +103,7 @@ public:
     operator const char *() const;
     operator int() const;
     operator uint() const;
-    operator double() const;
+    operator CDouble() const;
     operator long() const;
     operator unsigned long() const;
     operator long long() const;

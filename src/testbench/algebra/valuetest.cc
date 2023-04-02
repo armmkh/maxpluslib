@@ -23,10 +23,10 @@ void ValueTest::test_mpTime() {
 /// Test max operator.
 void ValueTest::test_Max() {
     std::cout << "Running test: Max" << std::endl;
-    // Test normal double values.
-    double a = 5.0;
-    double b = 3.14;
-    double max_ab = 5;
+    // Test normal CDouble values.
+    CDouble a = 5.0;
+    CDouble b = 3.14;
+    CDouble max_ab = 5;
 
     ASSERT_EQUAL(static_cast<CDouble>(MPTime(max_ab)), static_cast<CDouble>(MP_MAX(MPTime(a), MPTime(b))));
     ASSERT_EQUAL(static_cast<CDouble>(MPTime(max_ab)), static_cast<CDouble>(MP_MAX(MPTime(b), MPTime(a))));
@@ -41,7 +41,7 @@ void ValueTest::test_Max() {
 /// Test min operator.
 void ValueTest::test_Min() {
     std::cout << "Running test: Min" << std::endl;
-    // Test normal double values.
+    // Test normal CDouble values.
     ASSERT_EQUAL(static_cast<CDouble>(MPTime(3.14)), static_cast<CDouble>(MP_MIN(MPTime(5.0), MPTime(3.14))));
     ASSERT_EQUAL(static_cast<CDouble>(MPTime(3.14)), static_cast<CDouble>(MP_MIN(MPTime(3.14), MPTime(5.0))));
     ASSERT_EQUAL(static_cast<CDouble>(MPTime(-5.0)), static_cast<CDouble>(MP_MIN(MPTime(-5.0), MPTime(3.14))));

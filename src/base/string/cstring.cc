@@ -140,7 +140,7 @@ CString::CString(const unsigned long long int n) : std::string() {
  * CString ()
  * Constructor.
  */
-CString::CString(const double n) : std::string() {
+CString::CString(const CDouble n) : std::string() {
     char str[32];
     sprintf(&str[0], "%g", n);
     append(std::string(str));
@@ -229,7 +229,7 @@ CString &CString::operator+=(const long long int n) {
  * operator+= ()
  * Addition to string
  */
-CString &CString::operator+=(const double n) {
+CString &CString::operator+=(const CDouble n) {
     CString str(n);
     append(str);
 
@@ -255,10 +255,10 @@ CString::operator int() const { return strtol(c_str(), NULL, 0); }
 CString::operator uint() const { return strtoul(c_str(), NULL, 0); }
 
 /**
- * operator double ()
- * Type conversion to double.
+ * operator CDouble ()
+ * Type conversion to CDouble.
  */
-CString::operator double() const { return strtod(c_str(), NULL); }
+CString::operator CDouble() const { return strtod(c_str(), NULL); }
 
 /**
  * operator long ()
@@ -518,7 +518,7 @@ CString CString::regexReplace(const CString &regex, const CString &replace) {
         return res;
     } catch (std::runtime_error &e) {
         /// @todo add CExceptions to string class?
-        cout << "Failed regex: " << e.what() << endl;
+        std::cout << "Failed regex: " << e.what() << std::endl;
         //      throw CException(CString("Failed to compile and execute regex
         //      expression.")+e.what());
         return *this;
@@ -544,7 +544,7 @@ CString CString::regexReplaceMultiLine(const CString &regex, const CString &repl
         return result.str();
     } catch (std::runtime_error &e) {
         /// @todo add CExceptions to string class?
-        cout << "Failed regex: " << e.what() << endl;
+        std::cout << "Failed regex: " << e.what() << std::endl;
         //      throw CException(CString("Failed to compile and execute regex
         //      expression.")+e.what());
         return *this;

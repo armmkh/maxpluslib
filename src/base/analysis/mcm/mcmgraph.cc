@@ -739,7 +739,7 @@ std::shared_ptr<MCMgraph> MCMgraph::pruneEdges() {
 
     class _local {
     public:
-        map<std::shared_ptr<MCMnode>, MCMedges, MCMNodeLess> paretoEdges;
+        std::map<std::shared_ptr<MCMnode>, MCMedges, MCMNodeLess> paretoEdges;
         void insert(std::shared_ptr<MCMedge> e) {
             MCMedges &edges = paretoEdges[e->dst];
             // Simple Cull
@@ -776,9 +776,9 @@ std::shared_ptr<MCMgraph> MCMgraph::pruneEdges() {
     std::shared_ptr<MCMgraph> result = std::make_shared<MCMgraph>();
 
     // create all nodes.
-    map<std::shared_ptr<MCMnode>, std::shared_ptr<MCMnode>> newNodeMap;
+    std::map<std::shared_ptr<MCMnode>, std::shared_ptr<MCMnode>> newNodeMap;
     std::shared_ptr<MCMnode> u;
-    for (MCMnodes::iterator iter = this->nodes.begin(); iter != this->nodes.end(); iter++) {
+    for (auto iter = this->nodes.begin(); iter != this->nodes.end(); iter++) {
         u = *iter;
         std::shared_ptr<MCMnode> n = std::make_shared<MCMnode>(u->id, u->visible);
         newNodeMap[u] = n;
@@ -786,7 +786,7 @@ std::shared_ptr<MCMgraph> MCMgraph::pruneEdges() {
     }
 
     // for every node
-    for (MCMnodes::iterator iter = this->nodes.begin(); iter != this->nodes.end(); iter++) {
+    for (auto iter = this->nodes.begin(); iter != this->nodes.end(); iter++) {
         u = *iter;
 
         // for every outgoing edges to a simple cull Pareto filtering
@@ -797,7 +797,7 @@ std::shared_ptr<MCMgraph> MCMgraph::pruneEdges() {
 
         // add Pareto Edges to new Graph.
         // for every dst node
-        map<std::shared_ptr<MCMnode>, MCMedges>::const_iterator j;
+        std::map<std::shared_ptr<MCMnode>, MCMedges>::const_iterator j;
         for (j = local.paretoEdges.begin(); j != local.paretoEdges.end(); j++) {
             const MCMedges &edges = (*j).second;
             // for every edge

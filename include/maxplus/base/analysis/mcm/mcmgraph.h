@@ -61,7 +61,7 @@ public:
     CDouble d;
 };
 
-using MCMedges = list<std::shared_ptr<MCMedge>>;
+using MCMedges = std::list<std::shared_ptr<MCMedge>>;
 
 class MCMnode {
 public:
@@ -77,7 +77,7 @@ struct MCMNodeLess {
     bool operator()(std::shared_ptr<MCMnode> const &lhs, std::shared_ptr<MCMnode> const &rhs) const { return lhs->id < rhs->id; };
 };
 
-using MCMnodes = list<std::shared_ptr<MCMnode>>;
+using MCMnodes = std::list<std::shared_ptr<MCMnode>>;
 
 class MCMgraph {
 public:
@@ -90,11 +90,15 @@ public:
     // Copy Constructor
     MCMgraph(const MCMgraph &g);
 
-    const MCMnodes &getNodes() const { return nodes; };
+    MCMgraph(MCMgraph &&) = default;
+    MCMgraph &operator=(MCMgraph &&) = delete;
+    MCMgraph& operator=(const MCMgraph& other) = delete;
 
-    uint nrVisibleNodes() const {
+    [[nodiscard]] const MCMnodes &getNodes() const { return nodes; };
+
+    [[nodiscard]] uint nrVisibleNodes() const {
         uint nrNodes = 0;
-        for (auto &node : nodes) {
+        for (const auto &node : nodes) {
             if (node->visible) {
                 nrNodes++;
             }
@@ -110,7 +114,7 @@ public:
         return nullptr;
     };
 
-    const MCMedges &getEdges() const { return edges; };
+    [[nodiscard]] const MCMedges &getEdges() const { return edges; };
 
     std::shared_ptr<MCMedge> getEdge(CId id) {
         for (auto &edge : edges) {
@@ -180,7 +184,7 @@ public:
     }
 
     // Add an edge to the MCMgraph.
-    void addEdge(std::shared_ptr<MCMedge> e) {
+    void addEdge(const std::shared_ptr<MCMedge>& e) {
         this->edges.push_back(e);
         e->src->out.push_back(e);
         e->dst->in.push_back(e);
@@ -188,7 +192,7 @@ public:
 
     // Remove an edge from the MCMgraph.
     // Note: containers of edges are lists, so remove is expensive!
-    void removeEdge(std::shared_ptr<MCMedge> e) {
+    void removeEdge(const std::shared_ptr<MCMedge>& e) {
         this->edges.remove(e);
         e->src->out.remove(e);
         e->dst->in.remove(e);
@@ -224,7 +228,7 @@ private:
     MCMedges edges;
 };
 
-using MCMgraphs = list<std::shared_ptr<MCMgraph>>;
+using MCMgraphs = std::list<std::shared_ptr<MCMgraph>>;
 using MCMgraphsIter = MCMgraphs::iterator;
 
 /**

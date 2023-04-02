@@ -63,7 +63,7 @@ typedef ::FSM::Labeled::SetOfEdges<CId, CString> ELSSetOfEdges;
 
 typedef struct MLSEdgeLabel {
     Matrix *mat;
-    double rew;
+    CDouble rew;
 } MLSEdgeLabel;
 
 typedef ::FSM::Labeled::State<CId, MLSEdgeLabel> MLSState;

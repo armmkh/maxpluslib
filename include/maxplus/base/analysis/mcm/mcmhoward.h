@@ -59,7 +59,7 @@ namespace Graphs {
  * The function converts a weighted directed graph used in the MCM algorithms
  * to a sparse matrix input for Howard's algorithm.
  */
-void convertMCMgraphToMatrix(MCMgraph *g, int *ij, double *A);
+void convertMCMgraphToMatrix(MCMgraph *g, int *ij, CDouble *A);
 
 /**
  * Howard ()
@@ -77,11 +77,11 @@ void convertMCMgraphToMatrix(MCMgraph *g, int *ij, double *A);
  *
  */
 void Howard(int *ij,
-            double *A,
+            CDouble *A,
             int nr_nodes,
             int nr_arcs,
-            double *chi,
-            double *v,
+            CDouble *chi,
+            CDouble *v,
             int *policy,
             int *nr_iterations,
             int *nr_components);

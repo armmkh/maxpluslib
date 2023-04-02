@@ -44,7 +44,6 @@
 #include "mptype.h"
 #include <vector>
 
-
 class CString;
 
 namespace MaxPlus {
@@ -88,9 +87,9 @@ public:
     void putAll(unsigned int startRow, unsigned int endRow, MPTime value);
     void insertVector(unsigned int startRow, const SparseVector &v);
 
-    void toString(CString &outString, double scale = 1.0) const;
+    void toString(CString &outString, CDouble scale = 1.0) const;
 
-    SparseVector& operator=(const SparseVector &);
+    SparseVector &operator=(const SparseVector &);
 
     [[nodiscard]] MPTime norm() const;
 
@@ -137,8 +136,8 @@ private:
 class SparseMatrix {
 public:
     explicit SparseMatrix(unsigned int rowSize = 0,
-                 unsigned int colSize = 0,
-                 MPTime value = MP_MINUSINFINITY);
+                          unsigned int colSize = 0,
+                          MPTime value = MP_MINUSINFINITY);
 
     SparseMatrix(const SparseMatrix &);
 
@@ -173,7 +172,7 @@ public:
 
     void insertMatrix(unsigned int startRow, unsigned int startColumn, const SparseMatrix &M);
 
-    SparseMatrix& operator=(const SparseMatrix &);
+    SparseMatrix &operator=(const SparseMatrix &);
 
     [[nodiscard]] MPTime norm() const;
 
@@ -189,7 +188,7 @@ public:
 
     void compress();
 
-    void toString(CString &outString, double scale = 1.0) const;
+    void toString(CString &outString, CDouble scale = 1.0) const;
 
     MPTime mpEigenvalue();
 
@@ -208,7 +207,7 @@ private:
     bool isTransposed;
     // table contains column vectors (if isTransposed is false)
     // a pair (n, v) means that the vector v is repeated n times.
-    vector<std::pair<unsigned int, SparseVector>> table;
+    std::vector<std::pair<unsigned int, SparseVector>> table;
     std::pair<unsigned int, unsigned int> find(unsigned int col);
     void doTranspose();
     SparseMatrix combine(const SparseMatrix &vecB, MPTime f(MPTime a, MPTime b));
