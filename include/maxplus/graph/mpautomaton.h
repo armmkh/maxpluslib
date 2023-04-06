@@ -52,7 +52,7 @@ using namespace ::FSM::Labeled;
 /**
  * MPA state is labeled with the FSM state ID, and the token number.
  */
-using MPAStateLabel = struct {
+using MPAStateLabel = struct MPAStateLabel {
     CId id;
     unsigned int tokenNr;
 };
@@ -126,18 +126,15 @@ public:
  */
 using MPAREdgeLabel = struct MPAREdgeLabel {
     MPDelay delay;
-    CString *scenario{nullptr};
+    const CString& scenario;
     CDouble reward{0.0};
 };
 
 /**
  * Support for easy construction of a edge label with rewards.
  */
-inline MPAREdgeLabel makeRewardEdgeLabel(MPDelay d, CString *sc, CDouble r) {
-    MPAREdgeLabel el;
-    el.delay = d;
-    el.scenario = sc;
-    el.reward = r;
+inline MPAREdgeLabel makeRewardEdgeLabel(MPDelay d, const CString& sc, CDouble r) {
+    MPAREdgeLabel el ={d, sc, r};
     return el;
 }
 

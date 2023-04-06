@@ -1,7 +1,7 @@
 #include "policyiterationtest.h"
 #include "strategyvectortest.h"
 
-int main(void) {
+int main() {
 
     PolicyIterationTest T1;
     T1.Run();

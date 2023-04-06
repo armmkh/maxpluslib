@@ -53,13 +53,14 @@
 #define BASE_ANALYSIS_MCM_MCMHOWARD_H_INCLUDED
 
 #include "base/analysis/mcm/mcmgraph.h"
+#include <memory>
 namespace Graphs {
 /**
  * convertMCMgraphToMatrix ()
  * The function converts a weighted directed graph used in the MCM algorithms
  * to a sparse matrix input for Howard's algorithm.
  */
-void convertMCMgraphToMatrix(MCMgraph *g, int *ij, CDouble *A);
+void convertMCMgraphToMatrix(const MCMgraph& g, std::shared_ptr<std::vector<int>> *ij, std::shared_ptr<std::vector<CDouble>> *A);
 
 /**
  * Howard ()
@@ -76,13 +77,13 @@ void convertMCMgraphToMatrix(MCMgraph *g, int *ij, CDouble *A);
  *      NComponents: Number of connected components of the optimal policy
  *
  */
-void Howard(int *ij,
-            CDouble *A,
+void Howard(const std::vector<std::vector<int>>& ij,
+            const std::vector<std::vector<CDouble>>& A,
             int nr_nodes,
             int nr_arcs,
-            CDouble *chi,
-            CDouble *v,
-            int *policy,
+            std::vector<CDouble> &chi,
+            std::vector<CDouble>& v,
+            std::shared_ptr<std::vector<int>> (*policy),
             int *nr_iterations,
             int *nr_components);
 

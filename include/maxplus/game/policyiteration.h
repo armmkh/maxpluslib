@@ -49,9 +49,9 @@
 #include <stack>
 #include <utility> // std::pair
 
-using namespace ::FSM::Labeled;
-
 namespace MaxPlus {
+
+using namespace ::FSM::Labeled;
 
 /**
  * Policy Iteration Algorithm to solve ratio games.
@@ -69,7 +69,8 @@ template <typename SL, typename EL> class PolicyIteration {
     const CDouble EPSILON = 10e-5;
 
 public:
-    ~PolicyIteration(){};
+    ~PolicyIteration() = default;
+    ;
 
     struct PolicyIterationResult {
         std::map<const State<SL, EL> *, CDouble> values;
@@ -85,7 +86,7 @@ public:
      * @param game game graph
      * @return
      */
-    PolicyIterationResult solve(RatioGame<SL, EL> *graph) { return solve(graph, EPSILON); }
+    PolicyIterationResult solve(RatioGame<SL, EL>& graph) { return solve(graph, EPSILON); }
 
     /**
      * Find the values of the vertices and an optimal strategy for the given
@@ -97,16 +98,14 @@ public:
      * @param epsilon maximum absolute error between two values when they are considered equal
      * @return
      */
-    PolicyIterationResult solve(RatioGame<SL, EL> *game, CDouble epsilon) {
-        std::cout << "Checkpoint solve" << std::endl;
-
+    PolicyIterationResult solve(RatioGame<SL, EL>& game, CDouble epsilon) {
         if (!checkEachStateHasSuccessor(game)) {
             throw std::runtime_error(
                     "Input game graph is not valid. Some states have no successor.");
         }
-        std::cout << "Checkpoint solve" << std::endl;
         // Initialize arbitrary positional strategies.
-        StrategyVector<SL, EL> *initialStrategy = new StrategyVector<SL, EL>();
+        std::shared_ptr<StrategyVector<SL, EL>> initialStrategy =
+                std::make_shared<StrategyVector<SL, EL>>();
         initialStrategy->initializeRandomStrategy(game);
 
         return policyIteration(game, initialStrategy, epsilon);
@@ -116,31 +115,34 @@ private:
     /**
      * Policy iteration algorithm to find the value of each state and the strategy.
      */
-    PolicyIterationResult policyIteration(RatioGame<SL, EL> *game,
-                                          StrategyVector<SL, EL> *initialStrategy,
+    PolicyIterationResult policyIteration(RatioGame<SL, EL>& game,
+                                          std::shared_ptr<StrategyVector<SL, EL>> initialStrategy,
                                           CDouble epsilon) {
-        SetOfStates<SL, EL>& states = game->getStates();
+        SetOfStates<SL, EL> &states = game.getStates();
 
         bool improvement = true;
 
         // Initialize distance vector.
-        std::map<const State<SL, EL> *, CDouble> distVector = initializeVector(states, (CDouble)INFINITY);
-        std::map<const State<SL, EL> *, CDouble> dw2vector = initializeVector(states, (CDouble)INFINITY);
+        std::map<const State<SL, EL> *, CDouble> distVector =
+                initializeVector(states, static_cast<CDouble>(INFINITY));
+        std::map<const State<SL, EL> *, CDouble> dw2vector =
+                initializeVector(states, static_cast<CDouble>(INFINITY));
 
         // Initial ratio vector.
-        std::map<const State<SL, EL> *, CDouble> ratioVector = initializeVector(states, (CDouble)-INFINITY);
+        std::map<const State<SL, EL> *, CDouble> ratioVector =
+                initializeVector(states, static_cast<CDouble>(-INFINITY));
 
         // Initialize arbitrary positional strategies.
-        StrategyVector<SL, EL> currentStrategy = initialStrategy;
+        StrategyVector<SL, EL> currentStrategy = *initialStrategy;
 
         // Initialize state ids.
         std::map<const State<SL, EL> *, CDouble> stateIds;
         int cid = 0;
         typename SetOfStates<SL, EL>::CIter si;
-        for (auto& it: states) {
-            auto& si = *(it.second);
+        for (auto &it : states) {
+            auto &si = *(it.second);
             // Source vertex.
-            auto& state = dynamic_cast<State<SL, EL>&>(si);
+            auto &state = dynamic_cast<State<SL, EL> &>(si);
             stateIds[&state] = cid;
             cid++;
         }
@@ -150,7 +152,7 @@ private:
 
             // Improve the strategy of player 1.
             Player1Result result = improveStrategyPlayer1(
-                    game, &currentStrategy, distVector, ratioVector, dw2vector, stateIds, epsilon);
+                    game, currentStrategy, distVector, ratioVector, dw2vector, stateIds, epsilon);
 
             distVector = result.d_i_t;
             ratioVector = result.r_i_t;
@@ -158,21 +160,20 @@ private:
             dw2vector = result.dw2_i_t;
 
             // Improve the strategy of player 0, just one iteration.
-            std::set<State<SL, EL> *>& states = game->getV0();
-            typename std::set<State<SL, EL> *>::iterator si;
-            for (auto& si: states) {
+            std::set<State<SL, EL> *> &states = game.getV0();
+            for (auto &si : states) {
                 // Source vertex.
                 auto v = dynamic_cast<State<SL, EL> *>(si);
                 // Outgoing edges.
-                auto es = dynamic_cast<const FSM::Abstract::SetOfEdgeRefs&>(v->getOutgoingEdges());
-                for (const auto& ei: es) {
-                    auto e = dynamic_cast<Edge<SL, EL>*>(ei);
+                auto es = dynamic_cast<const FSM::Abstract::SetOfEdgeRefs &>(v->getOutgoingEdges());
+                for (const auto &ei : es) {
+                    auto e = dynamic_cast<Edge<SL, EL> *>(ei);
 
-                    const auto& u = dynamic_cast<const State<SL, EL>*>(&(e->getDestination()));
+                    const auto &u = dynamic_cast<const State<SL, EL> *>(&(e->getDestination()));
 
                     CDouble mw = ratioVector[u];
-                    CDouble w1 = static_cast<CDouble>(game->getWeight1(e));
-                    CDouble w2 = static_cast<CDouble>(game->getWeight2(e));
+                    CDouble w1 = static_cast<CDouble>(game.getWeight1(e));
+                    CDouble w2 = static_cast<CDouble>(game.getWeight2(e));
 
                     CDouble reweighted = w1 - mw * w2;
 
@@ -196,7 +197,7 @@ private:
         }
 
         PolicyIterationResult result = PolicyIterationResult();
-        result.strategy = initialStrategy;
+        result.strategy = *initialStrategy;
         result.values = ratioVector;
         return result;
     }
@@ -223,8 +224,8 @@ private:
      * @return new distance and ratio vectors, and a new strategy vector with an
      * updated strategy for player 1
      */
-    Player1Result improveStrategyPlayer1(RatioGame<SL, EL> *game,
-                                         StrategyVector<SL, EL> *currentStrategy,
+    Player1Result improveStrategyPlayer1(RatioGame<SL, EL>& game,
+                                         StrategyVector<SL, EL>& currentStrategy,
                                          std::map<const State<SL, EL> *, CDouble> &d_prev,
                                          std::map<const State<SL, EL> *, CDouble> &r_prev,
                                          std::map<const State<SL, EL> *, CDouble> &dw2_prev,
@@ -236,7 +237,7 @@ private:
         std::map<const State<SL, EL> *, CDouble> d_i_t(d_prev);
         std::map<const State<SL, EL> *, CDouble> r_i_t(r_prev);
         std::map<const State<SL, EL> *, CDouble> dw2_i_t(dw2_prev);
-        StrategyVector<SL, EL> *s_i_t = new StrategyVector<SL, EL>(currentStrategy);
+        std::shared_ptr<StrategyVector<SL, EL>> s_i_t = std::make_shared<StrategyVector<SL, EL>>(currentStrategy);
 
         while (improvement) {
             improvement = false;
@@ -249,21 +250,22 @@ private:
             r_i_t = evalResult.r_i_t;
             dw2_i_t = evalResult.dw2_i_t;
 
-            std::set<State<SL, EL> *> &states = game->getV1();
-            for (auto& si: states) {
+            std::set<State<SL, EL> *> &states = game.getV1();
+            for (auto &si : states) {
                 // Source vertex.
-                auto v = dynamic_cast<State<SL, EL>*>(si);
+                auto v = dynamic_cast<State<SL, EL> *>(si);
 
                 // Outgoing edges.
-                const auto& es = dynamic_cast<const FSM::Abstract::SetOfEdgeRefs&>(v->getOutgoingEdges());
-                for (const auto& ei: es) {
+                const auto &es =
+                        dynamic_cast<const FSM::Abstract::SetOfEdgeRefs &>(v->getOutgoingEdges());
+                for (const auto &ei : es) {
                     auto e = dynamic_cast<Edge<SL, EL> *>(ei);
 
                     auto u = dynamic_cast<const State<SL, EL> *>(&(e->getDestination()));
 
                     CDouble cycleRatio = r_i_t[u];
-                    CDouble w1 = static_cast<CDouble>(game->getWeight1(e));
-                    CDouble w2 = static_cast<CDouble>(game->getWeight2(e));
+                    CDouble w1 = static_cast<CDouble>(game.getWeight1(e));
+                    CDouble w2 = static_cast<CDouble>(game.getWeight2(e));
 
                     CDouble reweighted = w1 - cycleRatio * w2;
 
@@ -291,7 +293,7 @@ private:
         Player1Result result;
         result.d_i_t = d_i_t;
         result.r_i_t = r_i_t;
-        result.s_i_t = s_i_t;
+        result.s_i_t = *s_i_t;
         result.dw2_i_t = dw2_i_t;
         return result;
     }
@@ -315,8 +317,8 @@ private:
      * @param stateIds        map with unique id for each state
      * @return the new distance and ratio vectors
      */
-    StrategyEvaluation evaluateStrategy(RatioGame<SL, EL> *game,
-                                        StrategyVector<SL, EL> *currentStrategy,
+    StrategyEvaluation evaluateStrategy(RatioGame<SL, EL>& game,
+                                        std::shared_ptr<StrategyVector<SL, EL>> currentStrategy,
                                         std::map<const State<SL, EL> *, CDouble> &distanceVector,
                                         std::map<const State<SL, EL> *, CDouble> &ratioVector,
                                         std::map<const State<SL, EL> *, CDouble> &dw2,
@@ -360,13 +362,14 @@ private:
      * @param stateIds        map with unique id for each state
      * @return
      */
-    CycleResult findCyclesInRestrictedGraph(RatioGame<SL, EL> *game,
-                                            StrategyVector<SL, EL> *currentStrategy,
+    CycleResult findCyclesInRestrictedGraph(RatioGame<SL, EL>& game,
+                                            std::shared_ptr<StrategyVector<SL, EL>> currentStrategy,
                                             std::map<const State<SL, EL> *, CDouble> &stateIds) {
-        SetOfStates<SL, EL>& states = game->getStates();
+        SetOfStates<SL, EL> &states = game.getStates();
         const State<SL, EL> *BOTTOM_VERTEX = nullptr;
 
-        std::shared_ptr<FSM::Abstract::SetOfStateRefs> selectedVertices = std::make_shared<FSM::Abstract::SetOfStateRefs>();
+        std::shared_ptr<FSM::Abstract::SetOfStateRefs> selectedVertices =
+                std::make_shared<FSM::Abstract::SetOfStateRefs>();
 
         // Initially, all vertices are unvisited.
         std::map<const State<SL, EL> *, const State<SL, EL> *> visited =
@@ -374,9 +377,9 @@ private:
 
         std::map<const State<SL, EL> *, CDouble> r_i_t;
 
-        for (auto& it: states) {
+        for (auto &it : states) {
             // Source vertex.
-            auto& si = *(it.second);
+            auto &si = *(it.second);
             auto v = dynamic_cast<const State<SL, EL> *>(&(si));
             if (visited[v] == BOTTOM_VERTEX) {
                 const State<SL, EL> *u = v;
@@ -389,9 +392,9 @@ private:
                     const State<SL, EL> *x = currentStrategy->getSuccessor(u);
 
                     // Initialize both numerator and denominator.
-                    Edge<SL, EL> *e = game->getEdge(*u, *(currentStrategy->getSuccessor(u)));
-                    CDouble w1sum = static_cast<CDouble>(game->getWeight1(e));
-                    CDouble w2sum = static_cast<CDouble>(game->getWeight2(e));
+                    Edge<SL, EL> *e = game.getEdge(*u, *(currentStrategy->getSuccessor(u)));
+                    auto w1sum = static_cast<CDouble>(game.getWeight1(e));
+                    auto w2sum = static_cast<CDouble>(game.getWeight2(e));
 
                     while (x != u) {
                         // Find the vertex with the lowest id for unique
@@ -400,9 +403,10 @@ private:
                         if (stateIds[x] < stateIds[v_s]) {
                             v_s = x;
                         }
-                        Edge<SL, EL> *x_succ = game->getEdge(*x, *(currentStrategy->getSuccessor(x)));
-                        CDouble w1 = static_cast<CDouble>(game->getWeight1(x_succ));
-                        CDouble w2 = static_cast<CDouble>(game->getWeight2(x_succ));
+                        Edge<SL, EL> *x_succ =
+                                game.getEdge(*x, *(currentStrategy->getSuccessor(x)));
+                        auto w1 = static_cast<CDouble>(game.getWeight1(x_succ));
+                        auto w2 = static_cast<CDouble>(game.getWeight2(x_succ));
 
                         w1sum += w1;
                         w2sum += w2;
@@ -441,15 +445,15 @@ private:
      * @param epsilon         epsilon value for equality on real numbers
      * @return
      */
-    DistanceResult computeDistances(RatioGame<SL, EL> *game,
-                                    StrategyVector<SL, EL> *currentStrategy,
-                                    std::shared_ptr<FSM::Abstract::SetOfStateRefs> selectedStates,
+    DistanceResult computeDistances(RatioGame<SL, EL>& game,
+                                    std::shared_ptr<StrategyVector<SL, EL>> currentStrategy,
+                                    const std::shared_ptr<FSM::Abstract::SetOfStateRefs>& selectedStates,
                                     std::map<const State<SL, EL> *, CDouble> &r_i_t,
                                     std::map<const State<SL, EL> *, CDouble> &d_prev,
                                     std::map<const State<SL, EL> *, CDouble> &r_prev,
                                     std::map<const State<SL, EL> *, CDouble> &dw2_prev,
                                     CDouble epsilon) {
-        SetOfStates<SL, EL>& states = game->getStates();
+        SetOfStates<SL, EL> &states = game.getStates();
 
         std::stack<const State<SL, EL> *> stack;
         // Initialize visited vector.
@@ -459,7 +463,7 @@ private:
         std::map<const State<SL, EL> *, CDouble> dw2;
 
         // For all selected states.
-        for (auto& ssi: *selectedStates) {
+        for (const auto &ssi : *selectedStates) {
             auto u = dynamic_cast<const State<SL, EL> *>(ssi);
             if (equalTo(r_i_t[u], r_prev[u], epsilon)) {
                 d_i_t[u] = d_prev[u];
@@ -472,9 +476,8 @@ private:
         }
 
         // For all states.
-        typename SetOfStates<SL, EL>::CIter si;
-        for (auto& it: states) {
-            auto& si = *(it.second);
+        for (auto &it : states) {
+            auto &si = *(it.second);
             auto state = dynamic_cast<const State<SL, EL> *>(&(si));
             if (!visited[state]) {
                 const State<SL, EL> *u = state;
@@ -486,9 +489,9 @@ private:
                 while (!stack.empty()) {
                     const State<SL, EL> *x = stack.top();
                     stack.pop();
-                    Edge<SL, EL> *e = game->getEdge(*x, *u);
-                    CDouble w1 = static_cast<CDouble>(game->getWeight1(e));
-                    CDouble w2 = static_cast<CDouble>(game->getWeight2(e));
+                    Edge<SL, EL> *e = game.getEdge(*x, *u);
+                    auto w1 = static_cast<CDouble>(game.getWeight1(e));
+                    auto w2 = static_cast<CDouble>(game.getWeight2(e));
 
                     CDouble cycleRatio = r_i_t[u];
 
@@ -516,27 +519,19 @@ private:
      * @param graph game graph
      * @return true if and only if each state has at least one outgoing edge
      */
-    bool checkEachStateHasSuccessor(RatioGame<SL, EL> *graph) {
-        SetOfStates<SL, EL>& states = graph->getStates();
-
-        std::cout << "Checkpoint checkEachStateHasSuccessor" << std::endl;
-
-        typename SetOfStates<SL, EL>::CIter si;
-        for (auto& it: states) {
-            std::cout << "Checkpoint checkEachStateHasSuccessorL" << std::endl;
-            auto& si = it.second;
+    bool checkEachStateHasSuccessor(RatioGame<SL, EL> &graph) {
+        for (auto &it : graph.getStates()) {
+            auto &si = it.second;
             // For each state fetch its outgoing edges.
-            auto& src = dynamic_cast<State<SL, EL>&>(*si);
-            std::cout << "Checkpoint checkEachStateHasSuccessorL2" << std::endl;
-            const auto& es = dynamic_cast<const FSM::Abstract::SetOfEdgeRefs&>(src.getOutgoingEdges());
-            std::cout << "Checkpoint checkEachStateHasSuccessorL3" << std::endl;
+            auto &src = dynamic_cast<State<SL, EL> &>(*si);
+            const auto &es =
+                    dynamic_cast<const FSM::Abstract::SetOfEdgeRefs &>(src.getOutgoingEdges());
 
             // Check whether there are any outgoing edges.
             if (es.empty()) {
                 return false;
             }
         }
-        std::cout << "Checkpoint checkEachStateHasSuccessor tt" << std::endl;
         return true;
     }
 
@@ -553,10 +548,10 @@ private:
     std::map<const State<SL, EL> *, T> initializeVector(SetOfStates<SL, EL> &states, T value) {
         std::map<const State<SL, EL> *, T> vector;
 
-        for (auto& it: states) {
-            auto& si = *(it.second);
+        for (auto &it : states) {
+            auto &si = *(it.second);
             // Source vertex.
-            auto& state = dynamic_cast<State<SL, EL>&>(si);
+            auto &state = dynamic_cast<State<SL, EL> &>(si);
             vector[&state] = value;
         }
         return vector;

@@ -50,6 +50,9 @@
 
 #include "base/analysis/mcm/mcmgraph.h"
 #include <cstdint>
+#include <memory>
+#include <vector>
+
 namespace Graphs {
 
 using node = struct Node {
@@ -85,14 +88,14 @@ using arc = struct Arc {
     CDouble transit_time;
     CDouble key;
     std::int32_t h_pos;       // of arc in heap
-    std::shared_ptr<MCMedge> mcmEdge; // MCMedge from which the arc was constructed in the conversion
+    const MCMedge* mcmEdge; // MCMedge from which the arc was constructed in the conversion
 };
 
 using graph = struct Graph {
     std::int32_t n_nodes;
-    node *nodes;
+    std::vector<node> nodes;
     std::int32_t n_arcs;
-    arc *arcs;
+    std::vector<arc> arcs;
     node *vs; // additional node with zero cost outgoing edges
 };
 
@@ -101,7 +104,7 @@ using graph = struct Graph {
  * The function computes the maximum cycle mean of edge weight per edge of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
-CDouble maxCycleMeanYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph);
+CDouble maxCycleMeanYoungTarjanOrlin(const MCMgraph& mcmGraph);
 
 /**
  * maxCycleMeanAndCriticalCycleYoungTarjanOrlin ()
@@ -114,14 +117,14 @@ CDouble maxCycleMeanYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph);
  * in due time.
  */
 CDouble
-maxCycleMeanAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len);
+maxCycleMeanAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<std::vector<const MCMedge*>> *cycle);
 
 /**
  * maxCycleRatioYoungTarjanOrlin ()
  * The function computes the maximum cycle ratio of edge weight over delay of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
-CDouble maxCycleRatioYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph);
+CDouble maxCycleRatioYoungTarjanOrlin(const MCMgraph& mcmGraph);
 
 /**
  * maxCycleRatioAndCriticalCycleYoungTarjanOrlin ()
@@ -134,14 +137,14 @@ CDouble maxCycleRatioYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph);
  * in due time.
  */
 CDouble
-maxCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len);
+maxCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<std::vector<const MCMedge*>> *cycle);
 
 /**
  * minCycleRatioYoungTarjanOrlin ()
  * The function computes the minimum cycle ratio of edge weight over delay of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
-CDouble minCycleRatioYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph);
+CDouble minCycleRatioYoungTarjanOrlin(const MCMgraph& mcmGraph);
 
 /**
  * minCycleRatioAndCriticalCycleYoungTarjanOrlin ()
@@ -154,19 +157,19 @@ CDouble minCycleRatioYoungTarjanOrlin(std::shared_ptr<MCMgraph> mcmGraph);
  * in due time.
  */
 CDouble
-minCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<MCMedge> **cycle, uint *len);
+minCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<std::vector<const MCMedge*>> *cycle);
 
 /**
  * getDelay ()
  * The function returns the delay associated with an edge.
  */
-CDouble getDelay(std::shared_ptr<MCMedge> e);
+CDouble getDelay(const MCMedge& e);
 
 /**
  * getWeight ()
  * The function returns the weight associated with an edge.
  */
-CDouble getWeight(std::shared_ptr<MCMedge> e);
+CDouble getWeight(const MCMedge& e);
 
 /**
  * convertMCMgraphToYTOgraph ()
@@ -175,9 +178,9 @@ CDouble getWeight(std::shared_ptr<MCMedge> e);
  * It assumes that the id's of the nodes are 0 <= id < number of nodes
  */
 void convertMCMgraphToYTOgraph(const MCMgraph& g,
-                               graph *gr,
-                               CDouble (*costFunction)(std::shared_ptr<MCMedge> e),
-                               CDouble (*transit_timeFunction)(std::shared_ptr<MCMedge> e));
+                               graph& gr,
+                               CDouble (*costFunction)(const MCMedge& e),
+                               CDouble (*transit_timeFunction)(const MCMedge& e));
 
 /**
  * mmcycle ()
@@ -187,7 +190,7 @@ void convertMCMgraphToYTOgraph(const MCMgraph& g,
  * edges, alternatively called "length" or "weight".
  */
 
-void mmcycle(graph *gr, CDouble *lambda, arc **cycle, std::int32_t *len);
+void mmcycle(graph& gr, CDouble *lambda, std::shared_ptr<std::vector<const arc*>> *cycle);
 
 } // namespace Graphs
 

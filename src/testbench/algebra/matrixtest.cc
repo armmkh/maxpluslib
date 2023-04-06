@@ -14,7 +14,7 @@ void MatrixTest::Run() {
     this->test_Addition();
 };
 
-int MatrixTest::test_SetMPTimeInMatrix(void) {
+int MatrixTest::test_SetMPTimeInMatrix() {
     std::cout << "Running test: SetMPTimeInMatrix" << std::endl;
     unsigned int N = 2;
     Matrix m(N, N, MatrixFill::MinusInfinity);
@@ -42,7 +42,7 @@ int MatrixTest::test_SetMPTimeInMatrix(void) {
     return 0;
 }
 
-int MatrixTest::test_PasteMatrix(void) {
+int MatrixTest::test_PasteMatrix() {
     std::cout << "Running test: PasteMatrix" << std::endl;
 
     Matrix m(3, 3, MatrixFill::MinusInfinity);
@@ -62,22 +62,22 @@ int MatrixTest::test_PasteMatrix(void) {
     return 0;
 }
 
-int MatrixTest::test_SubMatrix(void) {
+int MatrixTest::test_SubMatrix() {
     std::cout << "Running test: SubMatrix" << std::endl;
 
     Matrix m(5, 5, MatrixFill::Identity);
     std::list<unsigned int> l = {0, 1};
 
-    Matrix *sub = m.getSubMatrix(l, l);
-    ASSERT_EQUAL(0.0, static_cast<CDouble>(sub->get(0, 0)));
-    ASSERT_EQUAL(static_cast<CDouble>(MP_MINUSINFINITY), static_cast<CDouble>(sub->get(0, 1)));
-    ASSERT_EQUAL(static_cast<CDouble>(MP_MINUSINFINITY), static_cast<CDouble>(sub->get(1, 0)));
-    ASSERT_EQUAL(0.0, static_cast<CDouble>(sub->get(1, 1)));
+    Matrix sub = m.getSubMatrix(l, l);
+    ASSERT_EQUAL(0.0, static_cast<CDouble>(sub.get(0, 0)));
+    ASSERT_EQUAL(static_cast<CDouble>(MP_MINUSINFINITY), static_cast<CDouble>(sub.get(0, 1)));
+    ASSERT_EQUAL(static_cast<CDouble>(MP_MINUSINFINITY), static_cast<CDouble>(sub.get(1, 0)));
+    ASSERT_EQUAL(0.0, static_cast<CDouble>(sub.get(1, 1)));
 
     return 0;
 }
 
-int MatrixTest::test_Equality(void) {
+int MatrixTest::test_Equality() {
     // Equality is not implemented!
     // Matrix m1(3, 3, MatrixFill::MinusInfinity);
     // Matrix m2(3, 3, MatrixFill::MinusInfinity);
@@ -86,24 +86,24 @@ int MatrixTest::test_Equality(void) {
     return 0;
 }
 
-int MatrixTest::test_Addition(void) {
+int MatrixTest::test_Addition() {
     std::cout << "Running test: Addition" << std::endl;
 
     Matrix m(3, 3, MatrixFill::Identity);
-    Matrix *mResult = m.add(MPTime(3.0));
+    Matrix mResult = m.add(MPTime(3.0));
 
     Matrix m2(3, 3, MatrixFill::Identity);
     Matrix mResult2(3, 3, MatrixFill::MinusInfinity);
 
-    m2.add(MPTime(3.0), &mResult2);
+    m2.add(MPTime(3.0), mResult2);
 
     for (int row = 0; row < 3; row++) {
         for (int column = 0; column < 3; column++) {
             if (row == column) {
-                ASSERT_EQUAL(3.0, static_cast<CDouble>(mResult->get(row, column)));
+                ASSERT_EQUAL(3.0, static_cast<CDouble>(mResult.get(row, column)));
                 ASSERT_EQUAL(3.0, static_cast<CDouble>(mResult2.get(row, column)));
             } else {
-                ASSERT_EQUAL(static_cast<CDouble>(MP_MINUSINFINITY), static_cast<CDouble>(mResult->get(row, column)));
+                ASSERT_EQUAL(static_cast<CDouble>(MP_MINUSINFINITY), static_cast<CDouble>(mResult.get(row, column)));
                 ASSERT_EQUAL(static_cast<CDouble>(MP_MINUSINFINITY), static_cast<CDouble>(mResult2.get(row, column)));
             }
         }

@@ -42,8 +42,8 @@
 #include "base/analysis/mcm/mcmgraph.h"
 #include "base/math/cmath.h"
 #include <climits>
+#include <cmath>
 #include <memory>
-
 
 namespace Graphs {
 /**
@@ -55,37 +55,28 @@ namespace Graphs {
  * check if algorithm can be generalized to float edge weights
  */
 CDouble mcmDG(MCMgraph *mcmGraph) {
-    int k, n;
-    int *level;
-    int **pi, **d;
-    CDouble l, ld;
-    std::shared_ptr<MCMnode> u;
-    std::list<int> Q_k;
-    std::list<std::shared_ptr<MCMnode>> Q_u;
-
     // Allocate memory
-    n = mcmGraph->nrVisibleNodes();
-    level = new int[n];
-    pi = new int *[n + 1];
-    d = new int *[n + 1];
-    for (int i = 0; i < n + 1; i++) {
-        pi[i] = new int[n];
-        d[i] = new int[n];
-    }
+    const unsigned int n = mcmGraph->nrVisibleNodes();
+    std::vector<int> level(n);
+    std::vector<std::vector<int>> pi(n + 1, std::vector<int>(n));
+    std::vector<std::vector<int>> d(n + 1, std::vector<int>(n));
 
     // Initialize
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++) {
         level[i] = -1;
+    }
     d[0][0] = 0;
     pi[0][0] = -1;
     level[0] = 0;
+    std::list<int> Q_k;
     Q_k.push_back(0);
+    std::list<std::shared_ptr<MCMnode>> Q_u;
     Q_u.push_back(mcmGraph->getNodes().front());
 
     // Compute the distances
-    k = Q_k.front();
+    int k = Q_k.front();
     Q_k.pop_front();
-    u = Q_u.front();
+    std::shared_ptr<MCMnode> u = Q_u.front();
     Q_u.pop_front();
     do {
         for (auto iter = u->out.begin(); iter != u->out.end(); iter++) {
@@ -108,13 +99,12 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
     } while (k < n);
 
     // Compute lambda using Karp's theorem
-    l = -INT_MAX;
-    for (auto iter = mcmGraph->getNodes().begin(); iter != mcmGraph->getNodes().end();
-         iter++) {
-        u = *iter;
+    CDouble l = -INT_MAX;
+    for (const auto & iter : mcmGraph->getNodes()) {
+        u = iter;
 
         if (level[u->id] == n) {
-            ld = INT_MAX;
+            CDouble ld = INT_MAX;
             k = pi[n][u->id];
             while (k > -1) {
                 ld = MIN(ld, (CDouble)(d[n][u->id] - d[k][u->id]) / (CDouble)(n - k));
@@ -123,15 +113,6 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
             l = MAX(l, ld);
         }
     }
-
-    // Cleanup
-    delete[] level;
-    for (int i = 0; i < n + 1; i++) {
-        delete[] pi[i];
-        delete[] d[i];
-    }
-    delete[] pi;
-    delete[] d;
 
     return l;
 }

@@ -44,8 +44,8 @@
 #include "base/analysis/mcm/mcmyto.h"
 #include "base/exception/exception.h"
 #include <cmath>
+#include <cstdlib>
 #include <memory>
-#include <stdlib.h>
 
 using namespace Graphs;
 
@@ -85,12 +85,15 @@ Vector::Vector(const Vector &other) {
  * vector assignment
  */
 Vector &Vector::operator=(const Vector &other) {
-    if (this->getSize() != other.getSize()) {
-        throw CException("Vectors of different size in"
-                         "Vector::operator=");
-    }
-    for (unsigned int row = 0; row < this->getSize(); row++) {
-        this->table[row] = other.table[row];
+    // self assignment check
+    if (this != &other) {
+        if (this->getSize() != other.getSize()) {
+            throw CException("Vectors of different size in"
+                             "Vector::operator=");
+        }
+        for (unsigned int row = 0; row < this->getSize(); row++) {
+            this->table[row] = other.table[row];
+        }
     }
     return *this;
 }
@@ -103,16 +106,15 @@ void Vector::negate() {
         if (this->get(row) == MP_MINUSINFINITY) {
             throw CException("Cannot negate vectors with MP_MINUSINFINITY elements in"
                              "Vector::negate");
-        } else {
-            this->put(row, -this->get(row));
         }
+        this->put(row, -this->get(row));
     }
 }
 
 /**
  * calculate vector norm
  */
-MPTime Vector::norm() {
+MPTime Vector::norm() const {
     MPTime maxEl = MP_MINUSINFINITY;
     for (unsigned int row = 0; row < this->getSize(); row++) {
         maxEl = MP_MAX(maxEl, this->get(row));
@@ -129,22 +131,22 @@ MPTime Vector::normalize() {
     if (maxEl == MP_MINUSINFINITY) {
         throw CException("Cannot normalize vector with norm MP_MINUSINFINITY"
                          "Vector::normalize");
-    } else {
-        for (unsigned int row = 0; row < this->getSize(); row++) {
-            MPTime x_i = this->get(row); // MPTime handles -INF correctly
-            x_i = x_i - maxEl;           // overloaded using MP_PLUS
-            this->put(row, x_i);
-        }
     }
+    for (unsigned int row = 0; row < this->getSize(); row++) {
+        MPTime x_i = this->get(row); // MPTime handles -INF correctly
+        x_i = x_i - maxEl;           // overloaded using MP_PLUS
+        this->put(row, x_i);
+    }
+
     return maxEl;
 }
 
 /**
  * add scalar to vector
  */
-Vector *Vector::add(MPTime increase) const {
+Vector Vector::add(MPTime increase) const {
     unsigned int M = this->getSize();
-    Vector *result = new Vector(M);
+    Vector result(M);
     this->add(increase, result);
     return result;
 }
@@ -152,32 +154,32 @@ Vector *Vector::add(MPTime increase) const {
 /**
  * add scalar to vector
  */
-void Vector::add(MPTime increase, Vector *result) const {
+void Vector::add(MPTime increase, Vector &result) const {
     unsigned int M = this->getSize();
-    assert(result->getSize() == M);
+    assert(result.getSize() == M);
 
     for (unsigned int pos = 0; pos < M; pos++) {
-        result->put(pos, this->get(pos) + increase); // uses MP_PLUS()
+        result.put(pos, this->get(pos) + increase); // uses MP_PLUS()
     }
 }
 
 /**
  * max of vectors
  */
-void Vector::maximum(const Vector *vecB, Vector *result) const {
+void Vector::maximum(const Vector &vecB, Vector &result) const {
     unsigned int M = this->getSize();
-    assert(vecB->getSize() == M);
-    assert(result->getSize() == M);
+    assert(vecB.getSize() == M);
+    assert(result.getSize() == M);
 
     for (unsigned int pos = 0; pos < M; pos++) {
-        result->put(pos, MP_MAX(this->get(pos), vecB->get(pos)));
+        result.put(pos, MP_MAX(this->get(pos), vecB.get(pos)));
     }
 }
 
 /**
  * Destructor of max-plus vector
  */
-Vector::~Vector() {}
+Vector::~Vector() = default;
 
 /**
  * Put an entry into the vector. Grows vector if necessary
@@ -203,19 +205,20 @@ void Vector::toString(CString &outString, CDouble scale) const {
  * Vector::add
  * add vectors
  */
-void Vector::add(const Vector *vecB, Vector *res) const {
-    assert(this->getSize() == vecB->getSize());
-    assert(this->getSize() == res->getSize());
+void Vector::add(const Vector &vecB, Vector &res) const {
+    assert(this->getSize() == vecB.getSize());
+    assert(this->getSize() == res.getSize());
     for (unsigned int row = 0; row < this->getSize(); row++) {
-        res->put(row, this->get(row) + vecB->get(row));
+        res.put(row, this->get(row) + vecB.get(row));
     }
 }
 
 /**
  * add vectors
  */
-Vector *Vector::add(const Vector *vecB) const {
-    Vector *res = new Vector(this->getSize());
+
+Vector Vector::add(const Vector &vecB) const {
+    Vector res(this->getSize());
     this->add(vecB, res);
     return res;
 }
@@ -225,15 +228,16 @@ Vector *Vector::add(const Vector *vecB) const {
  * returns the smallest among the finite elements in the vector or
  * MP_MINUSINFINITY if no finite elements exist
  * itsPosition returns the index of the (a) smallest finite element is set
- * to a pointer to unsigned int, otherwise set or defaults to NULL
+ * to a pointer to unsigned int, otherwise set or defaults to nullptr
  */
 MPTime Vector::minimalFiniteElement(unsigned int *itsPosition_Ptr) const {
-    unsigned int itsPosition_tmp;
-    unsigned int *itsPosition;
-    if (itsPosition_Ptr != NULL)
+    unsigned int itsPosition_tmp = 0;
+    unsigned int *itsPosition = nullptr;
+    if (itsPosition_Ptr != nullptr) {
         itsPosition = itsPosition_Ptr;
-    else
+    } else {
         itsPosition = &itsPosition_tmp;
+    }
     *itsPosition = this->getSize() + 1; // arbitrary value, invalid
 
     MPTime minEl = MP_MINUSINFINITY;
@@ -255,19 +259,22 @@ MPTime Vector::minimalFiniteElement(unsigned int *itsPosition_Ptr) const {
 /**
  * Compare vectors up to MP_EPSILON
  */
-bool Vector::compare(const Vector &v) {
-    if (this->getSize() != v.getSize())
+bool Vector::compare(const Vector &v) const {
+    if (this->getSize() != v.getSize()) {
         return false;
+    }
     for (unsigned int k = 0; k < this->getSize(); k++) {
-        if (fabs(static_cast<CDouble>(this->get(k) - v.get(k))) > static_cast<CDouble>(MP_EPSILON))
+        if (fabs(static_cast<CDouble>(this->get(k) - v.get(k)))
+            > static_cast<CDouble>(MP_EPSILON)) {
             return false;
+        }
     }
     return true;
 }
 
-Matrix::Matrix(unsigned int nr_rows, unsigned int nr_cols, MatrixFill fill) {
-    this->szRows = nr_rows;
-    this->szCols = nr_cols;
+Matrix::Matrix(unsigned int nr_rows, unsigned int nr_cols, MatrixFill fill) :
+    szRows(nr_rows), szCols(nr_cols) {
+
     init(fill);
 }
 
@@ -279,7 +286,7 @@ void Matrix::init(MatrixFill fill) {
     unsigned int nr_els = getRows() * getCols();
     this->table.resize(nr_els);
     // Fill the matrix according to the given fill pattern.
-    MPTime zeroValue = MPTime(0.0);
+    auto zeroValue = MPTime(0.0);
     switch (fill) {
     case MatrixFill::MinusInfinity:
         for (unsigned int pos = 0; pos < nr_els; pos++) {
@@ -313,26 +320,22 @@ void Matrix::init() { init(MatrixFill::MinusInfinity); }
 /**
  * Construct a square max-plus matrix of N by N
  */
-Matrix::Matrix(unsigned int N) {
-    this->szRows = N;
-    this->szCols = N;
-    this->init();
-}
+Matrix::Matrix(unsigned int N) : szRows(N), szCols(N) { this->init(); }
 
 /**
  *Creates a matrix with reserved memory
  */
-Matrix::Matrix(unsigned int nrows, unsigned int nr_cols, unsigned int nr_rel) {
-    this->szRows = nrows;
-    this->szCols = nr_cols;
-    this->table.reserve(nr_rel);
+Matrix::Matrix(unsigned int nr_rows, unsigned int nr_cols, unsigned int nr_el) :
+    szRows(nr_rows), szCols(nr_cols) {
+
+    this->table.reserve(nr_el);
     this->init();
 }
 
 /**
  * Destructor of MaxPlus matrix
  */
-Matrix::~Matrix() {}
+Matrix::~Matrix() = default;
 
 /**
  * Increases the number of rows of the matrix by n and fills the new elements with -\infty.
@@ -349,7 +352,7 @@ void Matrix::addRows(uint n) {
 /**
  * Get size of a square matrix
  */
-unsigned int Matrix::getSize(void) const {
+unsigned int Matrix::getSize() const {
     assert(this->getRows() == this->getCols());
     return this->getRows();
 }
@@ -427,7 +430,7 @@ void Matrix::pasteRowVector(unsigned int top_row,
  * mp_multiply()
  * Matrix-vector multiplication.
  */
-Vector *Matrix::mp_multiply(const Vector &v) const {
+Vector Matrix::mp_multiply(const Vector &v) const {
     // Check size of the matrix and vector
     if (this->getCols() != v.getSize()) {
         throw CException("Matrix and vector are of unequal size in "
@@ -435,7 +438,7 @@ Vector *Matrix::mp_multiply(const Vector &v) const {
     }
 
     // Allocate space of the resulting vector
-    auto *res = new Vector(this->getRows());
+    Vector res(this->getRows());
 
     // Perform point-wise multiplication
     for (unsigned int i = 0; i < this->getRows(); i++) {
@@ -443,7 +446,7 @@ Vector *Matrix::mp_multiply(const Vector &v) const {
         for (unsigned int k = 0; k < this->getCols(); k++) {
             m = MP_MAX(m, MP_PLUS(this->get(i, k), v.get(k)));
         }
-        res->put(i, m);
+        res.put(i, m);
     }
     return res;
 }
@@ -452,7 +455,7 @@ Vector *Matrix::mp_multiply(const Vector &v) const {
  * mp_multiply()
  * Matrix-matrix multiplication.
  */
-Matrix *Matrix::mp_multiply(const Matrix &m) const {
+Matrix Matrix::mp_multiply(const Matrix &m) const {
     // Check sizes of the matrices
     if (this->getCols() != m.getRows()) {
         throw CException("Matrices are of incompatible size in"
@@ -460,7 +463,7 @@ Matrix *Matrix::mp_multiply(const Matrix &m) const {
     }
 
     // Allocate space of the resulting matrix
-    Matrix *res = makeMatrix(this->getRows(), m.getCols());
+    Matrix res(this->getRows(), m.getCols());
 
     // Perform point-wise multiplication
     for (unsigned int i = 0; i < this->getRows(); i++) {
@@ -469,7 +472,7 @@ Matrix *Matrix::mp_multiply(const Matrix &m) const {
             for (unsigned int k = 0; k < this->getCols(); k++) {
                 mpt = MP_MAX(mpt, MP_PLUS(this->get(i, k), m.get(k, j)));
             }
-            res->put(i, j, mpt);
+            res.put(i, j, mpt);
         }
     }
     return res;
@@ -479,7 +482,7 @@ Matrix *Matrix::mp_multiply(const Matrix &m) const {
  * mp_sub()
  * Matrix-matrix subtraction.
  */
-Matrix *Matrix::mp_sub(const Matrix &m) const {
+Matrix Matrix::mp_sub(const Matrix &m) const {
     // Check sizes of the matrices
     if ((m.getRows() != this->getRows()) || (m.getCols() != this->getCols())) {
         throw CException("Matrices are of different size in"
@@ -487,12 +490,12 @@ Matrix *Matrix::mp_sub(const Matrix &m) const {
     }
 
     // Allocate space of the resulting matrix
-    Matrix *res = makeMatrix(this->getRows(), this->getCols());
+    Matrix res(this->getRows(), this->getCols());
 
     // Perform element-wise subtraction
     for (unsigned int i = 0; i < this->getRows(); i++) {
         for (unsigned int j = 0; j < this->getCols(); j++) {
-            res->put(i, j, this->get(i, j) - m.get(i, j));
+            res.put(i, j, this->get(i, j) - m.get(i, j));
         }
     }
     return res;
@@ -502,7 +505,7 @@ Matrix *Matrix::mp_sub(const Matrix &m) const {
  * mp_maximum()
  * Matrix-matrix maximization.
  */
-Matrix *Matrix::mp_maximum(const Matrix &m) const {
+Matrix Matrix::mp_maximum(const Matrix &m) const {
     // Check sizes of the matrices
     if ((m.getRows() != this->getRows()) || (m.getCols() != this->getCols())) {
         throw CException("Matrices are of different size in"
@@ -510,12 +513,12 @@ Matrix *Matrix::mp_maximum(const Matrix &m) const {
     }
 
     // Allocate space of the resulting matrix
-    Matrix *res = makeMatrix(this->getRows(), this->getCols());
+    Matrix res(this->getRows(), this->getCols());
 
     // Perform element-wise subtraction
     for (unsigned int i = 0; i < this->getRows(); i++) {
         for (unsigned int j = 0; j < this->getCols(); j++) {
-            res->put(i, j, MP_MAX(this->get(i, j), m.get(i, j)));
+            res.put(i, j, MP_MAX(this->get(i, j), m.get(i, j)));
         }
     }
     return res;
@@ -524,49 +527,34 @@ Matrix *Matrix::mp_maximum(const Matrix &m) const {
  * mp_power()
  * Raise matrix to a positive integer power >= 1.
  */
-Matrix *Matrix::mp_power(const unsigned int p) const {
-    Matrix *res = nullptr;
+Matrix Matrix::mp_power(const unsigned int p) const {
+
+    // TODO: unused. how to declare variable here and assign in the if else branches?
+    Matrix res(1,1);
 
     // base case p==1
     if (p == 1) {
-        return this->createCopy();
+        return *this;
     }
 
     // check if p is odd
-    if ((p & 1) != 0u) {
-        Matrix *m_pow = this->mp_power(p - 1);
-        res = this->mp_multiply(*m_pow);
-        delete m_pow;
+    if ((p % 2) == 1) {
+        Matrix m_pow = this->mp_power(p - 1);
+        res = this->mp_multiply(m_pow);
     } else { //  p is even
-        Matrix *m_pow = this->mp_power(p >> 1);
-        res = m_pow->mp_multiply(*m_pow);
-        delete m_pow;
+        Matrix m_pow = this->mp_power(p / 2);
+        res = m_pow.mp_multiply(m_pow);
     }
     return res;
 }
 
-/**
- * Matrix copy.
- */
-Matrix *Matrix::createCopy() const {
-    Matrix *newMatrix = makeMatrix(this->getRows(), this->getCols());
-    unsigned int nr_els = this->getRows() * this->getCols();
-    for (unsigned int pos = 0; pos < nr_els; pos++) {
-        newMatrix->table[pos] = this->table[pos];
-    }
-    return newMatrix;
-}
-
-/**
- * Matrix transposed copy.
- */
-Matrix *Matrix::getTransposedCopy() const {
+Matrix Matrix::transpose() const {
     unsigned int MR = this->getCols();
     unsigned int MC = this->getRows();
-    Matrix *newMatrix = makeMatrix(MR, MC);
+    Matrix newMatrix(MR, MC);
     for (unsigned int col = 0; col < MC; col++) {
         for (unsigned int row = 0; row < MR; row++) {
-            newMatrix->put(row, col, this->get(col, row));
+            newMatrix.put(row, col, this->get(col, row));
         }
     }
     return newMatrix;
@@ -575,11 +563,11 @@ Matrix *Matrix::getTransposedCopy() const {
 /**
  * Make sub matrix with indices in list.
  */
-Matrix *Matrix::getSubMatrix(const std::list<unsigned int> &rowIndices,
+Matrix Matrix::getSubMatrix(const std::list<unsigned int> &rowIndices,
                              const std::list<unsigned int> &colIndices) const {
     auto NR = static_cast<unsigned int>(rowIndices.size());
     auto NC = static_cast<unsigned int>(colIndices.size());
-    Matrix *newMatrix = makeMatrix(NR, NC);
+    Matrix newMatrix(NR, NC);
 
     auto rit = rowIndices.begin();
     for (unsigned int r = 0; r < NR; r++, rit++) {
@@ -587,7 +575,7 @@ Matrix *Matrix::getSubMatrix(const std::list<unsigned int> &rowIndices,
         auto cit = colIndices.begin();
         for (unsigned int c = 0; c < NC; c++, cit++) {
             unsigned int ci = (*cit);
-            newMatrix->put(r, c, this->get(ri, ci));
+            newMatrix.put(r, c, this->get(ri, ci));
         }
     }
     return newMatrix;
@@ -596,7 +584,7 @@ Matrix *Matrix::getSubMatrix(const std::list<unsigned int> &rowIndices,
 /**
  * Make sub matrix with indices in list from square matrix
  */
-Matrix *Matrix::getSubMatrix(const std::list<unsigned int> &indices) const {
+Matrix Matrix::getSubMatrix(const std::list<unsigned int> &indices) const {
     assert(this->getRows() == this->getCols());
     return this->getSubMatrix(indices, indices);
 }
@@ -605,15 +593,15 @@ Matrix *Matrix::getSubMatrix(const std::list<unsigned int> &indices) const {
  * Make sub matrix with indices in list for non-square matrix. The new matrix only keeps the columns
  * of the original matrix with the selected indices.
  */
-Matrix *Matrix::getSubMatrixNonSquare(const std::list<unsigned int> &colIndices) const {
+Matrix Matrix::getSubMatrixNonSquare(const std::list<unsigned int> &colIndices) const {
     auto NC = static_cast<unsigned int>(colIndices.size());
-    Matrix *newMatrix = makeMatrix(this->getRows(), NC);
+    Matrix newMatrix(this->getRows(), NC);
 
     for (unsigned int r = 0; r < this->getRows(); r++) {
         auto cit = colIndices.begin();
         for (unsigned int c = 0; c < NC; c++, cit++) {
             unsigned int ci = (*cit);
-            newMatrix->put(r, c, this->get(r, ci));
+            newMatrix.put(r, c, this->get(r, ci));
         }
     }
     return newMatrix;
@@ -622,10 +610,10 @@ Matrix *Matrix::getSubMatrixNonSquare(const std::list<unsigned int> &colIndices)
 /**
  * Matrix addition of scalar.
  */
-Matrix *Matrix::add(MPTime increase) const {
+Matrix Matrix::add(MPTime increase) const {
     unsigned int MR = this->getRows();
     unsigned int MC = this->getCols();
-    Matrix *result = makeMatrix(MR, MC);
+    Matrix result(MR, MC);
 
     this->add(increase, result);
     return result;
@@ -634,16 +622,16 @@ Matrix *Matrix::add(MPTime increase) const {
 /**
  * Matrix addition of scalar with existing result matrix.
  */
-void Matrix::add(MPTime increase, Matrix *result) const {
+void Matrix::add(MPTime increase, Matrix& result) const {
     unsigned int MR = this->getRows();
     unsigned int MC = this->getCols();
-    if ((MR != result->getRows()) || (MC != result->getCols())) {
+    if ((MR != result.getRows()) || (MC != result.getCols())) {
         throw CException("Matrices are of different size in"
                          "Matrix::add(Matrix*, MPTime, Matrix*");
     }
     for (unsigned int r = 0; r < MR; r++) {
         for (unsigned int c = 0; c < MC; c++) {
-            result->put(r, c, this->get(r, c) + increase); // uses MP_PLUS()
+            result.put(r, c, this->get(r, c) + increase); // uses MP_PLUS()
         }
     }
 }
@@ -651,18 +639,18 @@ void Matrix::add(MPTime increase, Matrix *result) const {
 /**
  * Matrix maximum with existing result matrix.
  */
-void Matrix::maximum(const Matrix *matB, Matrix *result) const {
+void Matrix::maximum(const Matrix& matB, Matrix& result) const {
     unsigned int MR = this->getRows();
     unsigned int MC = this->getCols();
-    if ((matB->getRows() != MR) || (matB->getCols() != MC) || (result->getRows() != MR)
-        || (result->getCols() != MC)) {
+    if ((matB.getRows() != MR) || (matB.getCols() != MC) || (result.getRows() != MR)
+        || (result.getCols() != MC)) {
         throw CException("Matrices are of different size in"
                          "Matrix::maximum(Matrix*, Matrix*, Matrix*");
     }
 
     for (unsigned int r = 0; r < MR; r++) {
         for (unsigned int c = 0; c < MC; c++) {
-            result->put(r, c, MP_MAX(this->get(r, c), matB->get(r, c)));
+            result.put(r, c, MP_MAX(this->get(r, c), matB.get(r, c)));
         }
     }
 }
@@ -789,7 +777,7 @@ MPTime Matrix::minimalFiniteElement() const {
 /**
  * Matrix plus closure.
  */
-Matrix *Matrix::plusClosureMatrix(MPTime posCycleThreshold) const {
+Matrix Matrix::plusClosureMatrix(MPTime posCycleThreshold) const {
     // notation: A^(+) = max(A, A^2, ...)
     return Matrix::allPairLongestPathMatrix(posCycleThreshold, false /*implyZeroSelfEdges*/);
 }
@@ -797,7 +785,7 @@ Matrix *Matrix::plusClosureMatrix(MPTime posCycleThreshold) const {
 /**
  * Matrix star closure.
  */
-Matrix *Matrix::starClosureMatrix(MPTime posCycleThreshold) const {
+Matrix Matrix::starClosureMatrix(MPTime posCycleThreshold) const {
     // notation: A^(*) = max(E,A,A^2,...)
     // E - diagonal matrix with 'e'==0 on the diagonal
 
@@ -807,37 +795,37 @@ Matrix *Matrix::starClosureMatrix(MPTime posCycleThreshold) const {
 /**
  * Matrix all pair longest path.
  */
-Matrix *Matrix::allPairLongestPathMatrix(MPTime posCycleThreshold, bool implyZeroSelfEdges) const {
+Matrix Matrix::allPairLongestPathMatrix(MPTime posCycleThreshold, bool implyZeroSelfEdges) const {
     // Floyd-Warshall algorithm
     if (this->getRows() != this->getCols()) {
         throw CException("Matrix must be square in Matrix::allPaiLongestPathMatrix.");
     }
     unsigned int N = this->getRows();
 
-    Matrix *distMat = this->createCopy();
+    Matrix distMat = *this;
 
     // k - intermediate node
     for (unsigned int k = 0; k < N; k++) {
         for (unsigned int u = 0; u < N; u++) {
             for (unsigned int v = 0; v < N; v++) {
                 MPTime extra = (implyZeroSelfEdges && u == v) ? MPTime(0) : MP_MINUSINFINITY;
-                MPTime path_u2v = MP_MAX(distMat->get(v, u), extra);
-                MPTime path_u2k = distMat->get(k, u);
-                MPTime path_k2v = distMat->get(v, k);
+                MPTime path_u2v = MP_MAX(distMat.get(v, u), extra);
+                MPTime path_u2k = distMat.get(k, u);
+                MPTime path_k2v = distMat.get(v, k);
 
                 MPTime path_u2v_candidate = (path_u2k + path_k2v); // uses MP_PLUS()
                 if (path_u2v_candidate > path_u2v) {
                     path_u2v = path_u2v_candidate;
                 }
-                distMat->put(v, u, path_u2v);
+                distMat.put(v, u, path_u2v);
             }
         }
     }
 
     for (unsigned int k = 0; k < N; k++) {
-        if (distMat->get(k, k) > posCycleThreshold) {
+        if (distMat.get(k, k) > posCycleThreshold) {
             CString tmp;
-            distMat->toString(tmp, 1.0e-06);
+            distMat.toString(tmp, 1.0e-06);
             std::cout << tmp << std::endl;
             throw CException("Positive cycle!");
         }
@@ -898,10 +886,6 @@ bool Matrix::allPairLongestPathMatrix(MPTime posCycleThreshold,
     return false;
 }
 
-// factory methods
-Matrix *Matrix::makeMatrix(unsigned int nr_rows, unsigned int nr_cols) const {
-    return new Matrix(nr_rows, nr_cols);
-}
 /**
  * class VectorList
  */
@@ -1065,7 +1049,7 @@ MCMgraph Matrix::mpMatrixToPrecedenceGraph() const {
             std::shared_ptr<MCMedge> e = std::make_shared<MCMedge>(edgeId++, true);
             e->src = nodes[col];
             e->dst = nodes[row];
-            e->w = (CDouble)i;
+            e->w = static_cast<CDouble>(i);
             e->d = 1.0;
 
             // Add the edge to the MCM graph and the src and dst node
@@ -1117,7 +1101,7 @@ Matrix::mp_generalized_eigenvectors() const {
     uint k = 0;
     // for each SCC
     for (auto scci = sccs.cbegin(); scci != sccs.cend(); scci++, k++) {
-        std::shared_ptr<MCMgraph> scc = *scci;
+        const std::shared_ptr<MCMgraph>& scc = *scci;
         sccMapInv[k] = scc;
 
         // MCM calculation requires node relabelling
@@ -1126,7 +1110,7 @@ Matrix::mp_generalized_eigenvectors() const {
 
         if (scc->nrVisibleEdges() > 0) {
             // compute MCM mu and critical node n of scc
-            MCMnode* n = nullptr;
+            const MCMnode *n = nullptr;
             auto mu = MPTime(scc->calculateMaximumCycleMeanKarpDouble(&n));
             criticalNodes.push_back(precGraph.getNode(sccNodeIdMap[n->id]));
             cycleMeans.push_back(mu);
@@ -1136,7 +1120,7 @@ Matrix::mp_generalized_eigenvectors() const {
             cycleMeans.push_back(MP_MINUSINFINITY);
         }
         // for each node in the scc
-        for (auto nn=precGraph.getNodes().begin(); nn != precGraph.getNodes().end(); nn++) {
+        for (auto nn = precGraph.getNodes().begin(); nn != precGraph.getNodes().end(); nn++) {
             auto nnn = precGraph.getNode(sccNodeIdMap[(*nn)->id]);
             // map node to SCC index
             sccMap[nnn] = k;
@@ -1151,7 +1135,7 @@ Matrix::mp_generalized_eigenvectors() const {
 
     for (size_t k = 0; k < sccs.size(); k++) {
         // there is one for each SCC with a cycle mean larger than -inf
-        if (! cycleMeans[k].isMinusInfinity()) {
+        if (!cycleMeans[k].isMinusInfinity()) {
             // eigenvector is formed by normalized longest paths from critical node to all other
             // nodes compute transitive cycle means such that all nodes in SCC k and downstream SCCs
             // get a cycle mean that is the maximum if all (reflexive) upstream SCCs
@@ -1165,7 +1149,7 @@ Matrix::mp_generalized_eigenvectors() const {
             while (change) {
                 change = false;
                 // for all edges in precGraph
-                for (auto i : precGraph.getEdges()) {
+                for (const auto& i : precGraph.getEdges()) {
                     MCMedge &e = *i;
                     if (trCycleMeans[e.src->id] > trCycleMeans[e.dst->id]) {
                         change = true;
@@ -1178,7 +1162,9 @@ Matrix::mp_generalized_eigenvectors() const {
             // compute normalization map replace MP_MINUSINFINITY by -DBL_MAX
             std::map<CId, CDouble> muMap;
             for (unsigned int n = 0; n < trCycleMeans.size(); n++) {
-                muMap[n] = (MPTime(trCycleMeans[n]).isMinusInfinity()) ? -DBL_MAX : static_cast<CDouble>(trCycleMeans[n]);
+                muMap[n] = (MPTime(trCycleMeans[n]).isMinusInfinity())
+                                   ? -DBL_MAX
+                                   : static_cast<CDouble>(trCycleMeans[n]);
             }
 
             // compute normalized longest paths
@@ -1229,43 +1215,4 @@ Matrix::EigenvectorList Matrix::mpEigenvectors() const {
     return gev.first;
 }
 
-void ExtendedMatrix::put(unsigned int row,
-                         unsigned int column,
-                         MPTime value,
-                         std::unordered_set<int> &bs) {
-    this->Matrix::put(row, column, value);
-    this->bufferSets[row * this->getCols() + column] = bs;
-}
-
-Matrix *ExtendedMatrix::getSubMatrix(const std::list<unsigned int> &rowIndices,
-                                     const std::list<unsigned int> &colIndices) const {
-    unsigned int NR = rowIndices.size();
-    unsigned int NC = colIndices.size();
-    Matrix *newMatrix = makeMatrix(NR, NC);
-    auto *newExtendedMatrix = dynamic_cast<ExtendedMatrix *>(newMatrix);
-
-    auto rit = rowIndices.begin();
-    for (unsigned int r = 0; r < NR; r++, rit++) {
-        unsigned int ri = (*rit);
-        auto cit = colIndices.begin();
-        for (unsigned int c = 0; c < NC; c++, cit++) {
-            unsigned int ci = (*cit);
-            std::unordered_set<int> bs = this->getBufferSet(ri, ci);
-            newExtendedMatrix->put(r, c, this->get(ri, ci), bs);
-        }
-    }
-    return newExtendedMatrix;
-}
-
-Matrix *ExtendedMatrix::makeMatrix(unsigned int nr_rows, unsigned int nr_cols) const {
-    return new ExtendedMatrix(nr_rows, nr_cols);
-}
-
-std::unordered_set<int> ExtendedMatrix::getBufferSet(unsigned int row, unsigned int column) const {
-    if ((row >= this->getRows()) || (column >= this->getCols())) {
-        throw CException("Index out of bounds in"
-                         "Matrix::get");
-    }
-    return this->bufferSets[row * this->getCols() + column];
-}
 } // namespace MaxPlus

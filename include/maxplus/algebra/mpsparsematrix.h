@@ -101,7 +101,7 @@ public:
 
     [[nodiscard]] SparseVector add(MPTime increase) const;
 
-    [[nodiscard]] SparseVector maximum(const SparseVector &matB) const;
+    [[nodiscard]] SparseVector maximum(const SparseVector &vecB) const;
 
     [[nodiscard]] SparseVector add(const SparseVector &vecB) const;
 
@@ -184,7 +184,7 @@ public:
     SparseMatrix maximum(const SparseMatrix &M);
 
     SparseMatrix multiply(const SparseMatrix &M);
-    SparseVector multiply(const SparseVector &M);
+    SparseVector multiply(const SparseVector &v);
 
     void compress();
 
@@ -210,9 +210,9 @@ private:
     std::vector<std::pair<unsigned int, SparseVector>> table;
     std::pair<unsigned int, unsigned int> find(unsigned int col);
     void doTranspose();
-    SparseMatrix combine(const SparseMatrix &vecB, MPTime f(MPTime a, MPTime b));
-    Matrix *reduceRows();
-    std::pair<Matrix *, Sizes> reduceRowsAndColumns();
+    SparseMatrix combine(const SparseMatrix &M, MPTime f(MPTime a, MPTime b));
+    Matrix reduceRows();
+    std::pair<Matrix, Sizes> reduceRowsAndColumns();
     static SparseMatrix expand(const Matrix &M, const Sizes &rszs, const Sizes &cszs);
     [[nodiscard]] Sizes sizes() const;
 };

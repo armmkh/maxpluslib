@@ -45,10 +45,10 @@
 #include "ratiogame.h"
 #include <utility>
 
+namespace MaxPlus {
 
 using namespace ::FSM::Labeled;
 
-namespace MaxPlus {
 /**
  * Vector that can store the strategy for both players in the graph. For any
  * vertex in the graph this map contains the unique successor given the current
@@ -60,9 +60,9 @@ namespace MaxPlus {
  */
 template <typename SL, typename EL> class StrategyVector {
 public:
-    StrategyVector(){};
+    StrategyVector()= default;;
 
-    StrategyVector(StrategyVector *vec) {
+    explicit StrategyVector(StrategyVector *vec) {
         std::map<const State<SL, EL> *, const State<SL, EL> *> copy(vec->strategyVector);
         this->strategyVector = copy;
     }
@@ -74,14 +74,12 @@ public:
      *
      * @param graph game graph on which a random strategy is initialized
      */
-    void initializeRandomStrategy(RatioGame<SL, EL> *graph) {
-        SetOfStates<SL, EL>& states = graph->getStates();
-
-        for (auto &it: states) {
+    void initializeRandomStrategy(RatioGame<SL, EL>& graph) {
+        for (auto &it: graph.getStates()) {
             auto& si = *(it.second);
             // Source vertex.
             auto& src = dynamic_cast<State<SL, EL>&>(si);
-            auto& es = dynamic_cast<const FSM::Abstract::SetOfEdgeRefs&>(src.getOutgoingEdges());
+            const auto& es = dynamic_cast<const FSM::Abstract::SetOfEdgeRefs&>(src.getOutgoingEdges());
 
             // Find the first outgoing edge, and get the target.
             auto *e = dynamic_cast<Edge<SL, EL> *>(*es.begin());

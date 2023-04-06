@@ -144,7 +144,6 @@ public:
 
     // access the outgoing edges
     [[nodiscard]] virtual const SetOfEdgeRefs &getOutgoingEdges() const {
-        std::cout << "Checkpoint getOutgoingEdgesB" << std::endl;
         return this->outgoingEdges;
     }
 
@@ -277,7 +276,7 @@ public:
                 dfsStack.pop_back();
             } else {
                 // goto next edge
-                auto e = *(si.getIter());
+                auto *e = *(si.getIter());
                 si.advance();
                 bool revisit = visitedStates.includesState(&(e->getDestination()));
                 if (revisit) {
@@ -327,8 +326,7 @@ public:
     Edge(State<StateLabelType, EdgeLabelType> &src,
          EdgeLabelType &lbl,
          State<StateLabelType, EdgeLabelType> &dst) :
-        Abstract::Edge(src, dst) {
-        this->label = lbl;
+        Abstract::Edge(src, dst), label(lbl) {
     }
 
     EdgeLabelType label;
@@ -386,7 +384,7 @@ public:
         auto result = std::make_shared<Abstract::SetOfStateRefs>();
         auto es = static_cast<const Abstract::SetOfEdgeRefs &>(
                 this->getOutgoingEdges());
-        for (auto& i: es) {
+        for (const auto& i: es) {
             auto *e = static_cast<Edge<StateLabelType, EdgeLabelType> *>(i);
             if (e->label == l) {
                 result->insert(&(e->getDestination()));
@@ -400,7 +398,7 @@ public:
     State<StateLabelType, EdgeLabelType> *nextStateOfEdgeLabel(const EdgeLabelType l) {
         auto es = static_cast<const Abstract::SetOfEdgeRefs &>(
                 this->getOutgoingEdges());
-        for (auto& i: es) {
+        for (const auto& i: es) {
             Edge<StateLabelType, EdgeLabelType> *e = i;
             if (e->label == l) {
                 return e->getDestination();
@@ -464,7 +462,7 @@ public:
                 edgesToRemove.insert(&e);
             }
         }
-        for (auto e: edgesToRemove) {
+        for (auto *e: edgesToRemove) {
             this->removeEdge(dynamic_cast<const Edge<StateLabelType, EdgeLabelType>&>(*e));
         }
         this->states.remove(s);
@@ -526,7 +524,7 @@ public:
                 source.getOutgoingEdges());
 
         // collect all labels in edges of s
-        for (auto& i : e) {
+        for (const auto& i : e) {
             auto edge = dynamic_cast<Edge<StateLabelType, EdgeLabelType> *>(i);
             if (target == edge->getDestination()) {
                 return edge;
@@ -575,11 +573,11 @@ public:
             if (s->stateLabel == src) {
                 State<StateLabelType, EdgeLabelType> &srcState = this->getStateLabeled(src);
 
-                const Abstract::SetOfEdgeRefs &outgoingEdges =
+                const auto &outgoingEdges =
                         static_cast<const Abstract::SetOfEdgeRefs &>(
                                 srcState.getOutgoingEdges());
 
-                for (auto& it : outgoingEdges) {
+                for (const auto& it : outgoingEdges) {
                     auto e = dynamic_cast<const Edge<StateLabelType, EdgeLabelType> *>(it);
                     auto dstState = e->getDestination();
                     if (e->label == lbl && dstState->getLabel() == dst) {
@@ -646,8 +644,8 @@ public:
                             s.nextStatesOfEdgeLabel(l);
 
                     // add all l-images from s to Qnext
-                    for (auto& k : *l_img) {
-                        auto *simg = k;
+                    for (const auto& k : *l_img) {
+                        const auto *simg = k;
                         Qnext->insert(simg);
                     }
                 }
@@ -923,7 +921,7 @@ private:
     Abstract::State *sa;
     Abstract::State *sb;
     const FiniteStateMachine *fsm;
-    bool outgoingEdgesDone;
+    bool outgoingEdgesDone{};
 };
 
 class FiniteStateMachine : public Abstract::FiniteStateMachine {

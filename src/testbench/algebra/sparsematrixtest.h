@@ -5,16 +5,14 @@
 #include "algebra/mpsparsematrix.h"
 #include "testing.h"
 
-using namespace MaxPlus;
-
 class SparseMatrixTest : public ::testing::Test {
 
 public:
-    SparseMatrixTest() {}
+    SparseMatrixTest() = default;
 
-    virtual void SetUp(){};
-    virtual void TearDown(){};
-    virtual void Run(void);
+     void SetUp() override{};
+     void TearDown() override{};
+     void Run() override;
 
     int test_Vectors();
     int test_StarClosure();
