@@ -49,6 +49,8 @@
 
 using namespace Graphs;
 
+#define DEFAULT_SCALE 1.0e-06
+
 namespace MaxPlus {
 
 /**
@@ -529,9 +531,6 @@ Matrix Matrix::mp_maximum(const Matrix &m) const {
  */
 Matrix Matrix::mp_power(const unsigned int p) const {
 
-    // TODO: unused. how to declare variable here and assign in the if else branches?
-    Matrix res(1,1);
-
     // base case p==1
     if (p == 1) {
         return *this;
@@ -540,12 +539,11 @@ Matrix Matrix::mp_power(const unsigned int p) const {
     // check if p is odd
     if ((p % 2) == 1) {
         Matrix m_pow = this->mp_power(p - 1);
-        res = this->mp_multiply(m_pow);
-    } else { //  p is even
-        Matrix m_pow = this->mp_power(p / 2);
-        res = m_pow.mp_multiply(m_pow);
-    }
-    return res;
+        return this->mp_multiply(m_pow);
+    } 
+    //  p is even
+    Matrix m_pow = this->mp_power(p / 2);
+    return m_pow.mp_multiply(m_pow);
 }
 
 Matrix Matrix::transpose() const {
@@ -564,7 +562,7 @@ Matrix Matrix::transpose() const {
  * Make sub matrix with indices in list.
  */
 Matrix Matrix::getSubMatrix(const std::list<unsigned int> &rowIndices,
-                             const std::list<unsigned int> &colIndices) const {
+                            const std::list<unsigned int> &colIndices) const {
     auto NR = static_cast<unsigned int>(rowIndices.size());
     auto NC = static_cast<unsigned int>(colIndices.size());
     Matrix newMatrix(NR, NC);
@@ -622,7 +620,7 @@ Matrix Matrix::add(MPTime increase) const {
 /**
  * Matrix addition of scalar with existing result matrix.
  */
-void Matrix::add(MPTime increase, Matrix& result) const {
+void Matrix::add(MPTime increase, Matrix &result) const {
     unsigned int MR = this->getRows();
     unsigned int MC = this->getCols();
     if ((MR != result.getRows()) || (MC != result.getCols())) {
@@ -639,7 +637,7 @@ void Matrix::add(MPTime increase, Matrix& result) const {
 /**
  * Matrix maximum with existing result matrix.
  */
-void Matrix::maximum(const Matrix& matB, Matrix& result) const {
+void Matrix::maximum(const Matrix &matB, Matrix &result) const {
     unsigned int MR = this->getRows();
     unsigned int MC = this->getCols();
     if ((matB.getRows() != MR) || (matB.getCols() != MC) || (result.getRows() != MR)
@@ -825,7 +823,7 @@ Matrix Matrix::allPairLongestPathMatrix(MPTime posCycleThreshold, bool implyZero
     for (unsigned int k = 0; k < N; k++) {
         if (distMat.get(k, k) > posCycleThreshold) {
             CString tmp;
-            distMat.toString(tmp, 1.0e-06);
+            distMat.toString(tmp, DEFAULT_SCALE);
             std::cout << tmp << std::endl;
             throw CException("Positive cycle!");
         }
@@ -965,17 +963,16 @@ CDouble Matrix::mp_eigenvalue() const {
     std::shared_ptr<MCMgraph> mcmGraph = std::make_shared<MCMgraph>();
 
     // store vector of nodes
-    std::vector<std::shared_ptr<MCMnode>> nodes(sz);
+    std::vector<MCMnode *> nodes(sz);
 
     // Generate ids by counting
     CId id = 0;
     for (uint i = 0; i != sz; i++) {
         // Create an MCM node for this state
-        std::shared_ptr<MCMnode> n = std::make_shared<MCMnode>(id, true);
-        id++;
 
         // Add the node to the MCM graph
-        mcmGraph->addNode(n);
+        MCMnode *n = mcmGraph->addNode(id, true);
+        id++;
         nodes[i] = n;
     }
 
@@ -986,14 +983,8 @@ CDouble Matrix::mp_eigenvalue() const {
     uint col = 0;
     std::vector<MPTime>::const_iterator i;
     for (i = this->table.begin(); i != this->table.end(); i++) {
-        std::shared_ptr<MCMedge> e = std::make_shared<MCMedge>(edgeId++, true);
-        e->src = nodes[col];
-        e->dst = nodes[row];
-        e->w = static_cast<CDouble>(*i);
-        e->d = 1.0;
-
         // Add the edge to the MCM graph and the src and dst node
-        mcmGraph->addEdge(e);
+        mcmGraph->addEdge(edgeId, *nodes[col], *nodes[row], static_cast<CDouble>(*i), 1.0, true);
         edgeId++;
 
         col++;
@@ -1025,17 +1016,14 @@ MCMgraph Matrix::mpMatrixToPrecedenceGraph() const {
     MCMgraph precGraph;
 
     // store vector of nodes
-    std::vector<std::shared_ptr<MCMnode>> nodes(sz);
+    std::vector<MCMnode *> nodes(sz);
 
     // Generate ids by counting
     CId id = 0;
     for (uint i = 0; i != sz; i++) {
         // Create an MCM node for state element i
-        std::shared_ptr<MCMnode> n = std::make_shared<MCMnode>(id, true);
+        MCMnode *n = precGraph.addNode(id, true);
         id++;
-
-        // Add the node to the MCM graph
-        precGraph.addNode(n);
         nodes[i] = n;
     }
 
@@ -1046,14 +1034,8 @@ MCMgraph Matrix::mpMatrixToPrecedenceGraph() const {
     for (auto i : this->table) {
         // add edge is the value is not minus infinity
         if (!i.isMinusInfinity()) {
-            std::shared_ptr<MCMedge> e = std::make_shared<MCMedge>(edgeId++, true);
-            e->src = nodes[col];
-            e->dst = nodes[row];
-            e->w = static_cast<CDouble>(i);
-            e->d = 1.0;
-
             // Add the edge to the MCM graph and the src and dst node
-            precGraph.addEdge(e);
+            precGraph.addEdge(edgeId, *nodes[col], *nodes[row], static_cast<CDouble>(i), 1.0, true);
             edgeId++;
         }
         // update row and col
@@ -1083,16 +1065,16 @@ Matrix::mp_generalized_eigenvectors() const {
     stronglyConnectedMCMgraph(precGraph, sccs, true);
 
     // map from number of SCC to SCC
-    std::map<uint, std::shared_ptr<MCMgraph>> sccMapInv;
+    std::map<uint, MCMgraph *> sccMapInv;
 
     // map from node of precGraph to its SCC
-    std::map<std::shared_ptr<MCMnode>, uint> sccMap;
+    std::map<MCMnode *, uint> sccMap;
 
     // map from nodes of precGraph to the cycle mean of its SCC
-    std::map<std::shared_ptr<MCMnode>, MPTime> cycleMeansMap;
+    std::map<MCMnode *, MPTime> cycleMeansMap;
 
     // vector such that element k is a node from precGraph in the critical path of SCC k
-    std::vector<std::shared_ptr<MCMnode>> criticalNodes;
+    std::vector<MCMnode *> criticalNodes;
 
     // vector such that element k is the maximum cycle mean of SCC k
     std::vector<MPTime> cycleMeans;
@@ -1101,8 +1083,8 @@ Matrix::mp_generalized_eigenvectors() const {
     uint k = 0;
     // for each SCC
     for (auto scci = sccs.cbegin(); scci != sccs.cend(); scci++, k++) {
-        const std::shared_ptr<MCMgraph>& scc = *scci;
-        sccMapInv[k] = scc;
+        const std::shared_ptr<MCMgraph> &scc = *scci;
+        sccMapInv[k] = scc.get();
 
         // MCM calculation requires node relabelling
         std::map<int, int> sccNodeIdMap;
@@ -1120,8 +1102,8 @@ Matrix::mp_generalized_eigenvectors() const {
             cycleMeans.push_back(MP_MINUSINFINITY);
         }
         // for each node in the scc
-        for (auto nn = precGraph.getNodes().begin(); nn != precGraph.getNodes().end(); nn++) {
-            auto nnn = precGraph.getNode(sccNodeIdMap[(*nn)->id]);
+        for (auto &nn : precGraph.getNodes()) {
+            MCMnode *nnn = precGraph.getNode(sccNodeIdMap[nn.id]);
             // map node to SCC index
             sccMap[nnn] = k;
             // map node to the cycle mean of its SCC
@@ -1149,8 +1131,7 @@ Matrix::mp_generalized_eigenvectors() const {
             while (change) {
                 change = false;
                 // for all edges in precGraph
-                for (const auto& i : precGraph.getEdges()) {
-                    MCMedge &e = *i;
+                for (const auto &e : precGraph.getEdges()) {
                     if (trCycleMeans[e.src->id] > trCycleMeans[e.dst->id]) {
                         change = true;
                         trCycleMeans[e.dst->id] =
@@ -1185,9 +1166,7 @@ Matrix::mp_generalized_eigenvectors() const {
             MPTime lambda = MP_MINUSINFINITY;
             Vector ev(this->getCols());
             int l = 0;
-            for (auto i = precGraph.getNodes().cbegin(); i != precGraph.getNodes().cend();
-                 i++, l++) {
-                const MCMnode &n = **i;
+            for (auto &n : precGraph.getNodes()) {
                 if (lambda == MP_MINUSINFINITY) {
                     lambda = trCycleMeans[n.id];
                 } else {
@@ -1197,6 +1176,7 @@ Matrix::mp_generalized_eigenvectors() const {
                     }
                 }
                 ev.put(l, trCycleMeans[n.id]);
+                l++;
             }
 
             if (isGeneralized) {

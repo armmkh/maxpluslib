@@ -41,16 +41,15 @@
 #include "base/string/cstring.h"
 #include <algorithm>
 #include <cctype>
+#include <cstdio>
 #include <regex>
 #include <sstream>
-#include <stdio.h>
-
 
 /**
  * CString ()
  * Constructor.
  */
-CString::CString() : std::string() {}
+CString::CString() = default;
 
 /**
  * CString ()
@@ -74,13 +73,13 @@ CString::CString(const std::string &s) : std::string(s) {}
  * CString ()
  * Constructor.
  */
-CString::CString(const CString &s) : std::string(s) {}
+CString::CString(const CString &s) = default;
 
 /**
  * CString ()
  * Constructor.
  */
-CString::CString(const int n) : std::string() {
+CString::CString(const int n) {
     char str[32];
     sprintf(&str[0], "%i", n);
     append(std::string(str));
@@ -90,7 +89,7 @@ CString::CString(const int n) : std::string() {
  * CString ()
  * Constructor.
  */
-CString::CString(const unsigned int n) : std::string() {
+CString::CString(const unsigned int n) {
     char str[32];
     sprintf(&str[0], "%u", n);
     append(std::string(str));
@@ -100,7 +99,7 @@ CString::CString(const unsigned int n) : std::string() {
  * CString ()
  * Constructor.
  */
-CString::CString(const long int n) : std::string() {
+CString::CString(const long int n) {
     char str[32];
     sprintf(&str[0], "%ld", n);
     append(std::string(str));
@@ -110,7 +109,7 @@ CString::CString(const long int n) : std::string() {
  * CString ()
  * Constructor.
  */
-CString::CString(const unsigned long int n) : std::string() {
+CString::CString(const unsigned long int n) {
     char str[32];
     sprintf(&str[0], "%ld", n);
     append(std::string(str));
@@ -120,7 +119,7 @@ CString::CString(const unsigned long int n) : std::string() {
  * CString ()
  * Constructor.
  */
-CString::CString(const long long int n) : std::string() {
+CString::CString(const long long int n) {
     char str[32];
     sprintf(&str[0], "%lld", n);
     append(std::string(str));
@@ -130,7 +129,7 @@ CString::CString(const long long int n) : std::string() {
  * CString ()
  * Constructor.
  */
-CString::CString(const unsigned long long int n) : std::string() {
+CString::CString(const unsigned long long int n) {
     char str[32];
     sprintf(&str[0], "%lld", n);
     append(std::string(str));
@@ -140,7 +139,7 @@ CString::CString(const unsigned long long int n) : std::string() {
  * CString ()
  * Constructor.
  */
-CString::CString(const CDouble n) : std::string() {
+CString::CString(const CDouble n) {
     char str[32];
     sprintf(&str[0], "%g", n);
     append(std::string(str));
@@ -150,7 +149,7 @@ CString::CString(const CDouble n) : std::string() {
  * ~CString ()
  * Destructor.
  */
-CString::~CString() {}
+CString::~CString() = default;
 
 /**
  * operator+= ()
@@ -246,31 +245,31 @@ CString::operator const char *() const { return c_str(); }
  * operator int ()
  * Type conversion to integer.
  */
-CString::operator int() const { return strtol(c_str(), NULL, 0); }
+CString::operator int() const { return strtol(c_str(), nullptr, 0); }
 
 /**
  * operator uint ()
  * Type conversion to unsigned integer.
  */
-CString::operator uint() const { return strtoul(c_str(), NULL, 0); }
+CString::operator uint() const { return strtoul(c_str(), nullptr, 0); }
 
 /**
  * operator CDouble ()
  * Type conversion to CDouble.
  */
-CString::operator CDouble() const { return strtod(c_str(), NULL); }
+CString::operator CDouble() const { return strtod(c_str(), nullptr); }
 
 /**
  * operator long ()
  * Type conversion to long.
  */
-CString::operator long() const { return strtol(c_str(), NULL, 0); }
+CString::operator long() const { return strtol(c_str(), nullptr, 0); }
 
 /**
  * operator unsigned long ()
  * Type conversion to unsigned long.
  */
-CString::operator unsigned long() const { return strtoul(c_str(), NULL, 0); }
+CString::operator unsigned long() const { return strtoul(c_str(), nullptr, 0); }
 
 /**
  * operator long long ()
@@ -278,9 +277,9 @@ CString::operator unsigned long() const { return strtoul(c_str(), NULL, 0); }
  */
 CString::operator long long() const {
 #ifdef _MSC_VER
-    return _strtoi64(c_str(), NULL, 0);
+    return _strtoi64(c_str(), nullptr, 0);
 #else
-    return strtoll(c_str(), NULL, 0);
+    return strtoll(c_str(), nullptr, 0);
 #endif
 }
 
@@ -291,9 +290,9 @@ CString::operator long long() const {
 
 CString::operator unsigned long long() const {
 #ifdef _MSC_VER
-    return _strtoui64(c_str(), NULL, 0);
+    return _strtoui64(c_str(), nullptr, 0);
 #else
-    return strtoull(c_str(), NULL, 0);
+    return strtoull(c_str(), nullptr, 0);
 #endif
 }
 
@@ -317,13 +316,15 @@ CString &CString::ltrim() {
     CString::size_type startPos = 0;
 
     // Find first non-whitespace character in the string (from left)
-    while (startPos < length() && isspace(at(startPos)))
+    while (startPos < length() && (isspace(at(startPos)) != 0)) {
         startPos++;
+    }
 
-    if (startPos == length())
+    if (startPos == length()) {
         assign("");
-    else
+    } else {
         assign(substr(startPos, length()));
+    }
     return *this;
 }
 
@@ -335,13 +336,15 @@ CString &CString::rtrim() {
     CString::size_type endPos = length() - 1;
 
     // Find first non-whitespace character in the string (from right)
-    while (endPos < length() && isspace(at(endPos)))
+    while (endPos < length() && (isspace(at(endPos)) != 0)) {
         endPos--;
+    }
 
-    if (endPos > length())
+    if (endPos > length()) {
         assign("");
-    else
+    } else {
         assign(substr(0, endPos + 1));
+    }
 
     return *this;
 }
@@ -352,7 +355,8 @@ CString &CString::rtrim() {
  */
 CStrings CString::split(const char delim) const {
     CStrings strings;
-    CString::size_type curDelim, nextDelim = 0;
+    CString::size_type curDelim = 0;
+    CString::size_type nextDelim = 0;
 
     do {
         // Position the delimiters
@@ -360,12 +364,14 @@ CStrings CString::split(const char delim) const {
         nextDelim = find(delim, curDelim);
 
         // Add substring to list
-        if (nextDelim >= curDelim && curDelim != length())
-            strings.push_back(substr(curDelim, (nextDelim - curDelim)));
+        if (nextDelim >= curDelim && curDelim != length()) {
+            strings.push_back(CString(substr(curDelim, (nextDelim - curDelim))));
+        }
 
         // Advance nextDelim position to always make progress
-        if (nextDelim != CString::npos)
+        if (nextDelim != CString::npos) {
             nextDelim++;
+        }
     } while (nextDelim != CString::npos);
 
     return strings;
@@ -375,13 +381,14 @@ CStrings CString::split(const char delim) const {
  * join ()
  * Join the list of strings delimited with delim character
  */
-CString CString::join(const CStrings strl, const char delim) {
+CString CString::join(const CStrings &strl, const char delim) {
     CString res = "";
     CStrings::const_iterator si;
     bool first = true;
     for (si = strl.begin(); si != strl.end(); si++) {
-        if (!first)
+        if (!first) {
             res += delim;
+        }
         res += (*si);
         first = false;
     }
@@ -392,13 +399,14 @@ CString CString::join(const CStrings strl, const char delim) {
  * join ()
  * Join the list of strings delimited with delim character
  */
-CString CString::join(const CStrings strl, const CString delim) {
+CString CString::join(const CStrings &strl, const CString &delim) {
     CString res = "";
     CStrings::const_iterator si;
     bool first = true;
     for (si = strl.begin(); si != strl.end(); si++) {
-        if (!first)
+        if (!first) {
             res += delim;
+        }
         res += (*si);
         first = false;
     }
@@ -419,8 +427,9 @@ CString::replace(const CString &s1, const CString &s2, const size_type sPos, con
         std::string::replace(pos, s1.size(), s2.c_str());
         nrReplaced++;
 
-        if (n > 0 && nrReplaced == n)
+        if (n > 0 && nrReplaced == n) {
             break;
+        }
     }
 
     return *this;
@@ -431,13 +440,13 @@ CString::replace(const CString &s1, const CString &s2, const size_type sPos, con
  * The function returns true if the character is a valid token, else
  * the function returns false.
  */
-bool isTok(const char c, const char *tok) { return (strchr(tok, c) != NULL); }
+bool isTok(const char c, const char *tok) { return (strchr(tok, c) != nullptr); }
 
 /**
  * stringTok ()
  * Split a string into tokens using the given token delimiter.
  */
-void stringTok(CStrings &l, const CString &str, const char *tok) {
+void stringTok(CStrings &l, CString &str, const char *tok) {
     const CString::size_type S = str.size();
     CString::size_type i = 0;
 
@@ -447,18 +456,21 @@ void stringTok(CStrings &l, const CString &str, const char *tok) {
     // Split string
     while (i < S) {
         // eat leading whitespace
-        while ((i < S) && (isTok(str[i], tok)))
+        while ((i < S) && (isTok(str[i], tok))) {
             ++i;
-        if (i == S)
+        }
+        if (i == S) {
             return; // nothing left but WS
+        }
 
         // find end of word
         CString::size_type j = i + 1;
-        while ((j < S) && (!isTok(str[j], tok)))
+        while ((j < S) && (!isTok(str[j], tok))) {
             ++j;
+        }
 
         // add word
-        l.push_back(str.substr(i, j - i));
+        l.push_back(CString(str.substr(i, j - i)));
 
         // set up for next loop
         i = j + 1;
@@ -471,7 +483,7 @@ void stringTok(CStrings &l, const CString &str, const char *tok) {
  */
 CString &CString::toLower() {
     CString s = *this;
-    std::transform(s.begin(), s.end(), s.begin(), (int (*)(int))std::tolower);
+    std::transform(s.begin(), s.end(), s.begin(), static_cast<int (*)(int)>(std::tolower));
     assign(s);
 
     return *this;
@@ -483,7 +495,7 @@ CString &CString::toLower() {
  */
 CString &CString::toUpper() {
     CString s = *this;
-    std::transform(s.begin(), s.end(), s.begin(), (int (*)(int))std::toupper);
+    std::transform(s.begin(), s.end(), s.begin(), static_cast<int (*)(int)>(std::toupper));
     assign(s);
 
     return *this;
@@ -501,8 +513,9 @@ bool CString::isNNInteger() {
     CString::size_type pos = 0;
 
     // Find first non-whitespace and non-digit character in the string
-    while (pos < length() && (isspace(at(pos)) || isdigit(at(pos))))
+    while (pos < length() && ((isspace(at(pos)) != 0) || (isdigit(at(pos)) != 0))) {
         pos++;
+    }
 
     // If we didn't find any, the string is a non-negative integer
     return pos == length();
@@ -514,7 +527,7 @@ bool CString::isNNInteger() {
 CString CString::regexReplace(const CString &regex, const CString &replace) {
     try {
         std::regex pattern(regex);
-        CString res = regex_replace(*this, pattern, std::string(replace));
+        CString res = CString(regex_replace(*this, pattern, std::string(replace)));
         return res;
     } catch (std::runtime_error &e) {
         /// @todo add CExceptions to string class?
@@ -541,7 +554,7 @@ CString CString::regexReplaceMultiLine(const CString &regex, const CString &repl
             result << res << '\n';
         }
 
-        return result.str();
+        return CString(result.str());
     } catch (std::runtime_error &e) {
         /// @todo add CExceptions to string class?
         std::cout << "Failed regex: " << e.what() << std::endl;

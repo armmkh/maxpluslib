@@ -66,11 +66,11 @@ public:
 
     explicit CFraction(CString &f) {
         if (f.find('/') == CString::npos) {
-            num = f;
+            num = std::int64_t(f);
             den = 1;
         } else {
-            num = CString(f.substr(0, f.find('/')));
-            den = CString(f.substr(f.find('/') + 1));
+            num = std::int64_t(CString(f.substr(0, f.find('/'))));
+            den = std::int64_t(CString(f.substr(f.find('/') + 1)));
         }
         val = static_cast<CDouble>(num) / static_cast<CDouble>(den);
     };

@@ -42,8 +42,8 @@
 #ifndef BASE_BASIC_TYPES_H_INCLUDED
 #define BASE_BASIC_TYPES_H_INCLUDED
 
+#include <cassert>
 #include <cfloat>
-#include <assert.h>
 
 
 /* STL functionality */

@@ -52,13 +52,16 @@ class MCMnode;
 class MCMedge {
 public:
     // Constructor
-    MCMedge(CId eId, MCMnode &src, MCMnode &dst, bool eVisible);
+    MCMedge(CId eId, MCMnode &src, MCMnode &dst, CDouble w, CDouble d, bool eVisible);
     CId id;
     bool visible;
     MCMnode *src;
     MCMnode *dst;
     CDouble w;
     CDouble d;
+    bool operator==(const MCMedge& e) const {
+        return this->id == e.id;
+    }
 };
 
 using MCMedges = std::list<MCMedge>;
@@ -72,14 +75,17 @@ public:
     bool visible;
     MCMedgeRefs in;
     MCMedgeRefs out;
+    bool operator==(const MCMnode& n) const {
+        return this->id == n.id;
+    }
 };
 
-// struct MCMNodeLess {
-//     bool operator()(std::shared_ptr<MCMnode> const &lhs,
-//                     std::shared_ptr<MCMnode> const &rhs) const {
-//         return lhs->id < rhs->id;
-//     };
-// };
+struct MCMNodeLess {
+    bool operator()(const MCMnode* const &lhs,
+                    const MCMnode* const &rhs) const {
+        return lhs->id < rhs->id;
+    };
+};
 
 using MCMnodes = std::list<MCMnode>;
 using MCMnodeRefs = std::list<MCMnode *>;
@@ -99,7 +105,9 @@ public:
     MCMgraph &operator=(MCMgraph &&) = delete;
     MCMgraph &operator=(const MCMgraph &other) = delete;
 
-    [[nodiscard]] const MCMnodes &getNodes() const { return nodes; };
+    [[nodiscard]] MCMnodes &getNodes() { return nodes; };
+    [[nodiscard]] MCMnodeRefs getNodeRefs();
+    [[nodiscard]] MCMedgeRefs getEdgeRefs();
 
     [[nodiscard]] uint nrVisibleNodes() const {
         uint nrNodes = 0;
@@ -119,7 +127,7 @@ public:
         return nullptr;
     };
 
-    [[nodiscard]] const MCMedges &getEdges() const { return edges; };
+    [[nodiscard]] MCMedges &getEdges() { return edges; };
 
     MCMedge *getEdge(CId id) {
         for (auto &edge : edges) {
@@ -169,17 +177,12 @@ public:
         while (!n.out.empty()) {
             this->removeEdge(**(n.out.begin()));
         }
-
         this->nodes.remove(n);
     }
 
     // Add an edge to the MCMgraph.
-    MCMedge *addEdge(CId id, MCMnode &src, MCMnode &dst, CDouble w, CDouble d) {
-        MCMedge& e = this->edges.emplace_back(id, true);
-        e.src = &src;
-        e.dst = &dst;
-        e.w = w;
-        e.d = d;
+    MCMedge *addEdge(CId id, MCMnode &src, MCMnode &dst, CDouble w, CDouble d, bool visible = true) {
+        MCMedge& e = this->edges.emplace_back(id, src, dst, w, d, visible);
         src.out.push_back(&e);
         dst.in.push_back(&e);
         return &e;
@@ -202,12 +205,12 @@ public:
     // Note this algorithm does currently not distinguish visible and invisible edges!
     std::shared_ptr<MCMgraph> pruneEdges();
 
-    [[nodiscard]] CDouble calculateMaximumCycleMeanKarp() const;
+    [[nodiscard]] CDouble calculateMaximumCycleMeanKarp();
     [[nodiscard]] CDouble
-    calculateMaximumCycleMeanKarpDouble(const MCMnode **criticalNode = nullptr) const;
+    calculateMaximumCycleMeanKarpDouble(const MCMnode **criticalNode = nullptr);
 
     [[nodiscard]] CDouble calculateMaximumCycleRatioAndCriticalCycleYoungTarjanOrlin(
-            std::shared_ptr<std::vector<MCMedge*>> *cycle = nullptr) const;
+            std::shared_ptr<std::vector<const MCMedge*>> *cycle = nullptr);
 
     [[nodiscard]] std::shared_ptr<MCMgraph> normalize(CDouble mu) const;
     [[nodiscard]] std::shared_ptr<MCMgraph> normalize(const std::map<CId, CDouble> &mu) const;
@@ -238,7 +241,7 @@ using MCMgraphsIter = MCMgraphs::iterator;
  * MCM algorithms work also on this graph (which reduces the execution time
  * needed in some of the conversion algorithms).
  */
-void stronglyConnectedMCMgraph(const MCMgraph &g,
+void stronglyConnectedMCMgraph(MCMgraph &g,
                                MCMgraphs &components,
                                bool includeComponentsWithoutEdges = false);
 
@@ -253,7 +256,7 @@ void relabelMCMgraph(std::shared_ptr<MCMgraph> g);
  * addLongestDelayEdgesToMCMgraph ()
  * The function adds additional edges to the graph which express the
  * longest path between two nodes crossing one edge with a delay. Edges
- * with no delay are removed and edges with more then one delay element
+ * with no delay are removed and edges with more than one delay element
  * are converted into a sequence of edges with one delay element.
  */
 void addLongestDelayEdgesToMCMgraph(std::shared_ptr<MCMgraph> g);

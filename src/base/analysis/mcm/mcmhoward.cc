@@ -479,7 +479,7 @@ void Howard(const std::vector<int> &ij,
  * The function converts a weighted directed graph used in the MCM algorithms
  * to a sparse matrix input for Howard's algorithm.
  */
-void convertMCMgraphToMatrix(const MCMgraph &g,
+void convertMCMgraphToMatrix(MCMgraph &g,
                              std::shared_ptr<std::vector<int>> *ij,
                              std::shared_ptr<std::vector<CDouble>> *A) {
     int k = 0;
@@ -489,7 +489,7 @@ void convertMCMgraphToMatrix(const MCMgraph &g,
 
     // Re-map the id of all visible nodes back to the range [0, g->nrNodes())
     for (const auto &n : g.getNodes()) {
-        if (n->visible) {
+        if (n.visible) {
             mapId[i] = j;
             j++;
         }
@@ -504,10 +504,10 @@ void convertMCMgraphToMatrix(const MCMgraph &g,
     // Create an entry in the matrices for each edge
     for (const auto &e : g.getEdges()) {
         // Is the edge a existing edge in the graph?
-        if (e->visible) {
-            ijr[2 * k] = mapId[e->src->id];
-            ijr[2 * k + 1] = mapId[e->dst->id];
-            Ar[k] = e->w;
+        if (e.visible) {
+            ijr[2 * k] = mapId[e.src->id];
+            ijr[2 * k + 1] = mapId[e.dst->id];
+            Ar[k] = e.w;
 
             // Next edge
             k++;

@@ -64,7 +64,7 @@ namespace Graphs {
  *
  * len    - number of elements of "cycle"
  */
-CDouble maximumCycleMeanKarp(const MCMgraph &mcmGraph) {
+CDouble maximumCycleMeanKarp(MCMgraph &mcmGraph) {
     std::shared_ptr<MCMnode> u;
 
     // Allocate memory d[n+1][n]
@@ -86,20 +86,19 @@ CDouble maximumCycleMeanKarp(const MCMgraph &mcmGraph) {
     // Compute the distances
     for (int k = 1; k < n + 1; k++) {
         for (const auto& v : mcmGraph.getNodes()) {
-             for (auto e = v->in.begin(); e != v->in.end(); e++) {
-                std::shared_ptr<MCMnode> u = (*e)->src;
-                d[k][v->id] = MAX(d[k][v->id], d[k - 1][u->id] + ((int)(*e)->w));
+             for (auto e = v.in.begin(); e != v.in.end(); e++) {
+                MCMnode* u = (*e)->src;
+                d[k][v.id] = MAX(d[k][v.id], d[k - 1][u->id] + ((int)(*e)->w));
             }
         }
     }
 
     // Compute lambda using Karp's theorem
     CDouble l = -INT_MAX;
-    for (const auto & iter : mcmGraph.getNodes()) {
-        u = iter;
+    for (const auto & u : mcmGraph.getNodes()) {
         CDouble ld = INT_MAX;
         for (int k = 0; k < n; k++) {
-            ld = MIN(ld, (CDouble)(d[n][u->id] - d[k][u->id]) / (CDouble)(n - k));
+            ld = MIN(ld, (CDouble)(d[n][u.id] - d[k][u.id]) / (CDouble)(n - k));
         }
         l = MAX(l, ld);
     }
@@ -118,10 +117,10 @@ CDouble maximumCycleMeanKarp(const MCMgraph &mcmGraph) {
  * A critical node is only returned if criticalNode is not nullptr.
  */
 
-CDouble maximumCycleMeanKarpDouble(const MCMgraph &mcmGraph, const MCMnode **criticalNode = nullptr) {
+CDouble maximumCycleMeanKarpDouble(MCMgraph &mcmGraph, const MCMnode **criticalNode = nullptr) {
 
     // Allocate memory d[n+1][n]
-    int n = mcmGraph.nrVisibleNodes();
+    unsigned int n = mcmGraph.nrVisibleNodes();
     auto d = std::vector<std::vector<CDouble>>(n+1, std::vector<CDouble>(n));
 
     // Initialize
@@ -139,9 +138,9 @@ CDouble maximumCycleMeanKarpDouble(const MCMgraph &mcmGraph, const MCMnode **cri
     // Compute the distances
     for (int k = 1; k < n + 1; k++) {
         for (const auto& v : mcmGraph.getNodes()) {
-             for (auto e = v->in.begin(); e != v->in.end(); e++) {
-                std::shared_ptr<MCMnode> u = (*e)->src;
-                d[k][v->id] = MAX(d[k][v->id], d[k - 1][u->id] + ((*e)->w));
+             for (auto e = v.in.begin(); e != v.in.end(); e++) {
+                MCMnode* u = (*e)->src;
+                d[k][v.id] = MAX(d[k][v.id], d[k - 1][u->id] + ((*e)->w));
             }
         }
     }
@@ -151,7 +150,7 @@ CDouble maximumCycleMeanKarpDouble(const MCMgraph &mcmGraph, const MCMnode **cri
     for (const auto& u : mcmGraph.getNodes()) {
         CDouble ld = DBL_MAX;
         for (int k = 0; k < n; k++) {
-            CDouble nld = (d[n][u->id] - d[k][u->id]) / static_cast<CDouble>(n - k);
+            CDouble nld = (d[n][u.id] - d[k][u.id]) / static_cast<CDouble>(n - k);
             if (nld < ld) {
                 ld = nld;
             }
@@ -159,7 +158,7 @@ CDouble maximumCycleMeanKarpDouble(const MCMgraph &mcmGraph, const MCMnode **cri
         if (ld > l) {
             l = ld;
             if (criticalNode != nullptr) {
-                *criticalNode = u.get();
+                *criticalNode = &u;
             }
         }
     }

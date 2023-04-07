@@ -49,7 +49,6 @@
 #include "base/analysis/mcm/mcmyto.h"
 #include "base/analysis/mcm/mcmgraph.h"
 #include "base/exception/exception.h"
-#include "base/lookup/clookup.h"
 #include "base/math/cmath.h"
 #include <cfloat>
 #include <cstdint>
@@ -59,7 +58,7 @@ namespace Graphs {
 
 class AlgYTO {
 public:
-    AlgYTO(graph &g) : gr(g) {}
+    explicit AlgYTO(graph &g) : gr(g) {}
 
 private:
     static constexpr node *NILN = nullptr;
@@ -246,7 +245,7 @@ private:
         return (i);
     }
 
-    item GetMin() const {
+    [[nodiscard]] item GetMin() const {
         if (h.size == 0) {
             return (NILA);
         }
@@ -422,7 +421,7 @@ public:
         // requires that there are no cycles with zero transit time!
         // Also, determine epsilon value on transit times, cost and cost/time ratios
         // as a constant fraction of the smallest observed values
-        CDouble total_cost_plus_one = 1.0L;
+        CDouble total_cost_plus_one = 1.0;
         CDouble min_transit_time = DBL_MAX;
         for (auto &a : gr.arcs) {
             // add costs to total cost
@@ -698,7 +697,7 @@ public:
         // requires that there are no cycles with zero transit time!
         // Also, determine epsilon value on transit times, cost and cost/time ratios
         // as a constant fraction of the smallest observed values
-        CDouble total_cost_plus_one = 1.0L;
+        CDouble total_cost_plus_one = 1.0;
         CDouble min_transit_time = DBL_MAX;
         CDouble min_cost = DBL_MAX;
         for (const auto &a : gr.arcs) {
@@ -934,7 +933,7 @@ public:
  * to graph input for Young-Tarjan-Orlin's algorithm.
  * It assumes that the id's of the nodes are 0 <= id < number of nodes
  */
-void convertMCMgraphToYTOgraph(const MCMgraph &g,
+void convertMCMgraphToYTOgraph(MCMgraph &g,
                                graph &gr,
                                CDouble (*costFunction)(const MCMedge& e),
                                CDouble (*transit_timeFunction)(const MCMedge& e)) {
@@ -947,10 +946,10 @@ void convertMCMgraphToYTOgraph(const MCMgraph &g,
 
     // create nodes
     // keep an index of node id's
-    CLookupIntInt nodeIndex;
+    std::map<int,int> nodeIndex;
     uint ind = 0;
     for (const auto &n : g.getNodes()) {
-        nodeIndex.put(n.id, ind);
+        nodeIndex[n.id] = ind;
         node& x = (gr.nodes)[ind];
         x.id = n.id + 1;
         x.first_arc_out = nullptr;
@@ -968,8 +967,8 @@ void convertMCMgraphToYTOgraph(const MCMgraph &g,
 
         arc &a = gr.arcs[aidx];
 
-        a.tail = &(gr.nodes[nodeIndex.get(u->id)]);
-        a.head = &(gr.nodes[nodeIndex.get(v->id)]);
+        a.tail = &(gr.nodes[nodeIndex[u->id]]);
+        a.head = &(gr.nodes[nodeIndex[v->id]]);
         a.cost = (*costFunction)(e);
         a.transit_time = (*transit_timeFunction)(e);
         a.next_out = a.tail->first_arc_out;
@@ -1078,18 +1077,18 @@ CDouble getDelay(const MCMedge& e) { return e.d; }
  * 3. it is assumed that cycles have a weight > 0 !
  */
 CDouble
-maxCycleMeanAndCriticalCycleYoungTarjanOrlin(const MCMgraph &mcmGraph,
+maxCycleMeanAndCriticalCycleYoungTarjanOrlin(MCMgraph &mcmGraph,
                                              std::shared_ptr<std::vector<const MCMedge *>> *cycle) {
     graph ytoGraph;
 
     // Convert the graph to an input graph for the YTO algorithm
-    convertMCMgraphToYTOgraph(mcmGraph, &ytoGraph, constOne, getWeight);
+    convertMCMgraphToYTOgraph(mcmGraph, ytoGraph, constOne, getWeight);
 
     AlgYTO alg(ytoGraph);
 
     CDouble min_cr = 0;
     if (cycle != nullptr) {
-        std::shared_ptr<std::vector<arc>> ytoCycle = nullptr;
+        std::shared_ptr<std::vector<const arc*>> ytoCycle = nullptr;
 
         // Find maximum cycle mean
         std::int32_t ytoCycLen = 0;
@@ -1104,12 +1103,10 @@ maxCycleMeanAndCriticalCycleYoungTarjanOrlin(const MCMgraph &mcmGraph,
 
     } else {
         // Find maximum cycle mean without cycle
-        mmcycle_robust(&ytoGraph, &min_cr, nullptr, nullptr);
+        alg.mmcycle_robust(ytoGraph, &min_cr, nullptr);
     }
 
     // Cleanup
-    free(ytoGraph.nodes);
-    free(ytoGraph.arcs);
 
     return 1.0 / min_cr;
 }
@@ -1120,8 +1117,8 @@ maxCycleMeanAndCriticalCycleYoungTarjanOrlin(const MCMgraph &mcmGraph,
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
 
-CDouble maxCycleMeanYoungTarjanOrlin(const MCMgraph &mcmGraph) {
-    return maxCycleMeanAndCriticalCycleYoungTarjanOrlin(mcmGraph, nullptr, nullptr);
+CDouble maxCycleMeanYoungTarjanOrlin(MCMgraph &mcmGraph) {
+    return maxCycleMeanAndCriticalCycleYoungTarjanOrlin(mcmGraph, nullptr);
 }
 
 /**
@@ -1136,16 +1133,12 @@ CDouble maxCycleMeanYoungTarjanOrlin(const MCMgraph &mcmGraph) {
  * in due time.
  */
 
-CDouble maxCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph &mcmGraph,
-                                                      std::shared_ptr<MCMedge> **cycle,
-                                                      uint *len) {
+CDouble maxCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph &mcmGraph,
+                                                      std::shared_ptr<std::vector<const MCMedge*>> *cycle) {
     graph ytoGraph;
 
     // catch special case when the graph has no edges
     if (mcmGraph.nrVisibleEdges() == 0) {
-        if (len != nullptr) {
-            *len = 0;
-        }
         if (cycle != nullptr) {
             *cycle = nullptr;
         }
@@ -1153,37 +1146,32 @@ CDouble maxCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph &mcmGraph,
     }
 
     // Convert the graph to an input graph for the YTO algorithm
-    convertMCMgraphToYTOgraph(mcmGraph, &ytoGraph, getDelay, getWeight);
+    convertMCMgraphToYTOgraph(mcmGraph, ytoGraph, getDelay, getWeight);
+
+    AlgYTO alg(ytoGraph);
 
     CDouble min_cr = 0;
-    if (cycle != nullptr && len != nullptr) {
-        // allocate space for the critical cycle
-        arc **ytoCycle = (arc **)malloc(sizeof(arc *) * mcmGraph.nrVisibleEdges());
+    if (cycle != nullptr) {
+
+        std::shared_ptr<std::vector<const arc*>> ytoCycle = nullptr;
 
         // Find maximum cycle ratio
         std::int32_t ytoCycLen = 0;
-        mmcycle_robust(&ytoGraph, &min_cr, ytoCycle, &ytoCycLen);
+        alg.mmcycle_robust(ytoGraph, &min_cr, &ytoCycle);
 
-        *len = ytoCycLen;
-
-        *cycle = (std::shared_ptr<MCMedge> *)malloc(sizeof(std::shared_ptr<MCMedge>) * (*len));
+        *cycle = std::make_shared<std::vector<const MCMedge *>>(ytoCycle->size());
 
         // note that mmcycle returns the critical cycle following edges backwards
         // therefore reverse the order of the edges.
-        for (uint i = 0; i < *len; i++) {
-            (*cycle)[i] = ytoCycle[(*len) - 1 - i]->mcmEdge;
+        size_t len = ytoCycle->size();
+        for (uint i = 0; i < len; i++) {
+            (*cycle)->at(i) = (*ytoCycle)[len - 1 - i]->mcmEdge;
         }
-
-        free(ytoCycle);
 
     } else {
         // Find maximum cycle ratio without cycle
-        mmcycle_robust(&ytoGraph, &min_cr, nullptr, nullptr);
+        alg.mmcycle_robust(ytoGraph, &min_cr, nullptr);
     }
-
-    // Cleanup
-    free(ytoGraph.nodes);
-    free(ytoGraph.arcs);
 
     return 1.0 / min_cr;
 }
@@ -1194,8 +1182,8 @@ CDouble maxCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph &mcmGraph,
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
 
-CDouble maxCycleRatioYoungTarjanOrlin(const MCMgraph &mcmGraph) {
-    return maxCycleRatioAndCriticalCycleYoungTarjanOrlin(mcmGraph, nullptr, nullptr);
+CDouble maxCycleRatioYoungTarjanOrlin(MCMgraph &mcmGraph) {
+    return maxCycleRatioAndCriticalCycleYoungTarjanOrlin(mcmGraph, nullptr);
 }
 
 /**
@@ -1209,41 +1197,36 @@ CDouble maxCycleRatioYoungTarjanOrlin(const MCMgraph &mcmGraph) {
  * in due time.
  */
 
-CDouble minCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph &mcmGraph,
-                                                      std::shared_ptr<MCMedge> **cycle,
-                                                      uint *len) {
+CDouble minCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph &mcmGraph,
+                                                      std::shared_ptr<std::vector<const MCMedge*>> *cycle) {
     graph ytoGraph;
 
     // Convert the graph to an input graph for the YTO algorithm
-    convertMCMgraphToYTOgraph(mcmGraph, &ytoGraph, getWeight, getDelay);
+    convertMCMgraphToYTOgraph(mcmGraph, ytoGraph, getWeight, getDelay);
+
+    AlgYTO alg(ytoGraph);
 
     CDouble min_cr = 0;
-    if (cycle != nullptr && len != nullptr) {
-        // allocate space for the critical cycle
-        arc **ytoCycle = (arc **)malloc(sizeof(arc *) * mcmGraph.nrVisibleEdges());
+    if (cycle != nullptr) {
+
+        std::shared_ptr<std::vector<const arc*>> ytoCycle = nullptr;
 
         // Find minimum cycle ratio
         std::int32_t ytoCycLen = 0;
-        mmcycle_robust(&ytoGraph, &min_cr, ytoCycle, &ytoCycLen);
+        alg.mmcycle_robust(ytoGraph, &min_cr, &ytoCycle);
 
-        *len = ytoCycLen;
+        size_t len = (*ytoCycle).size();
+        *cycle = std::make_shared<std::vector<const MCMedge*>>(len);
 
-        *cycle = (std::shared_ptr<MCMedge> *)malloc(sizeof(std::shared_ptr<MCMedge>) * (*len));
 
-        for (uint i = 0; i < *len; i++) {
-            (*cycle)[i] = ytoCycle[i]->mcmEdge;
+        for (uint i = 0; i < len; i++) {
+            (*cycle)->at(i) = (*ytoCycle)[i]->mcmEdge;
         }
-
-        free(ytoCycle);
 
     } else {
         // Find minimum cycle ratio without cycle
-        mmcycle_robust(&ytoGraph, &min_cr, nullptr, nullptr);
+        alg.mmcycle_robust(ytoGraph, &min_cr, nullptr);
     }
-
-    // Cleanup
-    free(ytoGraph.nodes);
-    free(ytoGraph.arcs);
 
     return min_cr;
 }
@@ -1254,8 +1237,8 @@ CDouble minCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph &mcmGraph,
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
 
-CDouble minCycleRatioYoungTarjanOrlin(const MCMgraph &mcmGraph) {
-    return minCycleRatioAndCriticalCycleYoungTarjanOrlin(mcmGraph, nullptr, nullptr);
+CDouble minCycleRatioYoungTarjanOrlin(MCMgraph &mcmGraph) {
+    return minCycleRatioAndCriticalCycleYoungTarjanOrlin(mcmGraph, nullptr);
 }
 
 } // namespace Graphs

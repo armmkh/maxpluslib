@@ -70,18 +70,18 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
     level[0] = 0;
     std::list<int> Q_k;
     Q_k.push_back(0);
-    std::list<std::shared_ptr<MCMnode>> Q_u;
-    Q_u.push_back(mcmGraph->getNodes().front());
+    std::list<MCMnode*> Q_u;
+    Q_u.push_back(&(mcmGraph->getNodes().front()));
 
     // Compute the distances
     int k = Q_k.front();
     Q_k.pop_front();
-    std::shared_ptr<MCMnode> u = Q_u.front();
+    MCMnode* u = Q_u.front();
     Q_u.pop_front();
     do {
         for (auto iter = u->out.begin(); iter != u->out.end(); iter++) {
-            std::shared_ptr<MCMedge> e = *iter;
-            std::shared_ptr<MCMnode> v = e->dst;
+            MCMedge* e = *iter;
+            MCMnode* v = e->dst;
 
             if (level[v->id] < k + 1) {
                 Q_k.push_back(k + 1);
@@ -100,15 +100,14 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
 
     // Compute lambda using Karp's theorem
     CDouble l = -INT_MAX;
-    for (const auto & iter : mcmGraph->getNodes()) {
-        u = iter;
+    for (const auto & u : mcmGraph->getNodes()) {
 
-        if (level[u->id] == n) {
+        if (level[u.id] == n) {
             CDouble ld = INT_MAX;
-            k = pi[n][u->id];
+            k = pi[n][u.id];
             while (k > -1) {
-                ld = MIN(ld, (CDouble)(d[n][u->id] - d[k][u->id]) / (CDouble)(n - k));
-                k = pi[k][u->id];
+                ld = MIN(ld, (CDouble)(d[n][u.id] - d[k][u.id]) / (CDouble)(n - k));
+                k = pi[k][u.id];
             }
             l = MAX(l, ld);
         }

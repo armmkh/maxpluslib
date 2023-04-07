@@ -224,21 +224,21 @@ inline CString timeToString(MPTime val) {
     // so that we can expose the unwanted "impure" infinities here.
     //
     if (static_cast<CDouble>(val)==MPTIME_MIN_INF_VAL) {
-        return {"-mp_inf"};
+        return CString("-mp_inf");
     }
-    return {static_cast<CDouble>(val)};
+    return CString(static_cast<CDouble>(val));
 }
 inline CString timeToMatlabString(MPTime val) {
     if (val.isMinusInfinity()) {
-        return {"-Inf"};
+        return CString("-Inf");
     }
-    return {static_cast<CDouble>(val)};
+    return CString(static_cast<CDouble>(val));
 }
 inline CString timeToLaTeXString(MPTime val) {
     if (val.isMinusInfinity()) {
-        return {"-\\infty{}"};
+        return CString("-\\infty{}");
     }
-    return {static_cast<CDouble>(val)};
+    return CString(static_cast<CDouble>(val));
 }
 
 } // namespace MaxPlus

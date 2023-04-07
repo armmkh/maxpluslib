@@ -54,8 +54,8 @@ namespace Graphs {
  * The function computes the maximum cycle mean of an MCMgraph using Karp's
  * algorithm.
  */
-CDouble maximumCycleMeanKarp(const MCMgraph& g);
-CDouble maximumCycleMeanKarpDouble(const MCMgraph& g, const MCMnode **criticalNode = nullptr);
+CDouble maximumCycleMeanKarp(MCMgraph& g);
+CDouble maximumCycleMeanKarpDouble(MCMgraph& g, const MCMnode **criticalNode = nullptr);
 
 /**
  * mcmGetAdjacentActors ()

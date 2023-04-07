@@ -57,7 +57,7 @@ namespace MaxPlus {
 class MaxPlusGameAutomatonWithRewards : public MaxPlusAutomatonWithRewards,
                                         public RatioGame<MPAStateLabel, MPAREdgeLabel> {
 public:
-    MaxPlusGameAutomatonWithRewards() { }
+    MaxPlusGameAutomatonWithRewards() = default;
 
      ~MaxPlusGameAutomatonWithRewards() override= default;;
 

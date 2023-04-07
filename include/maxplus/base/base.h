@@ -51,7 +51,4 @@
 /* Math */
 #include "math/cmath.h"
 
-/* Lookups (i.e. hash tables)  */
-#include "lookup/clookup.h"
-
 #endif

@@ -117,7 +117,7 @@ CDouble maxCycleMeanYoungTarjanOrlin(const MCMgraph& mcmGraph);
  * in due time.
  */
 CDouble
-maxCycleMeanAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<std::vector<const MCMedge*>> *cycle);
+maxCycleMeanAndCriticalCycleYoungTarjanOrlin(MCMgraph& mcmGraph, std::shared_ptr<std::vector<const MCMedge*>> *cycle);
 
 /**
  * maxCycleRatioYoungTarjanOrlin ()
@@ -137,14 +137,14 @@ CDouble maxCycleRatioYoungTarjanOrlin(const MCMgraph& mcmGraph);
  * in due time.
  */
 CDouble
-maxCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<std::vector<const MCMedge*>> *cycle);
+maxCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph& mcmGraph, std::shared_ptr<std::vector<const MCMedge*>> *cycle);
 
 /**
  * minCycleRatioYoungTarjanOrlin ()
  * The function computes the minimum cycle ratio of edge weight over delay of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
-CDouble minCycleRatioYoungTarjanOrlin(const MCMgraph& mcmGraph);
+CDouble minCycleRatioYoungTarjanOrlin(MCMgraph& mcmGraph);
 
 /**
  * minCycleRatioAndCriticalCycleYoungTarjanOrlin ()
@@ -157,7 +157,7 @@ CDouble minCycleRatioYoungTarjanOrlin(const MCMgraph& mcmGraph);
  * in due time.
  */
 CDouble
-minCycleRatioAndCriticalCycleYoungTarjanOrlin(const MCMgraph& mcmGraph, std::shared_ptr<std::vector<const MCMedge*>> *cycle);
+minCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph& mcmGraph, std::shared_ptr<std::vector<const MCMedge*>> *cycle);
 
 /**
  * getDelay ()

@@ -153,7 +153,7 @@ class MaxPlusAutomatonWithRewards
     : virtual public ::FSM::Labeled::FiniteStateMachine<MPAStateLabel, MPAREdgeLabel> {
 public:
     // Destructor.
-     ~MaxPlusAutomatonWithRewards() override= default;;
+     ~MaxPlusAutomatonWithRewards() override= default;
     // compute the maximum cycle ratio of delay over progress
     CDouble calculateMCR();
     // compute the maximum cycle ratio of delay over progress and also return a critical cycle
