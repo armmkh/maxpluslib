@@ -5,7 +5,7 @@
  *  Electronics Systems Group
  *  Model Based Design Lab (https://computationalmodeling.info/)
  *
- *  Name            :   mcmhoward.cc
+ *  Name            :   mcmdg.cc
  *
  *  Author          :   Sander Stuijk (sander@ics.ele.tue.nl)
  *

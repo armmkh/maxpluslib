@@ -77,6 +77,7 @@ void convertMCMgraphToMatrix(const MCMgraph& g, std::shared_ptr<std::vector<int>
  *      NComponents: Number of connected components of the optimal policy
  *
  */
+
 void Howard(const std::vector<std::vector<int>>& ij,
             const std::vector<std::vector<CDouble>>& A,
             int nr_nodes,
