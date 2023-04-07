@@ -54,9 +54,9 @@ namespace Graphs {
  * @todo
  * check if algorithm can be generalized to float edge weights
  */
-CDouble mcmDG(MCMgraph *mcmGraph) {
+CDouble mcmDG(MCMgraph &mcmGraph) {
     // Allocate memory
-    const unsigned int n = mcmGraph->nrVisibleNodes();
+    const unsigned int n = mcmGraph.nrVisibleNodes();
     std::vector<int> level(n);
     std::vector<std::vector<int>> pi(n + 1, std::vector<int>(n));
     std::vector<std::vector<int>> d(n + 1, std::vector<int>(n));
@@ -71,7 +71,7 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
     std::list<int> Q_k;
     Q_k.push_back(0);
     std::list<MCMnode*> Q_u;
-    Q_u.push_back(&(mcmGraph->getNodes().front()));
+    Q_u.push_back(&(mcmGraph.getNodes().front()));
 
     // Compute the distances
     unsigned int k = Q_k.front();
@@ -100,7 +100,7 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
 
     // Compute lambda using Karp's theorem
     CDouble l = -INT_MAX;
-    for (const auto & u : mcmGraph->getNodes()) {
+    for (const auto & u : mcmGraph.getNodes()) {
 
         if (level[u.id] == n) {
             CDouble ld = INT_MAX;

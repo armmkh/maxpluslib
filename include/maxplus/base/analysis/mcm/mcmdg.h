@@ -54,7 +54,7 @@ namespace Graphs {
  * @todo
  * check if algorithm can be generalized to float edge weights
  */
-CDouble mcmDG(MCMgraph *mcmGraph);
+CDouble mcmDG(MCMgraph &mcmGraph);
 
 } // namespace Graphs
 
