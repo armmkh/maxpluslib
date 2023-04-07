@@ -104,7 +104,7 @@ using graph = struct Graph {
  * The function computes the maximum cycle mean of edge weight per edge of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
-CDouble maxCycleMeanYoungTarjanOrlin(const MCMgraph& mcmGraph);
+CDouble maxCycleMeanYoungTarjanOrlin(MCMgraph& mcmGraph);
 
 /**
  * maxCycleMeanAndCriticalCycleYoungTarjanOrlin ()
@@ -124,7 +124,7 @@ maxCycleMeanAndCriticalCycleYoungTarjanOrlin(MCMgraph& mcmGraph, std::shared_ptr
  * The function computes the maximum cycle ratio of edge weight over delay of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  */
-CDouble maxCycleRatioYoungTarjanOrlin(const MCMgraph& mcmGraph);
+CDouble maxCycleRatioYoungTarjanOrlin(MCMgraph& mcmGraph);
 
 /**
  * maxCycleRatioAndCriticalCycleYoungTarjanOrlin ()
