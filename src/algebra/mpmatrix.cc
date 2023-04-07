@@ -310,7 +310,9 @@ void Matrix::init(MatrixFill fill) {
                 }
             }
         }
-    default:;
+        break;
+    default:
+        break;
     }
 }
 
