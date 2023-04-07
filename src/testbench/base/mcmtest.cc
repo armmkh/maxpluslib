@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include "algebra/mptype.h"
+#include "base/analysis/mcm/mcm.h"
 #include "base/analysis/mcm/mcmdg.h"
 #include "base/analysis/mcm/mcmgraph.h"
 #include <base/analysis/mcm/mcmhoward.h>
@@ -55,8 +56,8 @@ void MCMTest::test_howard() {
     std::shared_ptr<std::vector<CDouble>> chi = nullptr;
     std::shared_ptr<std::vector<CDouble>> v = nullptr;
     std::shared_ptr<std::vector<int>> policy = nullptr;
-    int nr_iterations;
-    int nr_components;
+    int nr_iterations = 0;
+    int nr_components = 0;
     
     convertMCMgraphToMatrix(g, &ij, &A);
 
@@ -86,10 +87,20 @@ void MCMTest::test_howard() {
 /// Test MCM Karp.
 void MCMTest::test_karp() {
     std::cout << "Running test: MCM-Karp" << std::endl;
+
+    MCMgraph g = makeGraph1();
+
+    CDouble result = maximumCycleMeanKarp(g);
+    ASSERT_APPROX_EQUAL(2.5, result, 1e-5);
+
+    result = maximumCycleMeanKarpDouble(g, nullptr);
+    ASSERT_APPROX_EQUAL(2.5, result, 1e-5);
+
+
     ASSERT_APPROX_EQUAL(1.0, 1.0, 1e-5);
 }
 
-/// Test MCM Howard.
+/// Test MCM YTO.
 void MCMTest::test_yto() {
     std::cout << "Running test: MCM-YTO" << std::endl;
     ASSERT_APPROX_EQUAL(1.0, 1.0, 1e-5);
