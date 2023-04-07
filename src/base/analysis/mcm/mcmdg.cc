@@ -56,13 +56,13 @@ namespace Graphs {
  */
 CDouble mcmDG(MCMgraph &mcmGraph) {
     // Allocate memory
-    const unsigned int n = mcmGraph.nrVisibleNodes();
+    const int n = mcmGraph.nrVisibleNodes();
     std::vector<int> level(n);
     std::vector<std::vector<int>> pi(n + 1, std::vector<int>(n));
     std::vector<std::vector<int>> d(n + 1, std::vector<int>(n));
 
     // Initialize
-    for (unsigned int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         level[i] = -1;
     }
     d[0][0] = 0;
@@ -74,13 +74,12 @@ CDouble mcmDG(MCMgraph &mcmGraph) {
     Q_u.push_back(&(mcmGraph.getNodes().front()));
 
     // Compute the distances
-    unsigned int k = Q_k.front();
+    int k = Q_k.front();
     Q_k.pop_front();
     MCMnode* u = Q_u.front();
     Q_u.pop_front();
     do {
-        for (auto iter = u->out.begin(); iter != u->out.end(); iter++) {
-            MCMedge* e = *iter;
+        for (auto& e: u->out) {
             MCMnode* v = e->dst;
 
             if (level[v->id] < static_cast<int>(k + 1)) {

@@ -111,7 +111,7 @@ public:
             Update_Policy();
             New_Build_Inverse();
             (*NIterations)++;
-        } while ((!improved) && *NIterations < MAX_NIterations);
+        } while (improved && *NIterations < MAX_NIterations);
 
         End_Message();
     }
@@ -127,7 +127,7 @@ private:
     int *NIterations;
     int *NComponents;
 
-    std::shared_ptr<std::vector<int>> new_pi = nullptr; /*  new policy */
+    std::shared_ptr<std::vector<int>> new_pi = std::make_shared<std::vector<int>>(); /*  new policy */
     /* The inverse policy is coded by a linearly chained list.
      * pi_inv_idx[i]= pointer to the chain of inverses of node i.
      */
@@ -328,7 +328,7 @@ private:
                 if (chir[ij[i * 2 + 1]] == new_chi[ij[i * 2]]) {
                     CDouble w = a[i] + vr[ij[i * 2 + 1]] - chir[ij[i * 2 + 1]];
                     if (w > v_aux[ij[i * 2]] + epsilon) {
-                        *improved = 1;
+                        *improved = true;
                         v_aux[ij[i * 2]] = w;
                         (*new_pi)[ij[i * 2]] = ij[i * 2 + 1];
                         new_c[ij[i * 2]] = a[i];
@@ -341,7 +341,7 @@ private:
             for (int i = 0; i < narcs; i++) {
                 CDouble w = a[i] + vr[ij[i * 2 + 1]] - chir[ij[i * 2 + 1]];
                 if (w > v_aux[ij[i * 2]] + epsilon) {
-                    *improved = 1;
+                    *improved = true;
                     v_aux[ij[i * 2]] = w;
                     (*new_pi)[ij[i * 2]] = ij[i * 2 + 1];
                     new_c[ij[i * 2]] = a[i];
@@ -497,9 +497,9 @@ void convertMCMgraphToMatrix(MCMgraph &g,
     }
 
     *ij = std::make_shared<std::vector<int>>(2 * g.getEdges().size());
-    auto ijr = **ij;
+    auto& ijr = *(*ij);
     *A = std::make_shared<std::vector<CDouble>>(g.getEdges().size());
-    auto Ar = **A;
+    auto& Ar = *(*A);
 
     // Create an entry in the matrices for each edge
     for (const auto &e : g.getEdges()) {
