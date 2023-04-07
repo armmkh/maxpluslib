@@ -44,7 +44,6 @@
 #include "mptype.h"
 #include <vector>
 
-
 class CString;
 
 namespace MaxPlus {
@@ -88,9 +87,9 @@ public:
     void putAll(unsigned int startRow, unsigned int endRow, MPTime value);
     void insertVector(unsigned int startRow, const SparseVector &v);
 
-    void toString(CString &outString, double scale = 1.0) const;
+    void toString(CString &outString, CDouble scale = 1.0) const;
 
-    SparseVector& operator=(const SparseVector &);
+    SparseVector &operator=(const SparseVector &);
 
     [[nodiscard]] MPTime norm() const;
 
@@ -102,7 +101,7 @@ public:
 
     [[nodiscard]] SparseVector add(MPTime increase) const;
 
-    [[nodiscard]] SparseVector maximum(const SparseVector &matB) const;
+    [[nodiscard]] SparseVector maximum(const SparseVector &vecB) const;
 
     [[nodiscard]] SparseVector add(const SparseVector &vecB) const;
 
@@ -137,8 +136,8 @@ private:
 class SparseMatrix {
 public:
     explicit SparseMatrix(unsigned int rowSize = 0,
-                 unsigned int colSize = 0,
-                 MPTime value = MP_MINUSINFINITY);
+                          unsigned int colSize = 0,
+                          MPTime value = MP_MINUSINFINITY);
 
     SparseMatrix(const SparseMatrix &);
 
@@ -173,7 +172,7 @@ public:
 
     void insertMatrix(unsigned int startRow, unsigned int startColumn, const SparseMatrix &M);
 
-    SparseMatrix& operator=(const SparseMatrix &);
+    SparseMatrix &operator=(const SparseMatrix &);
 
     [[nodiscard]] MPTime norm() const;
 
@@ -185,11 +184,11 @@ public:
     SparseMatrix maximum(const SparseMatrix &M);
 
     SparseMatrix multiply(const SparseMatrix &M);
-    SparseVector multiply(const SparseVector &M);
+    SparseVector multiply(const SparseVector &v);
 
     void compress();
 
-    void toString(CString &outString, double scale = 1.0) const;
+    void toString(CString &outString, CDouble scale = 1.0) const;
 
     MPTime mpEigenvalue();
 
@@ -208,12 +207,12 @@ private:
     bool isTransposed;
     // table contains column vectors (if isTransposed is false)
     // a pair (n, v) means that the vector v is repeated n times.
-    vector<std::pair<unsigned int, SparseVector>> table;
+    std::vector<std::pair<unsigned int, SparseVector>> table;
     std::pair<unsigned int, unsigned int> find(unsigned int col);
     void doTranspose();
-    SparseMatrix combine(const SparseMatrix &vecB, MPTime f(MPTime a, MPTime b));
-    Matrix *reduceRows();
-    std::pair<Matrix *, Sizes> reduceRowsAndColumns();
+    SparseMatrix combine(const SparseMatrix &M, MPTime f(MPTime a, MPTime b));
+    Matrix reduceRows();
+    std::pair<Matrix, Sizes> reduceRowsAndColumns();
     static SparseMatrix expand(const Matrix &M, const Sizes &rszs, const Sizes &cszs);
     [[nodiscard]] Sizes sizes() const;
 };

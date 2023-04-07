@@ -52,16 +52,20 @@ class MCMnode;
 class MCMedge {
 public:
     // Constructor
-    MCMedge(CId eId, bool eVisible);
+    MCMedge(CId eId, MCMnode &src, MCMnode &dst, CDouble w, CDouble d, bool eVisible);
     CId id;
     bool visible;
-    std::shared_ptr<MCMnode> src;
-    std::shared_ptr<MCMnode> dst;
+    MCMnode *src;
+    MCMnode *dst;
     CDouble w;
     CDouble d;
+    bool operator==(const MCMedge& e) const {
+        return this->id == e.id;
+    }
 };
 
-using MCMedges = list<std::shared_ptr<MCMedge>>;
+using MCMedges = std::list<MCMedge>;
+using MCMedgeRefs = std::list<MCMedge *>;
 
 class MCMnode {
 public:
@@ -69,15 +73,22 @@ public:
     MCMnode(CId nId, bool nVisible);
     CId id;
     bool visible;
-    MCMedges in;
-    MCMedges out;
+    MCMedgeRefs in;
+    MCMedgeRefs out;
+    bool operator==(const MCMnode& n) const {
+        return this->id == n.id;
+    }
 };
 
 struct MCMNodeLess {
-    bool operator()(std::shared_ptr<MCMnode> const &lhs, std::shared_ptr<MCMnode> const &rhs) const { return lhs->id < rhs->id; };
+    bool operator()(const MCMnode* const &lhs,
+                    const MCMnode* const &rhs) const {
+        return lhs->id < rhs->id;
+    };
 };
 
-using MCMnodes = list<std::shared_ptr<MCMnode>>;
+using MCMnodes = std::list<MCMnode>;
+using MCMnodeRefs = std::list<MCMnode *>;
 
 class MCMgraph {
 public:
@@ -90,42 +101,48 @@ public:
     // Copy Constructor
     MCMgraph(const MCMgraph &g);
 
-    const MCMnodes &getNodes() const { return nodes; };
+    MCMgraph(MCMgraph &&) = default;
+    MCMgraph &operator=(MCMgraph &&) = delete;
+    MCMgraph &operator=(const MCMgraph &other) = delete;
 
-    uint nrVisibleNodes() const {
+    [[nodiscard]] MCMnodes &getNodes() { return nodes; };
+    [[nodiscard]] MCMnodeRefs getNodeRefs();
+    [[nodiscard]] MCMedgeRefs getEdgeRefs();
+
+    [[nodiscard]] uint nrVisibleNodes() const {
         uint nrNodes = 0;
-        for (auto &node : nodes) {
-            if (node->visible) {
+        for (const auto &node : nodes) {
+            if (node.visible) {
                 nrNodes++;
             }
         }
         return nrNodes;
     };
-    std::shared_ptr<MCMnode> getNode(CId id) {
+    MCMnode *getNode(CId id) {
         for (auto &node : nodes) {
-            if (node->id == id) {
-                return node;
+            if (node.id == id) {
+                return &node;
             }
         }
         return nullptr;
     };
 
-    const MCMedges &getEdges() const { return edges; };
+    [[nodiscard]] MCMedges &getEdges() { return edges; };
 
-    std::shared_ptr<MCMedge> getEdge(CId id) {
+    MCMedge *getEdge(CId id) {
         for (auto &edge : edges) {
-            if (edge->id == id) {
-                return edge;
+            if (edge.id == id) {
+                return &edge;
             }
         }
         return nullptr;
     };
 
-    std::shared_ptr<MCMedge> getEdge(CId srcId, CId dstId) {
+    MCMedge *getEdge(CId srcId, CId dstId) {
         for (auto &edge : edges) {
-            if (edge->src->id == srcId) {
-                if (edge->dst->id == dstId) {
-                    return edge;
+            if (edge.src->id == srcId) {
+                if (edge.dst->id == dstId) {
+                    return &edge;
                 }
             }
         }
@@ -135,7 +152,7 @@ public:
     [[nodiscard]] uint nrVisibleEdges() const {
         uint nrEdges = 0;
         for (const auto &edge : edges) {
-            if (edge->visible) {
+            if (edge.visible) {
                 nrEdges++;
             }
         }
@@ -145,53 +162,38 @@ public:
     // Construction
 
     // Add a node to the MCM graph
-    void addNode(const std::shared_ptr<MCMnode> &n) {
+    MCMnode *addNode(CId nId, bool nVisible = true) {
         // Add the node to the MCM graph
-        this->nodes.push_back(n);
+        return &this->nodes.emplace_back(nId, nVisible);
     }
 
     // Remove a node from the MCMgraph.
     // Note: containers of nodes are lists, so remove is expensive!
-    void removeNode(const std::shared_ptr<MCMnode> &n) {
+    void removeNode(MCMnode &n) {
         // remove any remaining edges
-        while (!n->in.empty()) {
-            this->removeEdge(*(n->in.begin()));
+        while (!n.in.empty()) {
+            this->removeEdge(**(n.in.begin()));
         }
-        while (!n->out.empty()) {
-            this->removeEdge(*(n->out.begin()));
+        while (!n.out.empty()) {
+            this->removeEdge(**(n.out.begin()));
         }
-
         this->nodes.remove(n);
     }
 
     // Add an edge to the MCMgraph.
-    std::shared_ptr<MCMedge> addEdge(CId id,
-                                     std::shared_ptr<MCMnode> src,
-                                     std::shared_ptr<MCMnode> dst,
-                                     CDouble w,
-                                     CDouble d) {
-        std::shared_ptr<MCMedge> e = std::make_shared<MCMedge>(id, true);
-        e->src = std::move(src);
-        e->dst = std::move(dst);
-        e->w = w;
-        e->d = d;
-        this->addEdge(e);
-        return e;
-    }
-
-    // Add an edge to the MCMgraph.
-    void addEdge(std::shared_ptr<MCMedge> e) {
-        this->edges.push_back(e);
-        e->src->out.push_back(e);
-        e->dst->in.push_back(e);
+    MCMedge *addEdge(CId id, MCMnode &src, MCMnode &dst, CDouble w, CDouble d, bool visible = true) {
+        MCMedge& e = this->edges.emplace_back(id, src, dst, w, d, visible);
+        src.out.push_back(&e);
+        dst.in.push_back(&e);
+        return &e;
     }
 
     // Remove an edge from the MCMgraph.
     // Note: containers of edges are lists, so remove is expensive!
-    void removeEdge(std::shared_ptr<MCMedge> e) {
+    void removeEdge(MCMedge &e) {
         this->edges.remove(e);
-        e->src->out.remove(e);
-        e->dst->in.remove(e);
+        e.src->out.remove(&e);
+        e.dst->in.remove(&e);
     }
 
     void relabelNodeIds(std::map<int, int> &nodeIdMap);
@@ -203,18 +205,19 @@ public:
     // Note this algorithm does currently not distinguish visible and invisible edges!
     std::shared_ptr<MCMgraph> pruneEdges();
 
-    [[nodiscard]] CDouble calculateMaximumCycleMeanKarp() const;
-    [[nodiscard]] CDouble calculateMaximumCycleMeanKarpDouble(MCMnode** criticalNode = nullptr) const;
+    [[nodiscard]] CDouble calculateMaximumCycleMeanKarp();
+    [[nodiscard]] CDouble
+    calculateMaximumCycleMeanKarpDouble(const MCMnode **criticalNode = nullptr);
 
-    [[nodiscard]] CDouble calculateMaximumCycleRatioAndCriticalCycleYoungTarjanOrlin(std::shared_ptr<MCMedge> **cycle = nullptr,
-                                                                       uint *len = nullptr);
+    [[nodiscard]] CDouble calculateMaximumCycleRatioAndCriticalCycleYoungTarjanOrlin(
+            std::shared_ptr<std::vector<const MCMedge*>> *cycle = nullptr);
 
-    [[nodiscard]] MCMgraph normalize(CDouble mu) const;
-    [[nodiscard]] MCMgraph normalize(const std::map<CId, CDouble> &mu) const;
-    [[nodiscard]] std::map<CId, CDouble> longestPaths( CId rootNodeId) const;
-    [[nodiscard]] std::map<CId, CDouble> normalizedLongestPaths( CId rootNodeId,  CDouble mu) const;
-    [[nodiscard]] std::map<CId, CDouble> normalizedLongestPaths( CId rootNodeId,
-                                                  const std::map<CId, CDouble> &) const;
+    [[nodiscard]] std::shared_ptr<MCMgraph> normalize(CDouble mu) const;
+    [[nodiscard]] std::shared_ptr<MCMgraph> normalize(const std::map<CId, CDouble> &mu) const;
+    [[nodiscard]] std::map<CId, CDouble> longestPaths(CId rootNodeId) const;
+    [[nodiscard]] std::map<CId, CDouble> normalizedLongestPaths(CId rootNodeId, CDouble mu) const;
+    [[nodiscard]] std::map<CId, CDouble>
+    normalizedLongestPaths(CId rootNodeId, const std::map<CId, CDouble> &) const;
 
 private:
     // Nodes
@@ -224,7 +227,7 @@ private:
     MCMedges edges;
 };
 
-using MCMgraphs = list<std::shared_ptr<MCMgraph>>;
+using MCMgraphs = std::list<std::shared_ptr<MCMgraph>>;
 using MCMgraphsIter = MCMgraphs::iterator;
 
 /**
@@ -238,7 +241,7 @@ using MCMgraphsIter = MCMgraphs::iterator;
  * MCM algorithms work also on this graph (which reduces the execution time
  * needed in some of the conversion algorithms).
  */
-void stronglyConnectedMCMgraph(const MCMgraph& g,
+void stronglyConnectedMCMgraph(MCMgraph &g,
                                MCMgraphs &components,
                                bool includeComponentsWithoutEdges = false);
 
@@ -253,7 +256,7 @@ void relabelMCMgraph(std::shared_ptr<MCMgraph> g);
  * addLongestDelayEdgesToMCMgraph ()
  * The function adds additional edges to the graph which express the
  * longest path between two nodes crossing one edge with a delay. Edges
- * with no delay are removed and edges with more then one delay element
+ * with no delay are removed and edges with more than one delay element
  * are converted into a sequence of edges with one delay element.
  */
 void addLongestDelayEdgesToMCMgraph(std::shared_ptr<MCMgraph> g);

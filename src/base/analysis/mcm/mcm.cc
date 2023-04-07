@@ -51,14 +51,18 @@ namespace Graphs {
  * actor a.
  */
 
-v_uint
-mcmGetAdjacentActors(uint a, v_uint &nodeId, v_uint &actorId, vector<v_uint> &graph, uint nrNodes) {
+v_uint mcmGetAdjacentActors(uint a,
+                            const v_uint &nodeId,
+                            const v_uint &actorId,
+                            const std::vector<v_uint> &graph,
+                            uint nrNodes) {
     v_uint actors;
 
     uint u = nodeId[a];
     for (uint v = 0; v < nrNodes; v++) {
-        if (graph[u][v] == 1)
+        if (graph[u][v] == 1) {
             actors.push_back(actorId[v]);
+        }
     }
 
     return actors;

@@ -43,9 +43,10 @@
 
 #include "../exception/exception.h"
 #include "../string/cstring.h"
+#include <algorithm>
 #include <list>
+#include <memory>
 #include <set>
-
 
 namespace FSM {
 
@@ -57,9 +58,10 @@ class WithUniqueID {
 public:
     WithUniqueID() : id(nextID++) {}
 
-    bool lessThan(const WithUniqueID *rhs) const { return this->id < rhs->id; }
+    [[nodiscard]] bool lessThan(const WithUniqueID &rhs) const { return this->id < rhs.id; }
+    [[nodiscard]] bool operator==(const WithUniqueID &rhs) const { return this->id == rhs.id; }
 
-    CId getId(void) const { return this->id; }
+    [[nodiscard]] CId getId() const { return this->id; }
 
 private:
     static CId nextID;
@@ -73,73 +75,112 @@ class State;
 class Edge : public WithUniqueID {
 public:
     // constructor
-    Edge(State *src, State *dst) : WithUniqueID() {
-        this->source = src;
-        this->destination = dst;
-    }
+    Edge(State &src, State &dst) : source(src), destination(dst) {}
+
+    Edge(const Edge &) = default;
+    Edge &operator=(const Edge &other) = delete;
+    Edge(Edge &&) = default;
+    Edge &operator=(Edge &&) = delete;
 
     // destructor
-    virtual ~Edge(){};
+    virtual ~Edge() = default;
+    ;
 
     // virtual access methods
-    virtual State *getSource() { return this->source; }
-
-    virtual State *getDestination() { return this->destination; }
+    [[nodiscard]] virtual const State &getSource() const { return this->source; }
+    [[nodiscard]] virtual const State &getDestination() const { return this->destination; }
 
 private:
     // source and destination state of the edge
-    State *source;
-    State *destination;
+    State &source;
+    State &destination;
 };
 
-struct EdgeLess {
-    bool operator()(Edge *const &lhs, Edge *const &rhs) const { return lhs->lessThan(rhs); };
-};
+// // Edge ordering for sets
+// struct EdgeCompareLessThan {
+//     bool operator()(const Edge &lhs, const Edge &rhs) const { return lhs.lessThan(rhs); };
+// };
 
-// A set of edges based on STL set
-class SetOfEdges : public set<Edge *, EdgeLess> {
+// A set of edges
+// the set is assumed to have unique ownership of the edges
+// TODO: wanted to make it a unique pointer, but  compiler complains we are a deleted copy constructor...
+class SetOfEdges : public std::map<CId, std::shared_ptr<Edge>> {
 public:
-    typedef SetOfEdges::const_iterator CIter;
+    void remove(const Edge& e) {
+        this->erase(e.getId());
+    }
 };
 
-// A list of edges based on STL list
-class ListOfEdges : public list<Edge *> {
+struct EdgeRefCompareLessThan {
+    bool operator()(const Edge *lhs, const Edge *rhs) const { return lhs->lessThan(*rhs); };
+};
+
+// A set of references to edges
+class SetOfEdgeRefs : public std::set<Edge*, EdgeRefCompareLessThan> {
 public:
-    typedef ListOfEdges::const_iterator CIter;
+    using CIter = SetOfEdgeRefs::const_iterator;
+    virtual ~SetOfEdgeRefs() = default;
 };
 
 // Ancestor of all FSM states
 class State : public WithUniqueID {
 public:
     // constructor
-    State() : WithUniqueID() { this->outgoingEdges = new SetOfEdges(); }
+    State() = default;
 
     // destructor
-    virtual ~State() { delete this->outgoingEdges; }
+    virtual ~State() = default;
+
+    State(const State &) = default;
+    State &operator=(const State &other) = delete;
+    State(State &&) = default;
+    State &operator=(State &&) = delete;
 
     // add an outgoing edge to the state
-    void addOutGoingEdge(Edge *e) {
-        assert(e->getSource() == this);
-        this->outgoingEdges->insert(e);
+    void addOutGoingEdge(Edge &e) {
+        assert(&(e.getSource()) == this);
+        this->outgoingEdges.insert(&e);
     }
 
     // access the outgoing edges
-    virtual const SetOfEdges *getOutgoingEdges() { return this->outgoingEdges; }
+    [[nodiscard]] virtual const SetOfEdgeRefs &getOutgoingEdges() const {
+        return this->outgoingEdges;
+    }
 
-    void removeOutgoingEdge(Edge *e) { this->outgoingEdges->erase(e); }
+    void removeOutgoingEdge(Edge &e) { this->outgoingEdges.erase(&e); }
+    void insertOutgoingEdge(Edge &e) { this->outgoingEdges.insert(&e); }
 
-protected:
-    SetOfEdges *outgoingEdges;
+private:
+    SetOfEdgeRefs outgoingEdges;
 };
 
-struct StateLess {
-    bool operator()(State *const &lhs, State *const &rhs) const { return lhs->lessThan(rhs); };
-};
+// struct StateCompareLessThan {
+//     bool operator()(const State &lhs, const State &rhs) const { return lhs.lessThan(rhs); };
+// };
 
 // A set of states
-class SetOfStates : public set<State *, StateLess> {
+// the set is assumed to have unique ownership of the states
+// TODO: wanted to make it a unique pointer, but  compiler complains we are a deleted copy constructor...
+class SetOfStates : public std::map<CId, std::shared_ptr<State>> {
 public:
-    typedef SetOfStates::const_iterator CIter;
+    using CIter = SetOfStates::const_iterator;
+    using Iter = SetOfStates::iterator;
+    void remove(const State& s) {
+        this->erase(s.getId());
+    }
+};
+
+struct StateRefCompareLessThan {
+    bool operator()(const State *lhs, const State *rhs) const { return lhs->lessThan(*rhs); };
+};
+
+// A set of references to states
+class SetOfStateRefs : public std::set<const State *, StateRefCompareLessThan> {
+public:
+    using CIter = SetOfEdgeRefs::const_iterator;
+    bool includesState(const State *s) {
+        return this->find(s) != this->end(); 
+    }
 };
 
 // forward declaration of reachable states strategy
@@ -148,7 +189,15 @@ class ReachableStates;
 // The abstract ancestor of finite state machines
 class FiniteStateMachine {
 public:
-    virtual State *getInitialState() const = 0;
+    FiniteStateMachine() = default;
+    virtual ~FiniteStateMachine() = default;
+
+    FiniteStateMachine(const FiniteStateMachine &) = delete;
+    FiniteStateMachine &operator=(const FiniteStateMachine &other) = delete;
+    FiniteStateMachine(FiniteStateMachine &&) = default;
+    FiniteStateMachine &operator=(FiniteStateMachine &&) = delete;
+
+    [[nodiscard]] virtual const State &getInitialState() const = 0;
 };
 
 //
@@ -158,80 +207,84 @@ public:
 //
 class DepthFirstSearch {
 
+public:
+    DepthFirstSearch(const DepthFirstSearch &) = delete;
+    DepthFirstSearch &operator=(const DepthFirstSearch &other) = delete;
+    DepthFirstSearch(DepthFirstSearch &&) = delete;
+    DepthFirstSearch &operator=(DepthFirstSearch &&) = delete;
+
     // supporting class for DFS stack items
     class DFSStackItem {
     public:
         // constructor
-        DFSStackItem(State *s) {
-            this->state = s;
-            this->iter = s->getOutgoingEdges()->begin();
-        };
+        explicit DFSStackItem(const State &s) : state(s) { this->iter = s.getOutgoingEdges().begin(); };
 
         // access state
-        inline State *getState() { return this->state; }
+        inline const State &getState() { return this->state; }
 
-        inline const SetOfEdges::CIter getIter() { return this->iter; }
+        inline SetOfEdgeRefs::CIter getIter() { return this->iter; }
 
         // test if all outgoing edges have been done
-        bool atEnd() { return this->iter == this->state->getOutgoingEdges()->end(); }
+        bool atEnd() { return this->iter == this->state.getOutgoingEdges().end(); }
 
         // move to the next edge
         void advance() { (this->iter)++; }
 
     private:
-        State *state;
-        SetOfEdges::CIter iter;
+        const State &state;
+        SetOfEdgeRefs::CIter iter;
     };
 
 private:
-    list<DFSStackItem *> dfsStack;
+    using DfsStack = std::list<DFSStackItem>;
+    DfsStack dfsStack;
 
 public:
-    typedef list<DFSStackItem *>::const_iterator DFSStackCIter;
+    virtual ~DepthFirstSearch() = default;
+    using DFSStackCIter = DfsStack::const_iterator;
 
-    virtual void onEnterState(const State *s){};
+    virtual void onEnterState(const State &s){};
 
-    virtual void onLeaveState(const State *s){};
+    virtual void onLeaveState(const State &s){};
 
-    virtual void onTransition(const Edge *e){};
+    virtual void onTransition(const Edge &e){};
 
-    virtual void onSimpleCycle(const list<DFSStackItem *> &stack){};
+    virtual void onSimpleCycle(DfsStack &stack){};
 
-    DepthFirstSearch(FiniteStateMachine *targetFsm) { this->fsm = targetFsm; };
+    explicit DepthFirstSearch(FiniteStateMachine &targetFsm) : fsm(targetFsm){};
 
     // Execute the depth first search
     void DoDepthFirstSearch(bool fullDFS = false) {
         // store visited states
-        SetOfStates *visitedStates = new SetOfStates();
+        SetOfStateRefs visitedStates;
 
         // put initial state on the stack
-        dfsStack.push_back(new DFSStackItem(this->fsm->getInitialState()));
+        dfsStack.emplace_back(this->fsm.getInitialState());
 
         while (!(dfsStack.empty())) {
-            DFSStackItem *si = dfsStack.back();
+            DFSStackItem &si = dfsStack.back();
 
             // current item complete?
-            if (si->atEnd()) {
+            if (si.atEnd()) {
                 // pop it from stack
-                this->onLeaveState(si->getState());
-                dfsStack.pop_back();
+                this->onLeaveState(si.getState());
                 if (fullDFS) {
-                    SetOfStates::iterator i = visitedStates->find((*si).getState());
-                    visitedStates->erase(i);
+                    const auto s = si.getState();
+                    assert(visitedStates.includesState(&s));
+                    visitedStates.erase(&s);
                 }
-                delete si;
+                dfsStack.pop_back();
             } else {
                 // goto next edge
-                Edge *e = *(si->getIter());
-                si->advance();
-                bool revisit;
-                revisit = visitedStates->find(e->getDestination()) == visitedStates->end();
+                auto *e = *(si.getIter());
+                si.advance();
+                bool revisit = visitedStates.includesState(&(e->getDestination()));
                 if (revisit) {
                     // if target state not visited before
-                    dfsStack.push_back(new DFSStackItem(e->getDestination()));
-                    this->onTransition(e);
+                    dfsStack.emplace_back(e->getDestination());
+                    this->onTransition(*e);
                     this->onEnterState(e->getDestination());
-                    visitedStates->insert(e->getDestination());
+                    visitedStates.insert(&(e->getDestination()));
                 } else {
                     // cycle found
                     this->onSimpleCycle(dfsStack);
@@ -241,21 +294,24 @@ public:
     }
 
 private:
-    FiniteStateMachine *fsm;
+    FiniteStateMachine &fsm;
 };
 
 // Reachable states strategy based on DFS
 class ReachableStates : public DepthFirstSearch {
 public:
-    SetOfStates *result;
+    SetOfStateRefs result;
 
-    ReachableStates(FiniteStateMachine *targetFsm) : DepthFirstSearch(targetFsm) {
-        this->result = new SetOfStates();
-    };
+    explicit ReachableStates(FiniteStateMachine &targetFsm) : DepthFirstSearch(targetFsm){};
 
-    virtual ~ReachableStates(){};
+    ~ReachableStates() override = default;
 
-    virtual void onEnterState(State *s) { this->result->insert(s); };
+    ReachableStates(const ReachableStates &) = delete;
+    ReachableStates &operator=(const ReachableStates &other) = delete;
+    ReachableStates(ReachableStates &&) = delete;
+    ReachableStates &operator=(ReachableStates &&) = delete;
+
+    void onEnterState(const State &s) override { this->result.insert(&s); };
 };
 
 }; // namespace Abstract
@@ -267,54 +323,72 @@ template <typename StateLabelType, typename EdgeLabelType> class State;
 
 template <typename StateLabelType, typename EdgeLabelType> class Edge : public Abstract::Edge {
 public:
-    Edge(State<StateLabelType, EdgeLabelType> *src,
+    Edge(State<StateLabelType, EdgeLabelType> &src,
          EdgeLabelType &lbl,
-         State<StateLabelType, EdgeLabelType> *dst) :
-        Abstract::Edge(src, dst) {
-        this->label = lbl;
+         State<StateLabelType, EdgeLabelType> &dst) :
+        Abstract::Edge(src, dst), label(lbl) {
     }
 
     EdgeLabelType label;
 };
 
-template <typename StateLabelType, typename EdgeLabelType>
-class SetOfEdges : public Abstract::SetOfEdges {
-public:
-    typedef typename SetOfEdges<StateLabelType, EdgeLabelType>::const_iterator CIter;
-};
+// template <typename StateLabelType, typename EdgeLabelType>
+// class SetOfEdges : public Abstract::SetOfEdges {
+// public:
+//     using CIter = typename Abstract::SetOfEdges::const_iterator;
+// };
 
-template <typename StateLabelType, typename EdgeLabelType>
-class ListOfEdges : public Abstract::ListOfEdges {
-public:
-    typedef typename ListOfEdges<StateLabelType, EdgeLabelType>::const_iterator CIter;
-};
+// template <typename StateLabelType, typename EdgeLabelType>
+// class SetOfEdgeRefs : public Abstract::SetOfEdgeRefs {
+// public:
+//     using CIter = typename Abstract::SetOfEdgeRefs::const_iterator;
+// };
 
 template <typename StateLabelType, typename EdgeLabelType>
 class SetOfStates : public Abstract::SetOfStates {
+private:
+    std::map<StateLabelType, State<StateLabelType, EdgeLabelType>*> stateIndex;
 public:
-    typedef typename SetOfStates::const_iterator CIter;
-    map<StateLabelType, State<StateLabelType, EdgeLabelType> *> stateIndex;
+    using CIter = typename SetOfStates::const_iterator;
+    State<StateLabelType, EdgeLabelType>* withLabel(StateLabelType l) {
+        if (this->stateIndex.find(l) != this->stateIndex.end()) {
+            return this->stateIndex[l];
+        }
+        return nullptr;
+    }
+
+    void addToStateIndex(StateLabelType l, State<StateLabelType, EdgeLabelType>* s){
+        this->stateIndex[l] = s;
+    }
 };
+
+// template <typename StateLabelType, typename EdgeLabelType>
+// class SetOfStateRefs : public Abstract::SetOfStateRefs {
+// public:
+//     using CIter = typename SetOfStateRefs::const_iterator;
+// };
 
 template <typename StateLabelType, typename EdgeLabelType> class State : public Abstract::State {
 public:
     StateLabelType stateLabel;
 
-    State(const StateLabelType &withLabel) : Abstract::State() { this->stateLabel = withLabel; }
+    explicit State(const StateLabelType &withLabel) : Abstract::State() {
+        this->stateLabel = withLabel;
+    }
 
-    const StateLabelType &getLabel(void) const { return this->stateLabel; }
+    [[nodiscard]] const StateLabelType &getLabel() const { return this->stateLabel; }
 
     // return all next states reachable via an edge labelled l
-    SetOfStates<StateLabelType, EdgeLabelType> *nextStatesOfEdgeLabel(const EdgeLabelType l) {
-        SetOfStates<StateLabelType, EdgeLabelType> *result =
-                new SetOfStates<StateLabelType, EdgeLabelType>();
-        SetOfEdges<StateLabelType, EdgeLabelType> *es =
-                (SetOfEdges<StateLabelType, EdgeLabelType> *)this->getOutgoingEdges();
-        typename SetOfEdges<StateLabelType, EdgeLabelType>::CIter i;
-        for (i = es->begin(); i != es->end(); i++) {
-            Edge<StateLabelType, EdgeLabelType> *e = (Edge<StateLabelType, EdgeLabelType> *)*i;
-            if (e->label == l)
-                result->insert(e->getDestination());
+    std::shared_ptr<Abstract::SetOfStateRefs>
+    nextStatesOfEdgeLabel(const EdgeLabelType l) {
+        auto result = std::make_shared<Abstract::SetOfStateRefs>();
+        auto es = static_cast<const Abstract::SetOfEdgeRefs &>(
+                this->getOutgoingEdges());
+        for (const auto& i: es) {
+            auto *e = static_cast<Edge<StateLabelType, EdgeLabelType> *>(i);
+            if (e->label == l) {
+                result->insert(&(e->getDestination()));
+            }
         }
         return result;
     }
@@ -322,150 +396,190 @@ public:
     // return an arbitrary next state reachable via an edge labelled l
     // or null if no such state exists
     State<StateLabelType, EdgeLabelType> *nextStateOfEdgeLabel(const EdgeLabelType l) {
-        SetOfEdges<StateLabelType, EdgeLabelType> *es =
-                (SetOfEdges<StateLabelType, EdgeLabelType> *)this->getOutgoingEdges();
-        typename SetOfEdges<StateLabelType, EdgeLabelType>::CIter i;
-        for (i = es->begin(); i != es->end(); i++) {
-            Edge<StateLabelType, EdgeLabelType> *e = *i;
-            if (e->label == l)
+        auto es = static_cast<const Abstract::SetOfEdgeRefs &>(
+                this->getOutgoingEdges());
+        for (const auto& i: es) {
+            Edge<StateLabelType, EdgeLabelType> *e = i;
+            if (e->label == l) {
                 return e->getDestination();
+            }
         }
-        return 0L;
+        return nullptr;
     }
 };
 
 template <typename StateLabelType, typename EdgeLabelType>
 class FiniteStateMachine : public Abstract::FiniteStateMachine {
+
+private:
+    SetOfStates<StateLabelType, EdgeLabelType> states;
+    Abstract::SetOfEdges edges;
+    const State<StateLabelType, EdgeLabelType> *initialState;
+
 public:
-    FiniteStateMachine() : Abstract::FiniteStateMachine() {
-        states = new SetOfStates<StateLabelType, EdgeLabelType>();
-        edges = new SetOfEdges<StateLabelType, EdgeLabelType>();
-        initialState = 0;
+    FiniteStateMachine() : Abstract::FiniteStateMachine(), initialState(nullptr){};
+
+    ~FiniteStateMachine() override = default;
+
+    FiniteStateMachine(const FiniteStateMachine &) = delete;
+    FiniteStateMachine &operator=(const FiniteStateMachine &other) = delete;
+    FiniteStateMachine(FiniteStateMachine &&) = delete;
+    FiniteStateMachine &operator=(FiniteStateMachine &&) = delete;
+
+    // add state with the given label
+    State<StateLabelType, EdgeLabelType> *addState(StateLabelType label) {
+        bool added = false;
+        typename SetOfStates<StateLabelType, EdgeLabelType>::CIter i;
+        auto sp = std::make_shared<State<StateLabelType, EdgeLabelType>>(label);
+        auto& s = *sp;
+        this->states[sp->getId()] = std::move(sp);
+        return &s;
     };
 
-    virtual ~FiniteStateMachine() {
-        typename SetOfEdges<StateLabelType, EdgeLabelType>::iterator ei;
-        for (ei = this->edges->begin(); ei != this->edges->end(); ei++) {
-            delete *ei;
-        }
-        delete edges;
-
-        typename SetOfStates<StateLabelType, EdgeLabelType>::iterator si;
-        for (si = this->states->begin(); si != this->states->end(); si++) {
-            delete *si;
-        }
-        delete states;
-    };
-
-    void addState(State<StateLabelType, EdgeLabelType> *s) { states->insert(s); };
-
-    Edge<StateLabelType, EdgeLabelType> *addEdge(State<StateLabelType, EdgeLabelType> *src,
+    Edge<StateLabelType, EdgeLabelType> *addEdge(State<StateLabelType, EdgeLabelType> &src,
                                                  EdgeLabelType lbl,
-                                                 State<StateLabelType, EdgeLabelType> *dst) {
-        Edge<StateLabelType, EdgeLabelType> *e =
-                new Edge<StateLabelType, EdgeLabelType>(src, lbl, dst);
-        edges->insert(e);
-        src->addOutGoingEdge(e);
-        return e;
+                                                 State<StateLabelType, EdgeLabelType> &dst) {
+        bool added = false;
+        auto ep = std::make_shared<Edge<StateLabelType, EdgeLabelType>>(src, lbl, dst);
+        auto& e = *ep;
+        this->edges[e.getId()] = std::move(ep);
+        src.addOutGoingEdge(e);
+        return &e;
     };
 
-    void setInitialState(State<StateLabelType, EdgeLabelType> *s) { this->initialState = s; };
+    void removeEdge(const Edge<StateLabelType, EdgeLabelType>& e) {
+        this->edges.remove(e);
+    }
 
-    State<StateLabelType, EdgeLabelType> *getInitialState() const { return this->initialState; };
+    void removeState(const State<StateLabelType, EdgeLabelType>& s) {
+        // remove related edges
+        Abstract::SetOfEdgeRefs edgesToRemove;
+        for(auto& it: this->edges) {
+            auto& e = *(it.second);
+            auto src = dynamic_cast<const State<StateLabelType, EdgeLabelType>&>(e.getSource());
+            auto dst = dynamic_cast<const State<StateLabelType, EdgeLabelType>&>(e.getDestination());
+            if(( src == s) || (dst == s)) {
+                edgesToRemove.insert(&e);
+            }
+        }
+        for (auto *e: edgesToRemove) {
+            this->removeEdge(dynamic_cast<const Edge<StateLabelType, EdgeLabelType>&>(*e));
+        }
+        this->states.remove(s);
+    }
 
-    State<StateLabelType, EdgeLabelType> *getStateLabeled(const StateLabelType &s) {
+    // set initial state to state with label;
+    void setInitialState(StateLabelType label) {
+        this->initialState = this->states.withLabel(label);
+    };
+
+    void setInitialState(const State<StateLabelType, EdgeLabelType>& s) {
+        // we are asumming s is one of our states
+        this->initialState = &s;
+    };
+
+    [[nodiscard]] const State<StateLabelType, EdgeLabelType> &getInitialState() const override {
+        return *this->initialState;
+    };
+
+    State<StateLabelType, EdgeLabelType> &getStateLabeled(const StateLabelType &s) {
         // try the index first
-        if (this->states->stateIndex.find(s) != this->states->stateIndex.end()) {
-            return this->states->stateIndex[s];
+        State<StateLabelType, EdgeLabelType> *sp = this->states.withLabel(s);
+        if (sp != nullptr) {
+            return *sp;
         }
         // for now just a linear search
-        typename SetOfStates<StateLabelType, EdgeLabelType>::CIter i = this->states->begin();
-        while (i != this->states->end()) {
-            State<StateLabelType, EdgeLabelType> *t =
-                    dynamic_cast<State<StateLabelType, EdgeLabelType> *>(*i);
-            if ((t->stateLabel) == s) {
-                this->states->stateIndex[s] = t;
-                return t;
+        // TODO: use index?
+        for(auto& it: this->states) {
+            auto& i = *(it.second);
+            auto& t = dynamic_cast<const State<StateLabelType, EdgeLabelType>&>(i);
+            // TODO: remove const_cast set of states provides only const iterator, but states are identified only by ID.
+            auto& ct = const_cast<State<StateLabelType, EdgeLabelType>&>(t);
+            if ((ct.stateLabel) == s) {
+                // TODO: manage index inside SetOfStates
+                this->states.addToStateIndex(s, &ct);
+                return ct;
             }
-            i++;
         }
+        // typename SetOfStates<StateLabelType, EdgeLabelType>::CIter i = this->states.begin();
+        // while (i != this->states.end()) {
+        //     State<StateLabelType, EdgeLabelType>& t = static_cast<State<StateLabelType, EdgeLabelType>>(*i);
+        //     if ((t.stateLabel) == s) {
+        //         this->states.stateIndex[s] = &t;
+        //         return t;
+        //     }
+        //     i++;
+        // }
         throw CException("error - state not found in FiniteStateMachine::getStateLabeled");
     };
 
-    SetOfStates<StateLabelType, EdgeLabelType> *getStates(void) { return this->states; };
+    SetOfStates<StateLabelType, EdgeLabelType> &getStates() { return this->states; };
 
-    SetOfEdges<StateLabelType, EdgeLabelType> *getEdges(void) { return this->edges; };
+    Abstract::SetOfEdges &getEdges() { return this->edges; };
 
-    Edge<StateLabelType, EdgeLabelType> *getEdge(State<StateLabelType, EdgeLabelType> *source,
-                                                 State<StateLabelType, EdgeLabelType> *target) {
-        SetOfEdges<StateLabelType, EdgeLabelType> *e =
-                (SetOfEdges<StateLabelType, EdgeLabelType> *)source->getOutgoingEdges();
+    Edge<StateLabelType, EdgeLabelType> *
+    getEdge(const State<StateLabelType, EdgeLabelType> &source,
+            const State<StateLabelType, EdgeLabelType> &target) {
+        auto e = static_cast<const Abstract::SetOfEdgeRefs &>(
+                source.getOutgoingEdges());
 
         // collect all labels in edges of s
-        typename SetOfEdges<StateLabelType, EdgeLabelType>::CIter i;
-        for (i = e->begin(); i != e->end(); i++) {
-            Edge<StateLabelType, EdgeLabelType> *edge = (Edge<StateLabelType, EdgeLabelType> *)*i;
+        for (const auto& i : e) {
+            auto edge = dynamic_cast<Edge<StateLabelType, EdgeLabelType> *>(i);
             if (target == edge->getDestination()) {
                 return edge;
             }
         }
-        return NULL;
+        return nullptr;
     };
 
     State<StateLabelType, EdgeLabelType> *checkStateLabeled(const StateLabelType &s) {
         // try the index first
-        if (this->states->stateIndex.find(s) != this->states->stateIndex.end()) {
-            return this->states->stateIndex[s];
+        if (this->states.stateIndex.find(s) != this->states.stateIndex.end()) {
+            return this->states.stateIndex[s];
         }
         // for now just a linear search
-        typename SetOfStates<StateLabelType, EdgeLabelType>::CIter i = this->states->begin();
-        while (i != this->states->end()) {
-            State<StateLabelType, EdgeLabelType> *t =
-                    dynamic_cast<State<StateLabelType, EdgeLabelType> *>(*i);
-            if ((t->stateLabel) == s) {
-                this->states->stateIndex[s] = t;
-                return t;
+        typename SetOfStates<StateLabelType, EdgeLabelType>::CIter i = this->states.begin();
+        while (i != this->states.end()) {
+            auto& t = *(i.second);
+            if ((t.stateLabel) == s) {
+                this->states.addToStateIndex(s, &t);
+                return &t;
             }
             i++;
         }
-        return NULL;
+        return nullptr;
     };
 
-    Abstract::SetOfStates *reachableStates(void) {
+    std::shared_ptr<Abstract::SetOfStateRefs> reachableStates() {
         // use generic DFS function to add states found
-        Abstract::ReachableStates *rs = new Abstract::ReachableStates(this);
-        rs->DoDepthFirstSearch();
-        Abstract::SetOfStates *result = rs->result;
-        delete rs;
+        Abstract::ReachableStates rs(*this);
+        rs.DoDepthFirstSearch();
+        std::shared_ptr<Abstract::SetOfStateRefs> result =
+                std::make_shared<Abstract::SetOfStateRefs>(rs.result);
         return result;
     };
 
     // check if there exists a transition e = (q1,alpha,q2)
-    Edge<StateLabelType, EdgeLabelType> *
+    const Edge<StateLabelType, EdgeLabelType> *
     findEdge(StateLabelType src, EdgeLabelType lbl, StateLabelType dst) {
-        Edge<StateLabelType, EdgeLabelType> *found = NULL;
+        Edge<StateLabelType, EdgeLabelType> *found = nullptr;
 
         // get all labels
-        SetOfStates<StateLabelType, EdgeLabelType> *allStates = this->getStates();
+        SetOfStates<StateLabelType, EdgeLabelType> &allStates = this->getStates();
 
-        typename SetOfStates<StateLabelType, EdgeLabelType>::iterator iter = allStates->begin();
-
-        for (; iter != allStates->end(); iter++) {
-            State<StateLabelType, EdgeLabelType> *s = (State<StateLabelType, EdgeLabelType> *)*iter;
+        for (auto iter : allStates) {
+            auto s = *iter;
             if (s->stateLabel == src) {
-                State<StateLabelType, EdgeLabelType> *srcState = this->getStateLabeled(src);
+                State<StateLabelType, EdgeLabelType> &srcState = this->getStateLabeled(src);
 
-                SetOfEdges<StateLabelType, EdgeLabelType> *outgoingEdges =
-                        (SetOfEdges<StateLabelType, EdgeLabelType> *)srcState->getOutgoingEdges();
+                const auto &outgoingEdges =
+                        static_cast<const Abstract::SetOfEdgeRefs &>(
+                                srcState.getOutgoingEdges());
 
-                typename SetOfEdges<StateLabelType, EdgeLabelType>::iterator it =
-                        outgoingEdges->begin();
-                for (; it != outgoingEdges->end(); it++) {
-                    Edge<StateLabelType, EdgeLabelType> *e =
-                            dynamic_cast<Edge<StateLabelType, EdgeLabelType> *>(*it);
-                    State<StateLabelType, EdgeLabelType> *dstState =
-                            dynamic_cast<State<StateLabelType, EdgeLabelType> *>(
-                                    e->getDestination());
+                for (const auto& it : outgoingEdges) {
+                    auto e = dynamic_cast<const Edge<StateLabelType, EdgeLabelType> *>(it);
+                    auto dstState = e->getDestination();
                     if (e->label == lbl && dstState->getLabel() == dst) {
                         found = e;
                         return found;
@@ -473,157 +587,148 @@ public:
                 }
             }
         }
-        return NULL;
+        return nullptr;
     };
 
     // determinize the automaton based on edge labels only.
     // Using the subset construction
-    FiniteStateMachine<StateLabelType, EdgeLabelType> *determinizeEdgeLabels(void) {
-        FiniteStateMachine<StateLabelType, EdgeLabelType> *result;
-        result = new FiniteStateMachine<StateLabelType, EdgeLabelType>();
+    std::shared_ptr<FiniteStateMachine<StateLabelType, EdgeLabelType>> determinizeEdgeLabels() {
+        std::shared_ptr<FiniteStateMachine<StateLabelType, EdgeLabelType>> result;
+        result = std::make_shared<FiniteStateMachine<StateLabelType, EdgeLabelType>>();
 
         // maintain map of sets of states to the corresponding new states.
-        map<const SetOfStates<StateLabelType, EdgeLabelType>,
-            State<StateLabelType, EdgeLabelType> *>
+        std::map<const Abstract::SetOfStateRefs &,
+                 State<StateLabelType, EdgeLabelType> *>
                 newStatesMap;
 
         // queue of states that need to be further explored.
-        list<SetOfStates<StateLabelType, EdgeLabelType> *> *unprocessed;
-        unprocessed = new list<SetOfStates<StateLabelType, EdgeLabelType> *>();
+        std::list<std::shared_ptr<Abstract::SetOfStateRefs>> unprocessed;
 
         // create initial state
-        SetOfStates<StateLabelType, EdgeLabelType> *initialStateSet;
-        initialStateSet = new SetOfStates<StateLabelType, EdgeLabelType>();
-        initialStateSet->insert(this->getInitialState());
+        std::shared_ptr<SetOfStates<StateLabelType, EdgeLabelType>> initialStateSet;
+        initialStateSet = std::make_shared<SetOfStates<StateLabelType, EdgeLabelType>>();
+        initialStateSet->insert(&(this->getInitialState()));
 
         CId newStateId = 0;
-        State<StateLabelType, EdgeLabelType> *si =
-                new State<StateLabelType, EdgeLabelType>(newStateId++);
-        newStatesMap[*initialStateSet] = si;
-        result->addState(si);
-        result->setInitialState(si);
+        StateLabelType si = newStateId++;
+        const State<StateLabelType, EdgeLabelType> &initialState = result->addState(si);
+        newStatesMap[*initialStateSet] = initialState;
+        result->setInitialState(initialState);
 
         // add initial state to list of unprocessed state sets
-        unprocessed->push_back(initialStateSet);
+        unprocessed.push_back(initialStateSet);
 
-        while (!unprocessed->empty()) {
-            SetOfStates<StateLabelType, EdgeLabelType> *Q;
-            Q = *unprocessed->begin();
-            unprocessed->erase(unprocessed->begin());
+        while (!unprocessed.empty()) {
+            Abstract::SetOfStateRefs Q = *(*(unprocessed.begin()));
+            unprocessed.erase(unprocessed.begin());
 
             // get all outgoing labels
-            set<EdgeLabelType> labels;
-            typename SetOfStates<StateLabelType, EdgeLabelType>::CIter i;
-            for (i = Q->begin(); i != Q->end(); i++) {
-                State<StateLabelType, EdgeLabelType> *s =
-                        (State<StateLabelType, EdgeLabelType> *)*i;
+            std::set<EdgeLabelType> labels;
+            for (const auto *i : Q) {
+                auto s = *i;
                 this->insertOutgoingLabels(s, labels);
             }
 
             // for each label in labels get the image states into a set Qnext
-            typename set<EdgeLabelType>::const_iterator j;
-            for (j = labels.begin(); j != labels.end(); j++) {
+            for (auto j : labels) {
                 EdgeLabelType l = *j;
 
                 // collect image state in Qnext
-                SetOfStates<StateLabelType, EdgeLabelType> *Qnext;
-                Qnext = new SetOfStates<StateLabelType, EdgeLabelType>();
+                std::shared_ptr<Abstract::SetOfStateRefs> Qnext =
+                        std::make_shared<Abstract::SetOfStateRefs>();
 
                 // for every state s in Q
-                typename SetOfStates<StateLabelType, EdgeLabelType>::CIter i;
-                for (i = Q->begin(); i != Q->end(); i++) {
-                    State<StateLabelType, EdgeLabelType> *s =
-                            (State<StateLabelType, EdgeLabelType> *)*i;
-                    SetOfStates<StateLabelType, EdgeLabelType> *l_img;
-                    l_img = s->nextStatesOfEdgeLabel(l);
+                for (const auto *i : Q) {
+                    const auto& s = dynamic_cast<State<StateLabelType, EdgeLabelType> &>(*i);
+                    std::shared_ptr<Abstract::SetOfStateRefs> l_img =
+                            s.nextStatesOfEdgeLabel(l);
 
                     // add all l-images from s to Qnext
-                    typename SetOfStates<StateLabelType, EdgeLabelType>::CIter k;
-                    for (k = l_img->begin(); k != l_img->end(); k++) {
-                        State<StateLabelType, EdgeLabelType> *simg =
-                                (State<StateLabelType, EdgeLabelType> *)*k;
+                    for (const auto& k : *l_img) {
+                        const auto *simg = k;
                         Qnext->insert(simg);
                     }
-                    delete l_img;
                 }
+
                 // add new state in fsm if necessary
-                State<StateLabelType, EdgeLabelType> *ns;
+                const State<StateLabelType, EdgeLabelType> *ns = nullptr;
                 if (newStatesMap.find(*Qnext) == newStatesMap.end()) {
                     // state does not yet exist, make new state
-                    ns = new State<StateLabelType, EdgeLabelType>(newStateId++);
+                    CId nsId = newStateId++;
+                    ns = result->addState(nsId);
+
                     newStatesMap[*Qnext] = ns;
-                    result->addState(ns);
-                    unprocessed->push_back(Qnext);
+                    unprocessed.push_back(Qnext);
                 } else {
                     // state already exists, fetch from newStatesMap
                     ns = newStatesMap[*Qnext];
                 }
 
                 // add an edge in the new fsm
-                result->addEdge(newStatesMap[*Q], l, ns);
+                result->addEdge(newStatesMap[Q], l, ns);
             }
         }
-        delete initialStateSet;
-        delete unprocessed;
 
         // set initial state
         return result;
     };
 
-    typedef map<State<StateLabelType, EdgeLabelType> *,
-                SetOfStates<StateLabelType, EdgeLabelType> *>
-            EquivalenceMap;
+    using EquivalenceMap = std::map<State<StateLabelType, EdgeLabelType> *,
+                                    SetOfStates<StateLabelType, EdgeLabelType> *>;
 
     // minimize the automaton based on edge labels only.
-    FiniteStateMachine<StateLabelType, EdgeLabelType> *minimizeEdgeLabels(void) {
+    std::shared_ptr<FiniteStateMachine<StateLabelType, EdgeLabelType>> minimizeEdgeLabels() {
         // partition refinement algorithm
 
         // generate a vector of equivalence classes
-        list<SetOfStates<StateLabelType, EdgeLabelType> *> *eqClasses =
-                new list<SetOfStates<StateLabelType, EdgeLabelType> *>();
+        std::shared_ptr<std::list<std::shared_ptr<Abstract::SetOfStateRefs>>>
+                eqClasses = std::make_shared<std::list<
+                        std::shared_ptr<Abstract::SetOfStateRefs>>>();
 
         // populate it with s set of all states
-        SetOfStates<StateLabelType, EdgeLabelType> *initialClass =
-                new SetOfStates<StateLabelType, EdgeLabelType>(*(this->getStates()));
+        std::shared_ptr<Abstract::SetOfStateRefs> initialClass =
+                std::make_shared<Abstract::SetOfStateRefs>(
+                        *(this->getStates()));
         eqClasses->push_back(initialClass);
 
         // initially map all state to the initial class
         EquivalenceMap eqMap;
-        typename SetOfStates<StateLabelType, EdgeLabelType>::CIter si;
-        for (si = initialClass->begin(); si != initialClass->end(); si++) {
-            eqMap[(State<StateLabelType, EdgeLabelType> *)*si] = initialClass;
+        for (const auto *si : *initialClass) {
+            eqMap[*si] = initialClass;
         }
 
         // partition refinement
-        bool changed;
+        bool changed = false;
         do {
             changed = false;
 
-            list<SetOfStates<StateLabelType, EdgeLabelType> *> *newEqClasses =
-                    new list<SetOfStates<StateLabelType, EdgeLabelType> *>();
+            std::shared_ptr<
+                    std::list<std::shared_ptr<Abstract::SetOfStateRefs>>>
+                    newEqClasses = std::make_shared<std::list<
+                            std::shared_ptr<Abstract::SetOfStateRefs>>>();
 
             // for every potential equivalence class
-            typename list<SetOfStates<StateLabelType, EdgeLabelType> *>::const_iterator i;
-            for (i = eqClasses->begin(); i != eqClasses->end(); i++) {
-                SetOfStates<StateLabelType, EdgeLabelType> *_class = *i;
+            for (const auto& ic : *eqClasses) {
+                std::shared_ptr<Abstract::SetOfStateRefs> _class = ic;
 
                 typename SetOfStates<StateLabelType, EdgeLabelType>::iterator i;
                 i = _class->begin();
 
                 // pick arbitrary state from class
-                State<StateLabelType, EdgeLabelType> *s1, *s2;
-                s1 = (State<StateLabelType, EdgeLabelType> *)*i;
+                State<StateLabelType, EdgeLabelType> *s1 = nullptr;
+                State<StateLabelType, EdgeLabelType> *s2 = nullptr;
+                s1 = *i;
 
-                SetOfStates<StateLabelType, EdgeLabelType> *equivSet =
-                        new SetOfStates<StateLabelType, EdgeLabelType>();
-                SetOfStates<StateLabelType, EdgeLabelType> *remainingSet =
-                        new SetOfStates<StateLabelType, EdgeLabelType>();
+                std::shared_ptr<Abstract::SetOfStateRefs> equivSet =
+                        std::make_shared<Abstract::SetOfStateRefs>();
+                std::shared_ptr<Abstract::SetOfStateRefs> remainingSet =
+                        std::make_shared<Abstract::SetOfStateRefs>();
                 equivSet->insert(s1);
 
                 // check whether all other states can go with the same label to
                 // the same set of other equivalence classes.
                 while (++i != _class->end()) {
-                    s2 = (State<StateLabelType, EdgeLabelType> *)*i;
+                    s2 = *i;
                     if (this->edgesEquivalent(eqMap, s1, s2)) {
                         equivSet->insert(s2);
                     } else {
@@ -634,7 +739,6 @@ public:
                 if (equivSet->size() == _class->size()) {
                     newEqClasses->push_back(equivSet);
                     this->mapStates(eqMap, equivSet);
-                    delete remainingSet;
                 } else {
                     newEqClasses->push_back(equivSet);
                     this->mapStates(eqMap, equivSet);
@@ -642,72 +746,54 @@ public:
                     this->mapStates(eqMap, remainingSet);
                     changed = true;
                 }
-                delete _class;
             }
-            list<SetOfStates<StateLabelType, EdgeLabelType> *> *tempEqClasses;
-            tempEqClasses = eqClasses;
+            auto tempEqClasses = eqClasses;
             eqClasses = newEqClasses;
-            delete tempEqClasses;
-
         } while (changed);
 
-        FiniteStateMachine<StateLabelType, EdgeLabelType> *result =
-                new FiniteStateMachine<StateLabelType, EdgeLabelType>();
+        std::shared_ptr<FiniteStateMachine<StateLabelType, EdgeLabelType>> result =
+                std::make_shared<FiniteStateMachine<StateLabelType, EdgeLabelType>>();
 
         // make a state for every equivalence class
-        map<SetOfStates<StateLabelType, EdgeLabelType> *, State<StateLabelType, EdgeLabelType> *>
+        std::map<Abstract::SetOfStateRefs *,
+                 State<StateLabelType, EdgeLabelType> *>
                 newStateMap;
-        typename list<SetOfStates<StateLabelType, EdgeLabelType> *>::const_iterator cli;
         CId sid = 0;
-        for (cli = eqClasses->begin(); cli != eqClasses->end(); cli++) {
-            State<StateLabelType, EdgeLabelType> *ns =
-                    new State<StateLabelType, EdgeLabelType>(sid);
+        for (const auto& cli : *eqClasses) {
+            std::shared_ptr<State<StateLabelType, EdgeLabelType>> ns =
+                    std::make_shared<State<StateLabelType, EdgeLabelType>>(sid);
             result->addState(ns);
             newStateMap[*cli] = ns;
             sid++;
         }
 
         // make the appropriate edges
-        for (cli = eqClasses->begin(); cli != eqClasses->end(); cli++) {
+        for (const auto& cli : *eqClasses) {
             // take a representative state
-            State<StateLabelType, EdgeLabelType> *s =
-                    (State<StateLabelType, EdgeLabelType> *)*((*cli)->begin());
-            SetOfEdges<StateLabelType, EdgeLabelType> *es =
-                    (SetOfEdges<StateLabelType, EdgeLabelType> *)s->getOutgoingEdges();
-            typename SetOfEdges<StateLabelType, EdgeLabelType>::CIter edi;
+            const auto *s = *(cli->begin());
+            auto es = s->getOutgoingEdges();
             // for every outgoing edge
-            for (edi = es->begin(); edi != es->end(); edi++) {
-                Edge<StateLabelType, EdgeLabelType> *ed =
-                        (Edge<StateLabelType, EdgeLabelType> *)*edi;
-                result->addEdge(newStateMap[*cli],
-                                ed->label,
-                                newStateMap[eqMap[(State<StateLabelType, EdgeLabelType> *)
-                                                          ed->getDestination()]]);
+            for (auto *edi : es) {
+                auto ed = dynamic_cast<Edge<StateLabelType, EdgeLabelType>*>(edi);
+                result->addEdge(
+                        newStateMap[*cli], ed->label, newStateMap[eqMap[ed->getDestination()]]);
             }
         }
 
         // set initial state
         result->setInitialState(newStateMap[eqMap[this->getInitialState()]]);
 
-        // cleanup
-        typename list<SetOfStates<StateLabelType, EdgeLabelType> *>::iterator csi;
-        for (csi = eqClasses->begin(); csi != eqClasses->end(); csi++) {
-            delete *csi;
-        }
-        delete eqClasses;
-
         return result;
     }
 
 private:
-    void insertOutgoingLabels(State<StateLabelType, EdgeLabelType> *s, set<EdgeLabelType> &labels) {
-        SetOfEdges<StateLabelType, EdgeLabelType> *e =
-                (SetOfEdges<StateLabelType, EdgeLabelType> *)s->getOutgoingEdges();
+    void insertOutgoingLabels(State<StateLabelType, EdgeLabelType> *s,
+                              std::set<EdgeLabelType> &labels) {
+        const Abstract::SetOfEdgeRefs &e = s->getOutgoingEdges();
 
         // collect all labels in edges of s
-        typename SetOfEdges<StateLabelType, EdgeLabelType>::CIter i;
-        for (i = e->begin(); i != e->end(); i++) {
-            Edge<StateLabelType, EdgeLabelType> *ed = (Edge<StateLabelType, EdgeLabelType> *)*i;
+        for (auto *i : e) {
+            auto *ed = dynamic_cast<Edge<StateLabelType, EdgeLabelType>*>(i);
             labels.insert(ed->label);
         }
     };
@@ -718,64 +804,63 @@ private:
                          State<StateLabelType, EdgeLabelType> *s2) {
         // s1 and s2 are equivalent if for every s1-a->C, s2-a->C
         // and vice versa
-        set<EdgeLabelType> labels;
+        std::set<EdgeLabelType> labels;
         this->insertOutgoingLabels(s1, labels);
         this->insertOutgoingLabels(s2, labels);
 
         // for every label, compare outgoing edges
-        typename set<EdgeLabelType>::const_iterator k;
+        typename std::set<EdgeLabelType>::const_iterator k;
         for (k = labels.begin(); k != labels.end(); k++) {
             EdgeLabelType l = *k;
             SetOfStates<StateLabelType, EdgeLabelType> *ns1 = s1->nextStatesOfEdgeLabel(l);
             SetOfStates<StateLabelType, EdgeLabelType> *ns2 = s2->nextStatesOfEdgeLabel(l);
             // collect classes of states in ns1 and ns2
-            set<SetOfStates<StateLabelType, EdgeLabelType> *> cs1;
-            set<SetOfStates<StateLabelType, EdgeLabelType> *> cs2;
-            typename SetOfStates<StateLabelType, EdgeLabelType>::CIter j;
-            for (j = ns1->begin(); j != ns1->end(); j++) {
-                State<StateLabelType, EdgeLabelType> *s =
-                        (State<StateLabelType, EdgeLabelType> *)*j;
+            std::set<SetOfStates<StateLabelType, EdgeLabelType> *> cs1;
+            std::set<SetOfStates<StateLabelType, EdgeLabelType> *> cs2;
+            for (auto j : ns1) {
+                auto s = *j;
                 cs1.insert(m[s]);
             }
-            for (j = ns2->begin(); j != ns2->end(); j++) {
-                State<StateLabelType, EdgeLabelType> *s =
-                        (State<StateLabelType, EdgeLabelType> *)*j;
+            for (auto j : ns2) {
+                auto s = *j;
                 cs2.insert(m[s]);
             }
 
-            delete ns1;
-            delete ns2;
-
             // compare classes
-            if (cs1 != cs2)
+            if (cs1 != cs2) {
                 return false;
+            }
         }
         return true;
     }
 
     // function only used by minimizeEdgeLabels
     void mapStates(EquivalenceMap &m, SetOfStates<StateLabelType, EdgeLabelType> *sos) {
-        typename SetOfStates<StateLabelType, EdgeLabelType>::CIter i;
-        for (i = sos->begin(); i != sos->end(); i++) {
-            State<StateLabelType, EdgeLabelType> *s = (State<StateLabelType, EdgeLabelType> *)*i;
+        for (auto i : sos) {
+            auto s = *i;
             m[s] = sos;
         }
     }
-
-    SetOfStates<StateLabelType, EdgeLabelType> *states;
-    SetOfEdges<StateLabelType, EdgeLabelType> *edges;
-    State<StateLabelType, EdgeLabelType> *initialState;
 };
 } // namespace Labeled
 
 // Edge Labelled Scenario Automaton
-typedef ::FSM::Labeled::State<CId, CString> ELSState;
-typedef ::FSM::Labeled::Edge<CId, CString> ELSEdge;
-typedef ::FSM::Labeled::SetOfStates<CId, CString> ELSSetOfStates;
-typedef ::FSM::Labeled::SetOfEdges<CId, CString> ELSSetOfEdges;
+using ELSState = ::FSM::Labeled::State<CId, CString>;
+using ELSEdge = ::FSM::Labeled::Edge<CId, CString>;
+using ELSSetOfStates = ::FSM::Labeled::SetOfStates<CId, CString>;
+using ELSSetOfEdges = ::FSM::Abstract::SetOfEdges;
+using ELSSetOfStateRefs = ::FSM::Abstract::SetOfStateRefs;
+using ELSSetOfEdgeRefs = ::FSM::Abstract::SetOfEdgeRefs;
+
 class EdgeLabeledScenarioFSM : public ::FSM::Labeled::FiniteStateMachine<CId, CString> {
 public:
-    virtual ~EdgeLabeledScenarioFSM(){};
+    ~EdgeLabeledScenarioFSM() override = default;
+
+    EdgeLabeledScenarioFSM(const EdgeLabeledScenarioFSM &) = delete;
+    EdgeLabeledScenarioFSM &operator=(const EdgeLabeledScenarioFSM &other) = delete;
+    EdgeLabeledScenarioFSM(EdgeLabeledScenarioFSM &&) = delete;
+    EdgeLabeledScenarioFSM &operator=(EdgeLabeledScenarioFSM &&) = delete;
+
     virtual void removeDanglingStates();
 };
 
@@ -784,23 +869,27 @@ namespace StateStringLabeled {
 // make an FSM class with unlabeled edges, based on the labeled one with some dummy char labels
 //
 
-class SetOfEdges : public Labeled::SetOfEdges<CString, char> {};
+// class SetOfEdges : public Labeled::SetOfEdges<CString, char> {};
+// class SetOfEdgeRefs : public Labeled::SetOfEdgeRefs<CString, char> {};
 
-class SetOfStates : public Labeled::SetOfStates<CString, char> {};
+// class SetOfStates : public Labeled::SetOfStates<CString, char> {};
+// class SetOfStateRefs : public Labeled::SetOfStateRefs<CString, char> {};
 
 class State : public Labeled::State<CString, char> {
 public:
-    State(const CString &withLabel) : Labeled::State<CString, char>(withLabel) {}
+    explicit State(const CString &withLabel) : Labeled::State<CString, char>(withLabel) {}
 
-    SetOfEdges *getOutgoingEdges(void) {
-        return (SetOfEdges *)Labeled::State<CString, char>::getOutgoingEdges();
+    const Abstract::SetOfEdgeRefs &getOutgoingEdges() {
+        return dynamic_cast<const Abstract::SetOfEdgeRefs &>(
+                Labeled::State<CString, char>::getOutgoingEdges());
     }
 };
 
 class FiniteStateMachine : public Labeled::FiniteStateMachine<CString, char> {
 public:
-    State *getInitialState() {
-        return (State *)Labeled::FiniteStateMachine<CString, char>::getInitialState();
+    const State &getInitialState() {
+        return dynamic_cast<const State &>(
+                Labeled::FiniteStateMachine<CString, char>::getInitialState());
     };
 
     void setInitialStateLabeled(const CString &sl);
@@ -811,7 +900,7 @@ public:
 
     void addEdgeLabeled(const CString &src, const CString &dst);
 
-    SetOfStates *reachableStates(void);
+    std::shared_ptr<Abstract::SetOfStateRefs> reachableStates();
 };
 
 class Edge : public Labeled::Edge<CString, char> {};
@@ -823,38 +912,35 @@ class FiniteStateMachine;
 
 class State : public Abstract::State {
 public:
-    State(Abstract::State *s1, Abstract::State *s2, FiniteStateMachine *m) : Abstract::State() {
-        this->sa = s1;
-        this->sb = s2;
-        this->fsm = m;
-        outgoingEdgesDone = false;
-    }
+    State(Abstract::State &s1, Abstract::State &s2, const FiniteStateMachine &ownerFsm) :
+        sa(&s1), sb(&s2), fsm(&ownerFsm) {}
 
-    virtual Abstract::SetOfEdges *getOutgoingEdges();
+    virtual const Abstract::SetOfEdges &getOutgoingEdges();
 
 private:
     Abstract::State *sa;
     Abstract::State *sb;
-    FiniteStateMachine *fsm;
-    bool outgoingEdgesDone;
+    const FiniteStateMachine *fsm;
+    bool outgoingEdgesDone{};
 };
 
 class FiniteStateMachine : public Abstract::FiniteStateMachine {
 public:
-    FiniteStateMachine(Abstract::FiniteStateMachine *fsm1, Abstract::FiniteStateMachine *fsm2) {
-        this->fsm_a = fsm1;
-        this->fsm_b = fsm2;
-    }
+    FiniteStateMachine(const Abstract::FiniteStateMachine &fsm1,
+                       const Abstract::FiniteStateMachine &fsm2) :
+        fsm_a(fsm1), fsm_b(fsm2) {}
 
-    State *getInitialState();
+    std::shared_ptr<State> getInitialState();
 
-    virtual bool matchEdges(Abstract::Edge *e1, Abstract::Edge *e2) = 0;
+    [[nodiscard]] virtual bool matchEdges(const Abstract::Edge &e1,
+                                          const Abstract::Edge &e2) const = 0;
 
-    virtual Abstract::Edge *ensureEdge(Abstract::Edge *e1, Abstract::Edge *s2) = 0;
+    [[nodiscard]] virtual std::shared_ptr<Abstract::Edge>
+    ensureEdge(const Abstract::Edge &e1, const Abstract::Edge &e2) const = 0;
 
 private:
-    Abstract::FiniteStateMachine *fsm_a;
-    Abstract::FiniteStateMachine *fsm_b;
+    const Abstract::FiniteStateMachine &fsm_a;
+    const Abstract::FiniteStateMachine &fsm_b;
 };
 
 } // namespace Product

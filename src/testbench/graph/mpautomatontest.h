@@ -7,15 +7,14 @@
 
 #include "graph/mpautomaton.h"
 
-using namespace MaxPlus;
 
 class MPAutomatonTest : public ::testing::Test {
 
 public:
     MPAutomatonTest();
 
-    virtual void SetUp();
-    virtual void TearDown();
-    virtual void Run();
-    void testCreateFSM(void);
+    void SetUp() override;
+    void TearDown() override;
+    void Run() override;
+    void testCreateFSM();
 };

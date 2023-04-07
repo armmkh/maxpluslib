@@ -42,13 +42,13 @@
 #include "algebra/mpmatrix.h"
 #include "algebra/mptype.h"
 #include "base/exception/exception.h"
-#include <math.h>
+#include <cmath>
 #include <numeric>
 
 namespace MaxPlus {
 
-unsigned int Sizes::sum(void) const {
-    return std::accumulate(this->cbegin(), this->cend(), (unsigned int)0);
+unsigned int Sizes::sum() const {
+    return std::accumulate(this->cbegin(), this->cend(), static_cast<unsigned int>(0));
 }
 
 Sizes Sizes::refineWith(const Sizes &s) const {
@@ -62,23 +62,27 @@ Sizes Sizes::refineWith(const Sizes &s) const {
             result.push_back(rs);
             it++;
             is++;
-            if (it != this->cend())
+            if (it != this->cend()) {
                 rt = *it;
-            if (is != s.cend())
+            }
+            if (is != s.cend()) {
                 rs = *is;
+            }
         } else {
             if (rs < rt) {
                 result.push_back(rs);
                 is++;
                 rt -= rs;
-                if (is != s.cend())
+                if (is != s.cend()) {
                     rs = *is;
+                }
             } else {
                 result.push_back(rt);
                 it++;
                 rs -= rt;
-                if (it != this->cend())
+                if (it != this->cend()) {
                     rt = *it;
+                }
             }
         }
     }
@@ -90,21 +94,22 @@ Sizes Sizes::refineWith(const Sizes &s) const {
  */
 SparseVector::SparseVector(unsigned int size, MPTime value) : size(size), table(0) {
     if (size > 0) {
-        this->table.push_back(std::make_pair(size, value));
+        this->table.emplace_back(size, value);
     }
 }
 
 /**
  * Construct a max-plus vector from an std:vector
  */
-SparseVector::SparseVector(const std::vector<MPTime> &v) : size((unsigned int)v.size()), table(0) {
+SparseVector::SparseVector(const std::vector<MPTime> &v) :
+    size(static_cast<unsigned int>(v.size())), table(0) {
     unsigned int k = 0;
     while (k < v.size()) {
         unsigned int cnt = 0;
-        while (k + cnt < (unsigned int)v.size() && v[k + cnt] == v[k]) {
+        while (k + cnt < static_cast<unsigned int>(v.size()) && v[k + cnt] == v[k]) {
             cnt++;
         }
-        this->table.push_back(std::make_pair(cnt, v[k]));
+        this->table.emplace_back(cnt, v[k]);
         k += cnt;
     }
 }
@@ -112,7 +117,7 @@ SparseVector::SparseVector(const std::vector<MPTime> &v) : size((unsigned int)v.
 /**
  * copy constructor
  */
-SparseVector::SparseVector(const SparseVector &other) : size(other.size), table(other.table) {}
+SparseVector::SparseVector(const SparseVector &other) = default;
 
 SparseVector::SparseVector(const unsigned int size,
                            const std::vector<std::pair<unsigned int, MPTime>> &v) :
@@ -120,11 +125,11 @@ SparseVector::SparseVector(const unsigned int size,
 
 SparseVector::SparseVector(const Vector &v, const Sizes &sz) {
     if (v.getSize() != sz.size()) {
-        throw new CException("Incompatible sizes");
+        throw CException("Incompatible sizes");
     }
     this->size = 0;
     for (unsigned int i = 0; i < v.getSize(); i++) {
-        this->table.push_back(std::make_pair(sz[i], v.get(i)));
+        this->table.emplace_back(sz[i], v.get(i));
         this->size += sz[i];
     }
 }
@@ -133,11 +138,14 @@ SparseVector::SparseVector(const Vector &v, const Sizes &sz) {
  * vector assignment
  */
 SparseVector &SparseVector::operator=(const SparseVector &other) {
-    if (this->getSize() != other.getSize()) {
-        throw CException("Vectors of different size in"
-                         "SparseVector::operator=");
+    // check self assignment
+    if (this != &other) {
+        if (this->getSize() != other.getSize()) {
+            throw CException("Vectors of different size in"
+                             "SparseVector::operator=");
+        }
+        this->table = other.table;
     }
-    this->table = other.table;
     return *this;
 }
 
@@ -155,9 +163,8 @@ void SparseVector::negate() {
         if (e.second == MP_MINUSINFINITY) {
             throw CException("Cannot negate vectors with MP_MINUSINFINITY elements in"
                              "SparseVector::negate");
-        } else {
-            e.second = -e.second;
         }
+        e.second = -e.second;
     }
 }
 
@@ -195,12 +202,12 @@ MPTime SparseVector::normalize() {
  * add scalar to vector
  */
 SparseVector SparseVector::add(MPTime increase) const {
-    vector<std::pair<unsigned int, MPTime>> newTable;
+    std::vector<std::pair<unsigned int, MPTime>> newTable;
     unsigned int k = 0;
     while (k < this->table.size()) {
-        newTable.push_back(std::make_pair(this->table[k].first, this->table[k].second + increase));
+        newTable.emplace_back(this->table[k].first, this->table[k].second + increase);
     }
-    return SparseVector(this->getSize(), newTable);
+    return {this->getSize(), newTable};
 }
 
 /**
@@ -209,7 +216,7 @@ SparseVector SparseVector::add(MPTime increase) const {
 SparseVector SparseVector::combine(const SparseVector &vecB, MPTime f(MPTime a, MPTime b)) const {
     assert(vecB.getSize() == this->getSize());
 
-    vector<std::pair<unsigned int, MPTime>> newTable;
+    std::vector<std::pair<unsigned int, MPTime>> newTable;
     unsigned int k1 = 0;
     unsigned int k2 = 0;
     unsigned int m1 = 0;
@@ -217,27 +224,31 @@ SparseVector SparseVector::combine(const SparseVector &vecB, MPTime f(MPTime a, 
 
     // invariant m1 elements if this->table[k1] have been covered and m2 elements of vecB.table[k2]
     // m1 < this->table[k1].first && m2 < vecB.table[k1].first
-    if (k1 < this->table.size())
+    if (k1 < this->table.size()) {
         m1 = this->table[k1].first;
-    if (k2 < vecB.table.size())
+    }
+    if (k2 < vecB.table.size()) {
         m2 = vecB.table[k2].first;
+    }
     while (k1 < this->table.size()) {
         unsigned int m = (m1 < m2) ? m1 : m2;
-        newTable.push_back(std::make_pair(m, f(this->table[k1].second, vecB.table[k2].second)));
+        newTable.emplace_back(m, f(this->table[k1].second, vecB.table[k2].second));
         m1 -= m;
         m2 -= m;
         if (m1 == 0) {
             k1++;
-            if (k1 < this->table.size())
+            if (k1 < this->table.size()) {
                 m1 = this->table[k1].first;
+            }
         }
         if (m2 == 0) {
             k2++;
-            if (k2 < vecB.table.size())
+            if (k2 < vecB.table.size()) {
                 m2 = vecB.table[k2].first;
+            }
         }
     }
-    return SparseVector(this->getSize(), newTable);
+    return {this->getSize(), newTable};
 }
 
 bool SparseVector::forall(const SparseVector &vecB, bool f(MPTime a, MPTime b)) const {
@@ -250,25 +261,30 @@ bool SparseVector::forall(const SparseVector &vecB, bool f(MPTime a, MPTime b)) 
 
     // invariant m1 elements if this->table[k1] have been covered and m2 elements of vecB.table[k2]
     // m1 < this->table[k1].first && m2 < vecB.table[k1].first
-    if (k1 < this->table.size())
+    if (k1 < this->table.size()) {
         m1 = this->table[k1].first;
-    if (k2 < vecB.table.size())
+    }
+    if (k2 < vecB.table.size()) {
         m2 = vecB.table[k2].first;
+    }
     while (k1 < this->table.size()) {
         unsigned int m = (m1 < m2) ? m1 : m2;
-        if (!f(this->table[k1].second, vecB.table[k2].second))
+        if (!f(this->table[k1].second, vecB.table[k2].second)) {
             return false;
+        }
         m1 -= m;
         m2 -= m;
         if (m1 == 0) {
             k1++;
-            if (k1 < this->table.size())
+            if (k1 < this->table.size()) {
                 m1 = this->table[k1].first;
+            }
         }
         if (m2 == 0) {
             k2++;
-            if (k2 < vecB.table.size())
+            if (k2 < vecB.table.size()) {
                 m2 = vecB.table[k2].first;
+            }
         }
     }
     return true;
@@ -284,7 +300,7 @@ SparseVector SparseVector::maximum(const SparseVector &vecB) const {
 /**
  * Destructor of max-plus vector
  */
-SparseVector::~SparseVector() {}
+SparseVector::~SparseVector() = default;
 
 /**
  * Put an entry into the vector. Grows vector if necessary
@@ -296,8 +312,9 @@ void SparseVector::put(unsigned int row, MPTime value) {
     unsigned int rc = insert.second;
     if (k < this->table.size()) {
         // we have found the spot in the list
-        if (this->table[k].second == value)
+        if (this->table[k].second == value) {
             return;
+        }
         MPTime oldval = this->table[k].second;
         unsigned int before = rc;
         unsigned int after = this->table[k].first - rc - 1;
@@ -315,10 +332,10 @@ void SparseVector::put(unsigned int row, MPTime value) {
         // the spot exceeds the current size
         unsigned int before = rc;
         if (before > 0) {
-            this->table.push_back(std::make_pair(before, MP_MINUSINFINITY));
+            this->table.emplace_back(before, MP_MINUSINFINITY);
             k++;
         }
-        this->table.push_back(std::make_pair(1, value));
+        this->table.emplace_back(1, value);
         this->size += before + 1;
     }
 }
@@ -340,12 +357,12 @@ void SparseVector::putAll(unsigned int startRow, unsigned int endRow, MPTime val
     auto insertStart = this->find(startRow);
     auto insertEnd = this->find(endRow);
     if (insertEnd.first >= this->table.size() && insertEnd.second > 0) {
-        throw new CException("Range exceeds vector size in SparseVector::putAll");
+        throw CException("Range exceeds vector size in SparseVector::putAll");
     }
     // we have found the spot in the list
     MPTime oldValPre = this->table[insertStart.first].second;
     MPTime oldValPost;
-    unsigned int postRemain;
+    unsigned int postRemain = 0;
     if (insertEnd.first >= this->table.size()) {
         postRemain = 0;
     } else {
@@ -377,12 +394,12 @@ void SparseVector::insertVector(unsigned int startRow, const SparseVector &v) {
     auto insertStart = this->find(startRow);
     auto insertEnd = this->find(endRow);
     if (insertEnd.first >= this->table.size() && insertEnd.second > 0) {
-        throw new CException("Range exceeds vector size in SparseVector::putAll");
+        throw CException("Range exceeds vector size in SparseVector::putAll");
     }
     // we have found the spot in the list
     MPTime oldValPre = this->table[insertStart.first].second;
     MPTime oldValPost;
-    unsigned int postRemain;
+    unsigned int postRemain = 0;
     if (insertEnd.first >= this->table.size()) {
         postRemain = 0;
     } else {
@@ -399,7 +416,7 @@ void SparseVector::insertVector(unsigned int startRow, const SparseVector &v) {
     }
     if (endRow - startRow > 0) {
         this->table.insert(this->table.begin() + i, v.table.begin(), v.table.end());
-        i += (unsigned int)v.table.size();
+        i += static_cast<unsigned int>(v.table.size());
     }
     if (postRemain > 0) {
         this->table.insert(this->table.begin() + i, std::make_pair(postRemain, oldValPost));
@@ -420,7 +437,7 @@ MPTime SparseVector::get(unsigned int row) const {
 /**
  * String representation of vector
  */
-void SparseVector::toString(CString &outString, double scale) const {
+void SparseVector::toString(CString &outString, CDouble scale) const {
     outString = "[";
     for (auto k = this->table.begin(); k < this->table.end(); k++) {
         if (k != this->table.begin()) {
@@ -442,7 +459,10 @@ SparseVector SparseVector::add(const SparseVector &vecB) const {
  * Compare vectors up to MP_EPSILON
  */
 bool SparseVector::compare(const SparseVector &v) const {
-    return this->forall(v, [](MPTime a, MPTime b) { return fabs(static_cast<CDouble>(a) - static_cast<CDouble>(b)) <= static_cast<CDouble>(MP_EPSILON); });
+    return this->forall(v, [](MPTime a, MPTime b) {
+        return fabs(static_cast<CDouble>(a) - static_cast<CDouble>(b))
+               <= static_cast<CDouble>(MP_EPSILON);
+    });
 }
 
 SparseVector SparseVector::operator+=(MPTime increase) const { return this->add(increase); }
@@ -456,7 +476,7 @@ SparseVector SparseVector::operator-=(MPTime decrease) const {
 }
 
 void SparseVector::compress() {
-    vector<std::pair<unsigned int, MPTime>> newTable;
+    std::vector<std::pair<unsigned int, MPTime>> newTable;
     unsigned int k = 0;
     while (k < this->table.size()) {
         unsigned int m = k + 1;
@@ -465,7 +485,7 @@ void SparseVector::compress() {
             cnt += this->table[m].first;
             m++;
         }
-        newTable.push_back(std::make_pair(cnt, this->table[k].second));
+        newTable.emplace_back(cnt, this->table[k].second);
         k = m;
     }
     this->table = newTable;
@@ -482,10 +502,12 @@ MPTime SparseVector::innerProduct(const SparseVector &v) const {
 
     // invariant m1 elements if this->table[k1] have been covered and m2 elements of vecB.table[k2]
     // m1 < this->table[k1].first && m2 < vecB.table[k1].first
-    if (k1 < this->table.size())
+    if (k1 < this->table.size()) {
         m1 = this->table[k1].first;
-    if (k2 < v.table.size())
+    }
+    if (k2 < v.table.size()) {
         m2 = v.table[k2].first;
+    }
     while (k1 < this->table.size()) {
         unsigned int m = (m1 < m2) ? m1 : m2;
         result = MP_MAX(result, this->table[k1].second + v.table[k2].second);
@@ -493,13 +515,15 @@ MPTime SparseVector::innerProduct(const SparseVector &v) const {
         m2 -= m;
         if (m1 == 0) {
             k1++;
-            if (k1 < this->table.size())
+            if (k1 < this->table.size()) {
                 m1 = this->table[k1].first;
+            }
         }
         if (m2 == 0) {
             k2++;
-            if (k2 < v.table.size())
+            if (k2 < v.table.size()) {
                 m2 = v.table[k2].first;
+            }
         }
     }
     return result;
@@ -510,7 +534,7 @@ bool SparseVector::operator==(const SparseVector &v) const {
 }
 
 Vector SparseVector::maxRanges(const Ranges &ranges) const {
-    Vector result((unsigned int)ranges.size());
+    Vector result(static_cast<unsigned int>(ranges.size()));
     unsigned int k = 0;
     unsigned int l = 0;
     unsigned int idx = 0;
@@ -536,7 +560,7 @@ Vector SparseVector::maxRanges(const Ranges &ranges) const {
 }
 
 Vector SparseVector::sample(const Indices &i) const {
-    Vector result((unsigned int)i.size());
+    Vector result(static_cast<unsigned int>(i.size()));
     unsigned int k = 0;
     unsigned int idx = 0;
     for (unsigned int m = 0; m < i.size(); m++) {
@@ -560,14 +584,13 @@ Sizes SparseVector::getSizes() const {
 SparseMatrix::SparseMatrix(unsigned int rowSize, unsigned int colSize, MPTime value) :
     rowSize(rowSize), columnSize(colSize), isTransposed(false) {
     if (this->columnSize > 0) {
-        this->table.push_back(std::make_pair(this->columnSize, SparseVector(this->rowSize, value)));
+        this->table.emplace_back(this->columnSize, SparseVector(this->rowSize, value));
     }
 }
 
-SparseMatrix::SparseMatrix(const SparseMatrix &M) :
-    rowSize(M.rowSize), columnSize(M.columnSize), isTransposed(M.isTransposed), table(M.table) {}
+SparseMatrix::SparseMatrix(const SparseMatrix &M) = default;
 
-SparseMatrix::~SparseMatrix() {}
+SparseMatrix::~SparseMatrix() = default;
 
 MPTime SparseMatrix::get(unsigned int row, unsigned int column) const {
     unsigned int r = this->isTransposed ? column : row;
@@ -611,25 +634,27 @@ void SparseMatrix::put(unsigned int row, unsigned int column, MPTime value) {
         // the spot exceeds the current size
         unsigned int before = cc;
         if (before > 0) {
-            this->table.push_back(
-                    std::make_pair(before, SparseVector(this->rowSize, MP_MINUSINFINITY)));
+            this->table.emplace_back(before, SparseVector(this->rowSize, MP_MINUSINFINITY));
             k++;
         }
         SparseVector newVector(this->rowSize, MP_MINUSINFINITY);
         newVector.put(r, value);
-        this->table.push_back(std::make_pair(1, newVector));
+        this->table.emplace_back(1, newVector);
         this->rowSize += before + 1;
     }
 }
 
 SparseMatrix &SparseMatrix::operator=(const SparseMatrix &other) {
-    if (this->getRowSize() != other.getRowSize()
-        || this->getColumnSize() != other.getColumnSize()) {
-        throw CException("Matrices of different size in"
-                         "SparseMatrix::operator=");
+    // check self assignment
+    if (this != &other) {
+        if (this->getRowSize() != other.getRowSize()
+            || this->getColumnSize() != other.getColumnSize()) {
+            throw CException("Matrices of different size in"
+                             "SparseMatrix::operator=");
+        }
+        this->table = other.table;
+        this->isTransposed = other.isTransposed;
     }
-    this->table = other.table;
-    this->isTransposed = other.isTransposed;
     return *this;
 }
 
@@ -652,12 +677,12 @@ SparseMatrix SparseMatrix::transposed() const {
 void SparseMatrix::doTranspose() {
     SparseMatrix result(this->getRowSize(), this->getColumnSize());
     unsigned int cb = 0;
-    for (auto k = this->table.begin(); k != this->table.end(); k++) {
-        unsigned int ce = cb + (*k).first;
+    for (auto &k : this->table) {
+        unsigned int ce = cb + k.first;
         unsigned int rb = 0;
-        for (auto l = k->second.table.begin(); l != k->second.table.end(); l++) {
-            unsigned int re = rb + (*l).first;
-            result.putAll(cb, ce, rb, re, (*l).second);
+        for (auto &l : k.second.table) {
+            unsigned int re = rb + l.first;
+            result.putAll(cb, ce, rb, re, l.second);
             rb = re;
         }
         cb = ce;
@@ -690,12 +715,12 @@ void SparseMatrix::putAll(unsigned int startRow,
     auto insertStart = this->find(sc);
     auto insertEnd = this->find(ec);
     if (insertEnd.first >= this->table.size() && insertEnd.second > 0) {
-        throw new CException("Range exceeds matrix size in SparseMatrix::putAll");
+        throw CException("Range exceeds matrix size in SparseMatrix::putAll");
     }
     // we have found the spot in the list
     SparseVector oldValPre = this->table[insertStart.first].second;
     SparseVector oldValPost(oldValPre.getSize());
-    unsigned int postRemain;
+    unsigned int postRemain = 0;
     if (insertEnd.first < this->table.size()) {
         oldValPost = this->table[insertEnd.first].second;
         postRemain = this->table[insertEnd.first].first - insertEnd.second;
@@ -705,7 +730,8 @@ void SparseMatrix::putAll(unsigned int startRow,
 
     auto last = insertEnd.first < this->table.size() ? this->table.begin() + insertEnd.first + 1
                                                      : this->table.end();
-    vector<std::pair<unsigned int, SparseVector>> v(this->table.begin() + insertStart.first, last);
+    std::vector<std::pair<unsigned int, SparseVector>> v(this->table.begin() + insertStart.first,
+                                                         last);
     this->table.erase(this->table.begin() + insertStart.first, last);
 
     unsigned int i = insertStart.first;
@@ -719,16 +745,18 @@ void SparseMatrix::putAll(unsigned int startRow,
         // insert all new rows here as copies of the old ones with putAll, efficient as possible...
         while (remaining > 0) {
             unsigned int num = v[j].first;
-            if (remaining < num)
+            if (remaining < num) {
                 num = remaining;
+            }
             SparseVector newCol = v[j].second;
 
             newCol.putAll(sr, er, value);
             this->table.insert(this->table.begin() + i, std::make_pair(num, newCol));
             i++;
             remaining -= num;
-            if (num == v[j].first)
+            if (num == v[j].first) {
                 j++;
+            }
         }
     }
     if (postRemain > 0) {
@@ -749,12 +777,12 @@ void SparseMatrix::insertMatrix(unsigned int startRow,
     auto insertStart = this->find(sc);
     auto insertEnd = this->find(ec);
     if (insertEnd.first >= this->table.size() && insertEnd.second > 0) {
-        throw new CException("Range exceeds matrix size in SparseMatrix::putAll");
+        throw CException("Range exceeds matrix size in SparseMatrix::putAll");
     }
     // we have found the spot in the list
     SparseVector oldValPre = this->table[insertStart.first].second;
     SparseVector oldValPost(oldValPre.getSize());
-    unsigned int postRemain;
+    unsigned int postRemain = 0;
     if (insertEnd.first < this->table.size()) {
         oldValPost = this->table[insertEnd.first].second;
         postRemain = this->table[insertEnd.first].first - insertEnd.second;
@@ -764,7 +792,8 @@ void SparseMatrix::insertMatrix(unsigned int startRow,
 
     auto last = insertEnd.first < this->table.size() ? this->table.begin() + insertEnd.first + 1
                                                      : this->table.end();
-    vector<std::pair<unsigned int, SparseVector>> v(this->table.begin() + insertStart.first, last);
+    std::vector<std::pair<unsigned int, SparseVector>> v(this->table.begin() + insertStart.first,
+                                                         last);
     this->table.erase(this->table.begin() + insertStart.first, last);
 
     unsigned int i = insertStart.first;
@@ -781,10 +810,12 @@ void SparseMatrix::insertMatrix(unsigned int startRow,
         unsigned int n = 0;
         while (remaining > 0) {
             unsigned int num = v[j].first;
-            if (M.table[m].first < num)
+            if (M.table[m].first < num) {
                 num = M.table[m].first;
-            if (remaining < num)
+            }
+            if (remaining < num) {
                 num = remaining;
+            }
 
             SparseVector newCol = v[j].second;
 
@@ -793,8 +824,9 @@ void SparseMatrix::insertMatrix(unsigned int startRow,
             i++;
 
             remaining -= num;
-            if (num == v[j].first)
+            if (num == v[j].first) {
                 j++;
+            }
 
             n += num;
             if (n == M.table[m].first) {
@@ -857,7 +889,7 @@ void SparseMatrix::compress() {
         e.second.compress();
     }
 
-    vector<std::pair<unsigned int, SparseVector>> newTable;
+    std::vector<std::pair<unsigned int, SparseVector>> newTable;
     unsigned int k = 0;
     while (k < this->table.size()) {
         unsigned int m = k + 1;
@@ -866,7 +898,7 @@ void SparseMatrix::compress() {
             cnt += this->table[m].first;
             m++;
         }
-        newTable.push_back(std::make_pair(cnt, this->table[k].second));
+        newTable.emplace_back(cnt, this->table[k].second);
         k = m;
     }
     this->table = newTable;
@@ -875,7 +907,7 @@ void SparseMatrix::compress() {
 /**
  * String representation of matrix
  */
-void SparseMatrix::toString(CString &outString, double scale) const {
+void SparseMatrix::toString(CString &outString, CDouble scale) const {
     outString = "";
     if (this->isTransposed) {
         outString += "Transposed of ";
@@ -891,12 +923,12 @@ void SparseMatrix::toString(CString &outString, double scale) const {
 }
 
 // eliminate identical rows and corresponding columns.
-Matrix *SparseMatrix::reduceRows() {
+Matrix SparseMatrix::reduceRows() {
     if (!this->isTransposed) {
         this->doTranspose();
     }
-    unsigned int N = (unsigned int)this->table.size();
-    Matrix &M = *new Matrix(N, N);
+    auto N = static_cast<unsigned int>(this->table.size());
+    Matrix M(N, N);
 
     std::vector<std::pair<unsigned int, unsigned int>> ranges(N);
     unsigned int idx = 0;
@@ -908,7 +940,7 @@ Matrix *SparseMatrix::reduceRows() {
         Vector v = this->table[k].second.maxRanges(ranges);
         M.pasteRowVector(k, 0, &v);
     }
-    return &M;
+    return M;
 }
 
 /**********
@@ -916,7 +948,7 @@ Matrix *SparseMatrix::reduceRows() {
  * such that the corresponding blocks contain the same value and the new matrix has
  * a single element for each such block.
  **********/
-std::pair<Matrix *, Sizes> SparseMatrix::reduceRowsAndColumns() {
+std::pair<Matrix, Sizes> SparseMatrix::reduceRowsAndColumns() {
     // ensure that we are in transposed form
     if (!this->isTransposed) {
         this->doTranspose();
@@ -937,8 +969,8 @@ std::pair<Matrix *, Sizes> SparseMatrix::reduceRowsAndColumns() {
 
     // create a new non-sparse matrix with an element for each of the blocks with the value of that
     // block
-    unsigned int N = (unsigned int)fs.size();
-    Matrix &M = *new Matrix(N, N);
+    auto N = static_cast<unsigned int>(fs.size());
+    Matrix M(N, N);
 
     // determine the row/col indices of the first element of each block
     Indices idcs;
@@ -964,14 +996,13 @@ std::pair<Matrix *, Sizes> SparseMatrix::reduceRowsAndColumns() {
     }
 
     // return the resulting matrix.
-    return std::make_pair(&M, fs);
+    return std::make_pair(M, fs);
 }
 
 // identical rows can be eliminated any eigenvector must have identical values for those rows.
 MPTime SparseMatrix::mpEigenvalue() {
-    Matrix &M = *(this->reduceRows());
-    MPTime lambda = MPTime(M.mp_eigenvalue());
-    delete &M;
+    Matrix M = this->reduceRows();
+    auto lambda = MPTime(M.mp_eigenvalue());
     return lambda;
 }
 
@@ -985,11 +1016,10 @@ Sizes SparseMatrix::sizes() const {
 
 std::pair<SparseMatrix::EigenvectorList, SparseMatrix::GeneralizedEigenvectorList>
 SparseMatrix::mpGeneralizedEigenvectors() {
-    Matrix &M = *(this->reduceRows());
+    Matrix M = this->reduceRows();
     auto evp = M.mp_generalized_eigenvectors();
     auto evs = evp.first;
     auto gevs = evp.second;
-    delete &M;
     SparseMatrix::EigenvectorList evl;
     Sizes sizes = this->sizes();
     for (const auto &evev : evs) {
@@ -1015,7 +1045,7 @@ SparseMatrix SparseMatrix::IdentityMatrix(unsigned int rowsAndCols) {
     SparseMatrix result(rowsAndCols, rowsAndCols);
     result.table.clear();
     for (unsigned int i = 0; i < rowsAndCols; i++) {
-        result.table.push_back(std::make_pair(1, SparseVector::UnitVector(rowsAndCols, i)));
+        result.table.emplace_back(1, SparseVector::UnitVector(rowsAndCols, i));
     }
     return result;
 }
@@ -1037,18 +1067,20 @@ SparseMatrix SparseMatrix::combine(const SparseMatrix &M, MPTime f(MPTime a, MPT
     while (tInd < this->table.size()) {
         unsigned int d = (tRem < mRem) ? tRem : mRem;
         SparseVector v = this->table[tInd].second.combine(M.table[mInd].second, f);
-        result.table.push_back(std::make_pair(d, v));
+        result.table.emplace_back(d, v);
         tRem -= d;
         if (tRem == 0) {
             tInd++;
-            if (tInd < this->table.size())
+            if (tInd < this->table.size()) {
                 tRem = this->table[tInd].first;
+            }
         }
         mRem -= d;
         if (mRem == 0) {
             mInd++;
-            if (mInd < M.table.size())
+            if (mInd < M.table.size()) {
                 mRem = M.table[mInd].first;
+            }
         }
     }
     return result;
@@ -1065,10 +1097,9 @@ SparseMatrix SparseMatrix::maximum(const SparseMatrix &M) {
 SparseMatrix SparseMatrix::starClosure() {
     assert(this->getRowSize() == this->getColumnSize());
     auto mi = this->reduceRowsAndColumns();
-    Matrix &M = *(mi.first);
+    Matrix M = mi.first;
     Sizes szs = mi.second;
-    Matrix &MS = *M.plusClosureMatrix();
-    delete &M;
+    Matrix MS = M.plusClosureMatrix();
 
     // expand MS with indices returned from reduceRowsAndColumns
     //(this->getRowSize(), this->getColumnSize());
@@ -1076,9 +1107,6 @@ SparseMatrix SparseMatrix::starClosure() {
 
     return result.maximum(SparseMatrix::IdentityMatrix(this->getRowSize()));
 
-    delete &MS;
-
-    return result;
 }
 
 SparseMatrix SparseMatrix::expand(const Matrix &M, const Sizes &rszs, const Sizes &cszs) {
@@ -1089,7 +1117,7 @@ SparseMatrix SparseMatrix::expand(const Matrix &M, const Sizes &rszs, const Size
     unsigned int ri = 0;
     for (const auto &rs : rszs) {
         SparseVector rv(M.getRowVector(ri), cszs);
-        result.table.push_back(std::make_pair(rs, rv));
+        result.table.emplace_back(rs, rv);
         ri++;
     }
     return result;

@@ -18,9 +18,9 @@ public:
     virtual void SetUp();
     virtual void Run();
     virtual void TearDown();
-    void testPlayer1CycleTest(void);
-    void testPlayer1CycleTest2(void);
-    void testTwoPlayersTest(void);
-    void testSimpleTest(void);
-    void testInvalidInputGraphTest(void);
+    void testPlayer1CycleTest();
+    void testPlayer1CycleTest2();
+    void testTwoPlayersTest();
+    void testSimpleTest();
+    void testInvalidInputGraphTest();
 };

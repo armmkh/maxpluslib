@@ -47,7 +47,6 @@
 #include <unordered_set>
 #include <vector>
 
-
 class CString;
 
 namespace MaxPlus {
@@ -66,7 +65,7 @@ public:
     ~Vector();
 
     Vector(Vector &&) = default;
-    Vector &operator=(Vector &&) = default;
+    Vector &operator=(Vector &&) = delete;
 
     [[nodiscard]] inline unsigned int getSize() const {
         return static_cast<unsigned int>(this->table.size());
@@ -76,42 +75,42 @@ public:
 
     void put(unsigned int row, MPTime value);
 
-    void toString(CString &outString, double scale = 1.0) const;
+    void toString(CString &outString, CDouble scale = 1.0) const;
 
     Vector(const Vector &);
 
     Vector &operator=(const Vector &);
 
-    MPTime norm();
+    [[nodiscard]] MPTime norm() const;
 
     void negate();
     MPTime normalize();
 
-    [[nodiscard]] Vector *add(MPTime increase) const;
+    [[nodiscard]] Vector add(MPTime increase) const;
 
-    void add(MPTime increase, Vector *result) const;
+    void add(MPTime increase, Vector& result) const;
 
-    void maximum(const Vector *matB, Vector *result) const;
+    void maximum(const Vector& vecB, Vector& result) const;
 
-    Vector *add(const Vector *vecB) const;
+    [[nodiscard]] Vector add(const Vector& vecB) const;
 
-    void add(const Vector *vecB, Vector *res) const;
+    void add(const Vector& vecB, Vector& res) const;
 
     Vector &operator+=(MPTime increase) {
-        this->add(increase, this);
+        this->add(increase, *this);
         return *this;
     }
 
     Vector &operator-=(MPTime decrease) {
         assert(!decrease.isMinusInfinity());
-        this->add(-decrease, this);
+        this->add(-decrease, *this);
         return *this;
     }
 
-    bool compare(const Vector &v);
+    [[nodiscard]] bool compare(const Vector &v) const;
 
-    Vector &incrementalMaximum(const Vector *vec) {
-        this->maximum(vec, this);
+    Vector &incrementalMaximum(const Vector& vec) {
+        this->maximum(vec, *this);
         return *this;
     }
 
@@ -125,7 +124,7 @@ public:
     MPTime minimalFiniteElement(unsigned int *itsPosition_Ptr = nullptr) const;
 
 private:
-    vector<MPTime> table;
+    std::vector<MPTime> table;
 };
 
 enum class MatrixFill { MinusInfinity, Zero, Identity };
@@ -146,10 +145,13 @@ public:
      */
     Matrix(unsigned int nr_rows, unsigned int nr_cols, MatrixFill fill = MatrixFill::MinusInfinity);
 
-    Matrix(unsigned int nrows, unsigned int nr_cols, unsigned int nr_el);
+    Matrix(unsigned int nr_rows, unsigned int nr_cols, unsigned int nr_el);
 
     Matrix(Matrix &&) = default;
     Matrix &operator=(Matrix &&) = default;
+    Matrix(const Matrix &)=default;
+
+    Matrix &operator=(const Matrix &);
 
     virtual ~Matrix();
 
@@ -168,42 +170,42 @@ public:
 
     void pasteRowVector(unsigned int top_row, unsigned int left_column, const Vector *pastedVector);
 
-    [[nodiscard]] virtual Matrix *createCopy() const;
+    // [[nodiscard]] virtual Matrix *createCopy() const;
 
-    [[nodiscard]] Matrix *getTransposedCopy() const;
+    [[nodiscard]] Matrix transpose() const;
 
-    [[nodiscard]] virtual Matrix *getSubMatrix(const list<unsigned int> &rowIndices,
-                                               const list<unsigned int> &colIndices) const;
+    [[nodiscard]] virtual Matrix getSubMatrix(const std::list<unsigned int> &rowIndices,
+                                               const std::list<unsigned int> &colIndices) const;
 
-    [[nodiscard]] Matrix *getSubMatrix(const list<unsigned int> &indices) const;
+    [[nodiscard]] Matrix getSubMatrix(const std::list<unsigned int> &indices) const;
 
-    [[nodiscard]] Matrix *getSubMatrixNonSquare(const list<unsigned int> &indices) const;
+    [[nodiscard]] Matrix getSubMatrixNonSquare(const std::list<unsigned int> &indices) const;
 
     /**
      * Increases the number of rows of the matrix by n and fills the new elements with -\infty.
      */
     void addRows(uint n);
 
-    void toString(CString &outString, double scale = 1.0) const;
-    void toMatlabString(CString &outString, double scale = 1.0) const;
-    void toLaTeXString(CString &outString, double scale = 1.0) const;
+    void toString(CString &outString, CDouble scale = 1.0) const;
+    void toMatlabString(CString &outString, CDouble scale = 1.0) const;
+    void toLaTeXString(CString &outString, CDouble scale = 1.0) const;
 
     // Algebraic operations.
-    [[nodiscard]] Matrix *add(MPTime increase) const;
+    [[nodiscard]] Matrix add(MPTime increase) const;
 
-    void add(MPTime increase, Matrix *result) const;
+    void add(MPTime increase, Matrix& result) const;
 
-    [[nodiscard]] Matrix *mp_sub(const Matrix &m) const;
+    [[nodiscard]] Matrix mp_sub(const Matrix &m) const;
 
-    [[nodiscard]] Matrix *mp_maximum(const Matrix &m) const;
+    [[nodiscard]] Matrix mp_maximum(const Matrix &m) const;
 
-    void maximum(const Matrix *matB, Matrix *result) const;
+    void maximum(const Matrix& matB, Matrix& result) const;
 
-    [[nodiscard]] Vector *mp_multiply(const Vector &v) const;
+    [[nodiscard]] Vector mp_multiply(const Vector &v) const;
 
-    [[nodiscard]] Matrix *mp_multiply(const Matrix &m) const;
+    [[nodiscard]] Matrix mp_multiply(const Matrix &m) const;
 
-    [[nodiscard]] Matrix *mp_power(unsigned int p) const;
+    [[nodiscard]] Matrix mp_power(unsigned int p) const;
 
     [[nodiscard]] CDouble mp_eigenvalue() const;
 
@@ -214,19 +216,18 @@ public:
     [[nodiscard]] EigenvectorList mpEigenvectors() const;
 
     Matrix &operator+=(MPTime increase) {
-        this->add(increase, this);
+        this->add(increase, *this);
         return *this;
     }
 
     Matrix &operator-=(MPTime decrease) {
         assert(!decrease.isMinusInfinity());
-        this->add(-decrease, this);
+        this->add(-decrease, *this);
         return *this;
     }
 
-    Matrix &incrementalMaximum(const Matrix *matrix) {
-        this->maximum(matrix, this);
-        return *this;
+    void incrementalMaximum(const Matrix& matrix) {
+        this->maximum(matrix, *this);
     }
 
     bool operator==(const Matrix &other);
@@ -238,75 +239,32 @@ public:
     [[nodiscard]] MPTime largestFiniteElement() const;
     [[nodiscard]] MPTime minimalFiniteElement() const;
 
-    [[nodiscard]] Matrix *plusClosureMatrix(MPTime posCycleThreshold = MP_EPSILON) const;
+    [[nodiscard]] Matrix plusClosureMatrix(MPTime posCycleThreshold = MP_EPSILON) const;
 
-    [[nodiscard]] Matrix *starClosureMatrix(MPTime posCycleThreshold = MP_EPSILON) const;
+    [[nodiscard]] Matrix starClosureMatrix(MPTime posCycleThreshold = MP_EPSILON) const;
 
-    [[nodiscard]] Matrix *allPairLongestPathMatrix(MPTime posCycleThreshold,
+    [[nodiscard]] Matrix allPairLongestPathMatrix(MPTime posCycleThreshold,
                                                    bool implyZeroSelfEdges) const;
     bool
     allPairLongestPathMatrix(MPTime posCycleThreshold, bool implyZeroSelfEdges, Matrix &res) const;
 
     [[nodiscard]] MCMgraph mpMatrixToPrecedenceGraph() const;
 
-    // factory methods
-    [[nodiscard]] virtual Matrix *makeMatrix(unsigned int nr_rows, unsigned int nr_cols) const;
+    // // factory methods
+    // [[nodiscard]] virtual Matrix *makeMatrix(unsigned int nr_rows, unsigned int nr_cols) const;
 
 private:
-    // Implicit copying is not allowed
-    //  => Intentionally private and not implemented
-    Matrix(const Matrix &);
-
-    Matrix &operator=(const Matrix &);
 
     void init(MatrixFill fill);
     void init();
 
     Matrix();
 
-    vector<MPTime> table;
+    std::vector<MPTime> table;
     unsigned int szRows;
     unsigned int szCols;
 };
 
-class ExtendedMatrix : public Matrix {
-public:
-    ExtendedMatrix(unsigned int nrows, unsigned int nr_cols) : Matrix(nrows, nr_cols) {
-        unsigned int nr_els = this->getRows() * this->getCols();
-        this->bufferSets.resize(nr_els);
-    }
-
-    // Creates a matrix with reserved memory for nr_el expected entities
-    ExtendedMatrix(unsigned int nrows, unsigned int nr_cols, unsigned int nr_el) :
-        Matrix(nrows, nr_cols, nr_el) {
-        this->bufferSets.reserve(nr_el);
-    }
-    explicit ExtendedMatrix(unsigned int N) : Matrix(N) {}
-
-    [[nodiscard]] Matrix *createCopy() const override {
-        Matrix *newMatrix = Matrix::createCopy();
-        auto *newExtendedMatrix = dynamic_cast<ExtendedMatrix *>(newMatrix);
-
-        unsigned int nr_els = this->getRows() * this->getCols();
-        for (unsigned int pos = 0; pos < nr_els; pos++) {
-            newExtendedMatrix->bufferSets[pos] = this->bufferSets[pos];
-        }
-
-        return newExtendedMatrix;
-    }
-
-    void put(unsigned int row, unsigned int column, MPTime value, std::unordered_set<int> &);
-    [[nodiscard]] Matrix *getSubMatrix(const list<unsigned int> &rowIndices,
-                                       const list<unsigned int> &colIndices) const override;
-
-    // factory methods
-    [[nodiscard]] Matrix *makeMatrix(unsigned int nr_rows, unsigned int nr_cols) const override;
-
-    [[nodiscard]] std::unordered_set<int> getBufferSet(unsigned int row, unsigned int column) const;
-
-private:
-    vector<std::unordered_set<int>> bufferSets;
-};
 
 /****************************************************
  * VectorList: usually represents a set of eigenvectors
@@ -320,11 +278,11 @@ public:
 
     VectorList(VectorList &&) = default;
     VectorList &operator=(VectorList &&) = delete;
-    
+
     // Implicit copying is not allowed
     //  => Intentionally private and not implemented
-    VectorList(const VectorList &)=delete;
-    VectorList &operator=(const VectorList &)=delete;
+    VectorList(const VectorList &) = delete;
+    VectorList &operator=(const VectorList &) = delete;
 
     [[nodiscard]] const Vector &vectorRefAt(unsigned int n) const; // vector at index 'n'
     Vector &vectorRefAt(unsigned int n);
@@ -337,9 +295,9 @@ public:
 
     void grow(); // append one vector place
 
-    void toString(CString &outString, double scale = 1.0) const;
+    void toString(CString &outString, CDouble scale = 1.0) const;
 
-    // bool findSimilar(const Vector& vec, double threshold) const;
+    // bool findSimilar(const Vector& vec, CDouble threshold) const;
     //  similar - differs by a constant within a threshold
 
 private:
@@ -358,14 +316,12 @@ inline const Vector &VectorList::lastVectorRef() const { return *this->at(this->
 
 inline Vector &VectorList::lastVectorRef() { return *this->at(this->size() - 1); }
 
-inline unsigned int VectorList::getSize() const {
-    return static_cast<unsigned int>(this->size());
-}
+inline unsigned int VectorList::getSize() const { return static_cast<unsigned int>(this->size()); }
 
 inline void VectorList::grow() {
     auto last = static_cast<unsigned int>(this->size());
-    this->resize(last + 1);
-    this->insert(this->begin()+last, std::make_unique<Vector>(oneVectorSize, MP_MINUSINFINITY));
+    this->resize(static_cast<size_t>(last + 1));
+    this->insert(this->begin() + last, std::make_unique<Vector>(oneVectorSize, MP_MINUSINFINITY));
 }
 
 } // namespace MaxPlus

@@ -41,7 +41,7 @@
 #include "base/exception/exception.h"
 
 // Prototype
-ostream &operator<<(ostream &stream, const CException &e) {
+std::ostream &operator<<(std::ostream &stream, const CException &e) {
     e.report(stream);
 
     return stream;

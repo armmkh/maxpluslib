@@ -42,8 +42,8 @@
 #ifndef BASE_BASIC_TYPES_H_INCLUDED
 #define BASE_BASIC_TYPES_H_INCLUDED
 
-#include "float.h"
-#include <assert.h>
+#include <cassert>
+#include <cfloat>
 
 
 /* STL functionality */
@@ -57,31 +57,16 @@
 #include <vector>
 
 
-using std::cerr;
-using std::cin;
-using std::cout;
-using std::endl;
-using std::fstream;
-using std::ifstream;
-using std::istream;
-using std::list;
-using std::map;
-using std::ofstream;
-using std::ostream;
-using std::queue;
-using std::set;
-using std::vector;
-
 /* basic types */
-typedef unsigned int uint;
-typedef std::vector<int> v_int;
-typedef std::vector<uint> v_uint;
+using uint = unsigned int;
+using v_int = std::vector<int>;
+using v_uint = std::vector<uint>;
 
 /* Id */
-typedef uint CId;
-typedef unsigned long long CSize;
+using CId = uint;
+using CSize = unsigned long long;
 
 /* Doubles */
-typedef double CDouble;
+using CDouble = double;
 
 #endif

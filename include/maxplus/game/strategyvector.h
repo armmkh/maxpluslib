@@ -41,13 +41,14 @@
 #ifndef MAXPLUS_GAME_STRATEGYVECTOR_H
 #define MAXPLUS_GAME_STRATEGYVECTOR_H
 
+#include "base/fsm/fsm.h"
 #include "ratiogame.h"
 #include <utility>
 
+namespace MaxPlus {
 
 using namespace ::FSM::Labeled;
 
-namespace MaxPlus {
 /**
  * Vector that can store the strategy for both players in the graph. For any
  * vertex in the graph this map contains the unique successor given the current
@@ -59,10 +60,10 @@ namespace MaxPlus {
  */
 template <typename SL, typename EL> class StrategyVector {
 public:
-    StrategyVector(){};
+    StrategyVector()= default;;
 
-    StrategyVector(StrategyVector *vec) {
-        std::map<State<SL, EL> *, State<SL, EL> *> copy(vec->strategyVector);
+    explicit StrategyVector(StrategyVector *vec) {
+        std::map<const State<SL, EL> *, const State<SL, EL> *> copy(vec->strategyVector);
         this->strategyVector = copy;
     }
 
@@ -73,20 +74,18 @@ public:
      *
      * @param graph game graph on which a random strategy is initialized
      */
-    void initializeRandomStrategy(RatioGame<SL, EL> *graph) {
-        SetOfStates<SL, EL> *states = graph->getStates();
-
-        typename SetOfStates<SL, EL>::CIter si;
-        for (si = states->begin(); si != states->end(); si++) {
+    void initializeRandomStrategy(RatioGame<SL, EL>& graph) {
+        for (auto &it: graph.getStates()) {
+            auto& si = *(it.second);
             // Source vertex.
-            State<SL, EL> *src = (State<SL, EL> *)*si;
-            SetOfEdges<SL, EL> *es = (SetOfEdges<SL, EL> *)src->getOutgoingEdges();
+            auto& src = dynamic_cast<State<SL, EL>&>(si);
+            const auto& es = dynamic_cast<const FSM::Abstract::SetOfEdgeRefs&>(src.getOutgoingEdges());
 
             // Find the first outgoing edge, and get the target.
-            Edge<SL, EL> *e = (Edge<SL, EL> *)*es->begin();
-            State<SL, EL> *dest = (State<SL, EL> *)e->getDestination();
+            auto *e = dynamic_cast<Edge<SL, EL> *>(*es.begin());
+            auto& dest = dynamic_cast<const State<SL, EL>&>(e->getDestination());
 
-            strategyVector[src] = dest;
+            strategyVector[&src] = &dest;
         }
     }
 
@@ -96,7 +95,7 @@ public:
      * @param v         vertex of which a new successor is set
      * @param successor successor of the given vertex in the strategy
      */
-    void setSuccessor(State<SL, EL> *v, State<SL, EL> *successor) { strategyVector[v] = successor; }
+    void setSuccessor(const State<SL, EL> *v, const State<SL, EL> *successor) { strategyVector[v] = successor; }
 
     /**
      * Return the unique successor given the current strategy.
@@ -104,7 +103,7 @@ public:
      * @param v vertex of which the unique successor is returned.
      * @return the successor of {@code v} given the current strategy.
      */
-    State<SL, EL> *getSuccessor(State<SL, EL> *v) { return strategyVector.find(v)->second; }
+    const State<SL, EL> *getSuccessor(const State<SL, EL> *v) { return strategyVector.find(v)->second; }
 
     /**
      * Return the current strategy.
@@ -114,7 +113,7 @@ public:
     std::map<State<SL, EL> *, State<SL, EL> *> *getMap() { return &strategyVector; }
 
 private:
-    std::map<State<SL, EL> *, State<SL, EL> *> strategyVector;
+    std::map<const State<SL, EL> *, const State<SL, EL> *> strategyVector;
 };
 
 } // namespace MaxPlus

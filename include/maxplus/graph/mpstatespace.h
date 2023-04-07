@@ -48,10 +48,10 @@
 
 namespace MaxPlus {
 
-typedef ::FSM::Labeled::State<CId, CString> ELSState;
-typedef ::FSM::Labeled::Edge<CId, CString> ELSEdge;
-typedef ::FSM::Labeled::SetOfStates<CId, CString> ELSSetOfStates;
-typedef ::FSM::Labeled::SetOfEdges<CId, CString> ELSSetOfEdges;
+using ELSState = ::FSM::Labeled::State<CId, CString>;
+using ELSEdge = ::FSM::Labeled::Edge<CId, CString>;
+using ELSSetOfStates = ::FSM::Labeled::SetOfStates<CId, CString>;
+using ELSSetOfEdges = ::FSM::Abstract::SetOfEdges;
 
 // /**
 //  * Edge labeled scenario FSM.
@@ -61,15 +61,15 @@ typedef ::FSM::Labeled::SetOfEdges<CId, CString> ELSSetOfEdges;
 //     virtual ~EdgeLabeledScenarioFSM() {};
 // };
 
-typedef struct MLSEdgeLabel {
+using MLSEdgeLabel = struct MLSEdgeLabel {
     Matrix *mat;
-    double rew;
-} MLSEdgeLabel;
+    CDouble rew;
+};
 
-typedef ::FSM::Labeled::State<CId, MLSEdgeLabel> MLSState;
-typedef ::FSM::Labeled::Edge<CId, MLSEdgeLabel> MLSEdge;
-typedef ::FSM::Labeled::SetOfStates<CId, MLSEdgeLabel> MLSSetOfStates;
-typedef ::FSM::Labeled::SetOfEdges<CId, MLSEdgeLabel> MLSSetOfEdges;
+using MLSState = ::FSM::Labeled::State<CId, MLSEdgeLabel>;
+using MLSEdge = ::FSM::Labeled::Edge<CId, MLSEdgeLabel>;
+using MLSSetOfStates = ::FSM::Labeled::SetOfStates<CId, MLSEdgeLabel>;
+using MLSSetOfEdges = ::FSM::Abstract::SetOfEdges;
 
 /**
  * Matrix and reward labeled scenario FSM.

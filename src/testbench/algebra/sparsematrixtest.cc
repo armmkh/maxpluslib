@@ -17,8 +17,8 @@ void SparseMatrixTest::Run() {
     this->test_Multiplication();
 };
 
-int SparseMatrixTest::test_Vectors(void) {
-    std::cout << "Running test: SparseStarClosure" << std::endl;
+int SparseMatrixTest::test_Vectors() {
+    std::cout << "Running test: Vectors" << std::endl;
 
     SparseVector v1(1000);
     v1.put(100, MPTime(0));
@@ -35,7 +35,7 @@ int SparseMatrixTest::test_Vectors(void) {
     return 0;
 }
 
-int SparseMatrixTest::test_StarClosure(void) {
+int SparseMatrixTest::test_StarClosure() {
     std::cout << "Running test: SparseStarClosure" << std::endl;
 
     SparseMatrix M(200, 200);
@@ -50,7 +50,7 @@ int SparseMatrixTest::test_StarClosure(void) {
     return 0;
 }
 
-int SparseMatrixTest::test_EigenVectors(void) {
+int SparseMatrixTest::test_EigenVectors() {
     std::cout << "Running test: EigenVectors" << std::endl;
 
     SparseMatrix M(200, 200);
@@ -83,7 +83,7 @@ int SparseMatrixTest::test_EigenVectors(void) {
     return 0;
 }
 
-int SparseMatrixTest::test_GetPutMatrix(void) {
+int SparseMatrixTest::test_GetPutMatrix() {
     std::cout << "Running test: GetPutMatrix" << std::endl;
 
     SparseMatrix M(200, 200);
@@ -98,7 +98,7 @@ int SparseMatrixTest::test_GetPutMatrix(void) {
     return 0;
 }
 
-int SparseMatrixTest::test_Addition(void) {
+int SparseMatrixTest::test_Addition() {
     std::cout << "Running test: Addition" << std::endl;
 
     SparseMatrix M(200, 200);
@@ -114,7 +114,7 @@ int SparseMatrixTest::test_Addition(void) {
     ASSERT_APPROX_EQUAL(static_cast<CDouble>(S.get(130, 30)), 2.0, ASSERT_EPSILON);
     return 0;
 }
-int SparseMatrixTest::test_Multiplication(void) {
+int SparseMatrixTest::test_Multiplication() {
     std::cout << "Running test: Multiplication" << std::endl;
 
     SparseVector v1(200);

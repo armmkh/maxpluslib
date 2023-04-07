@@ -10,7 +10,7 @@ build:
     script:
         - cmake -DCODE_COVERAGE=ON .
         - make
-        - ctest
+        - ctest --output-on-failure
         - make maxpluslibcoverage
     artifacts:
       expire_in: 14d

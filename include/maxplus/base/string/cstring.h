@@ -55,8 +55,8 @@
 class CString;
 
 // Types
-typedef list<CString> CStrings;
-typedef CStrings::iterator CStringsIter;
+using CStrings = std::list<CString>;
+using CStringsIter = CStrings::iterator;
 
 /**
  * CString
@@ -67,47 +67,47 @@ class CString : public std::string {
 public:
     // Constructor
     CString();
-    CString(const char s);
     CString(const char *s);
-    CString(const std::string &s);
+    explicit CString(char s);
+    explicit CString(const std::string &s);
     CString(const CString &s);
 
     // Constructor (integer number)
-    CString(const int n);
-    CString(const unsigned int n);
-    CString(const long int n);
-    CString(const unsigned long int n);
-    CString(const long long int n);
-    CString(const unsigned long long int n);
+    explicit CString(int n);
+    explicit CString(unsigned int n);
+    explicit CString(long int n);
+    explicit CString(unsigned long int n);
+    explicit CString(long long int n);
+    explicit CString(unsigned long long int n);
 
     // Constructor (floating number)
-    CString(const double n);
+    explicit CString(CDouble n);
 
     // Destructor
     ~CString();
 
     // Assignment
     CString &operator+=(const CString &s);
-    CString &operator+=(const char c);
-    CString &operator+=(const int n);
-    CString &operator+=(const unsigned int n);
-    CString &operator+=(const long int n);
-    CString &operator+=(const unsigned long int n);
-    CString &operator+=(const long long int n);
-    CString &operator+=(const double n);
+    CString &operator+=(char c);
+    CString &operator+=(int n);
+    CString &operator+=(unsigned int n);
+    CString &operator+=(long int n);
+    CString &operator+=(unsigned long int n);
+    CString &operator+=(long long int n);
+    CString &operator+=(CDouble n);
 
     // Character access
     char operator[](int n) { return (c_str())[n]; };
 
     // Type conversion
-    operator const char *() const;
-    operator int() const;
-    operator uint() const;
-    operator double() const;
-    operator long() const;
-    operator unsigned long() const;
-    operator long long() const;
-    operator unsigned long long() const;
+    explicit operator const char *() const;
+    explicit operator int() const;
+    explicit operator uint() const;
+    explicit operator CDouble() const;
+    explicit operator long() const;
+    explicit operator unsigned long() const;
+    explicit operator long long() const;
+    explicit operator unsigned long long() const;
 
     // Whitespace
     CString &trim();
@@ -119,13 +119,13 @@ public:
     CString regexReplaceMultiLine(const CString &regex, const CString &replace);
 
     // Split
-    CStrings split(const char delim) const;
-    static CString join(const CStrings strl, const char delim);
-    static CString join(const CStrings strl, const CString delim);
+    [[nodiscard]] CStrings split(char delim) const;
+    static CString join(const CStrings& strl, char delim);
+    static CString join(const CStrings& strl, const CString& delim);
 
     // Replacement
     CString &
-    replace(const CString &s1, const CString &s2, const size_type sPos = 0, const uint n = 0);
+    replace(const CString &s1, const CString &s2, size_type sPos = 0, uint n = 0);
 
     // Case
     CString &toLower();

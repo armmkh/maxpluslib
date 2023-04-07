@@ -14,10 +14,10 @@ public:
 
     virtual void SetUp(){};
     virtual void TearDown(){};
-    int test_SetMPTimeInMatrix(void);
-    int test_PasteMatrix(void);
-    int test_SubMatrix(void);
-    int test_Equality(void);
-    int test_Addition(void);
-    virtual void Run(void);
+    int test_SetMPTimeInMatrix();
+    int test_PasteMatrix();
+    int test_SubMatrix();
+    int test_Equality();
+    int test_Addition();
+    virtual void Run();
 };

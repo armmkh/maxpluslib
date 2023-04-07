@@ -5,7 +5,7 @@
  *  Electronics Systems Group
  *  Model Based Design Lab (https://computationalmodeling.info/)
  *
- *  Name            :   mcmhoward.cc
+ *  Name            :   mcmdg.cc
  *
  *  Author          :   Sander Stuijk (sander@ics.ele.tue.nl)
  *
@@ -42,8 +42,8 @@
 #include "base/analysis/mcm/mcmgraph.h"
 #include "base/math/cmath.h"
 #include <climits>
+#include <cmath>
 #include <memory>
-
 
 namespace Graphs {
 /**
@@ -54,45 +54,35 @@ namespace Graphs {
  * @todo
  * check if algorithm can be generalized to float edge weights
  */
-CDouble mcmDG(MCMgraph *mcmGraph) {
-    int k, n;
-    int *level;
-    int **pi, **d;
-    CDouble l, ld;
-    std::shared_ptr<MCMnode> u;
-    list<int> Q_k;
-    list<std::shared_ptr<MCMnode>> Q_u;
-
+CDouble mcmDG(MCMgraph &mcmGraph) {
     // Allocate memory
-    n = mcmGraph->nrVisibleNodes();
-    level = new int[n];
-    pi = new int *[n + 1];
-    d = new int *[n + 1];
-    for (int i = 0; i < n + 1; i++) {
-        pi[i] = new int[n];
-        d[i] = new int[n];
-    }
+    const int n = mcmGraph.nrVisibleNodes();
+    std::vector<int> level(n);
+    std::vector<std::vector<int>> pi(n + 1, std::vector<int>(n));
+    std::vector<std::vector<int>> d(n + 1, std::vector<int>(n));
 
     // Initialize
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++) {
         level[i] = -1;
+    }
     d[0][0] = 0;
     pi[0][0] = -1;
     level[0] = 0;
+    std::list<int> Q_k;
     Q_k.push_back(0);
-    Q_u.push_back(mcmGraph->getNodes().front());
+    std::list<MCMnode*> Q_u;
+    Q_u.push_back(&(mcmGraph.getNodes().front()));
 
     // Compute the distances
-    k = Q_k.front();
+    int k = Q_k.front();
     Q_k.pop_front();
-    u = Q_u.front();
+    MCMnode* u = Q_u.front();
     Q_u.pop_front();
     do {
-        for (auto iter = u->out.begin(); iter != u->out.end(); iter++) {
-            std::shared_ptr<MCMedge> e = *iter;
-            std::shared_ptr<MCMnode> v = e->dst;
+        for (auto& e: u->out) {
+            MCMnode* v = e->dst;
 
-            if (level[v->id] < k + 1) {
+            if (level[v->id] < static_cast<int>(k + 1)) {
                 Q_k.push_back(k + 1);
                 Q_u.push_back(v);
                 pi[k + 1][v->id] = level[v->id];
@@ -108,30 +98,19 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
     } while (k < n);
 
     // Compute lambda using Karp's theorem
-    l = -INT_MAX;
-    for (auto iter = mcmGraph->getNodes().begin(); iter != mcmGraph->getNodes().end();
-         iter++) {
-        u = *iter;
+    CDouble l = -INT_MAX;
+    for (const auto & u : mcmGraph.getNodes()) {
 
-        if (level[u->id] == n) {
-            ld = INT_MAX;
-            k = pi[n][u->id];
+        if (level[u.id] == n) {
+            CDouble ld = INT_MAX;
+            k = pi[n][u.id];
             while (k > -1) {
-                ld = MIN(ld, (CDouble)(d[n][u->id] - d[k][u->id]) / (CDouble)(n - k));
-                k = pi[k][u->id];
+                ld = MIN(ld, (CDouble)(d[n][u.id] - d[k][u.id]) / (CDouble)(n - k));
+                k = pi[k][u.id];
             }
             l = MAX(l, ld);
         }
     }
-
-    // Cleanup
-    delete[] level;
-    for (int i = 0; i < n + 1; i++) {
-        delete[] pi[i];
-        delete[] d[i];
-    }
-    delete[] pi;
-    delete[] d;
 
     return l;
 }

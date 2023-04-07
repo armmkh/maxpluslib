@@ -2,19 +2,17 @@
 
 #include "game/mpgameautomaton.h"
 #include "game/strategyvector.h"
-#include <algorithm>
 #include "testing.h"
-
-using namespace MaxPlus;
+#include <algorithm>
 
 class StrategyVectorTest : public ::testing::Test {
 
 public:
     StrategyVectorTest();
 
-    virtual void Run();
-    virtual void SetUp();
-    virtual void TearDown();
+     void Run() override;
+     void SetUp() override;
+     void TearDown() override;
 
-    void testSimpleTest(void);
+    void testSimpleTest();
 };

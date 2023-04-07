@@ -44,9 +44,9 @@
 #include "algebra/mptype.h"
 #include "base/fsm/fsm.h"
 
-using namespace ::FSM::Labeled;
-
 namespace MaxPlus {
+
+using namespace ::FSM::Labeled;
 
 /**
  * Double weighted graph.
@@ -56,7 +56,7 @@ namespace MaxPlus {
 template <typename SL, typename EL>
 class DoubleWeightedGraph : virtual public ::FSM::Labeled::FiniteStateMachine<SL, EL> {
 public:
-    virtual ~DoubleWeightedGraph() {}
+    virtual ~DoubleWeightedGraph() = default;
 
     virtual MPTime getWeight1(const Edge<SL, EL> *e) const = 0;
 

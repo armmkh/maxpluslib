@@ -3,7 +3,7 @@
 #include "valuetest.h"
 #include "vectortest.h"
 
-int main(void) {
+int main() {
 
     std::cout << "Running Tests Maxplus - Algebra" << std::endl;
 
