@@ -755,11 +755,13 @@ CDouble MCMgraph::calculateMaximumCycleRatioAndCriticalCycleYoungTarjanOrlin(
     return maxCycleRatioAndCriticalCycleYoungTarjanOrlin(*this, cycle);
 }
 
-void MCMgraph::relabelNodeIds(std::map<int, int> &nodeIdMap) {
+void MCMgraph::relabelNodeIds(std::map<int, int> *nodeIdMap) {
     int k = 0;
     for (auto &i : this->nodes) {
         MCMnode &n = i;
-        nodeIdMap[k] = static_cast<int>(n.id);
+        if (nodeIdMap != nullptr) {
+            (*nodeIdMap)[k] = static_cast<int>(n.id);
+        }
         n.id = k;
         k++;
     }

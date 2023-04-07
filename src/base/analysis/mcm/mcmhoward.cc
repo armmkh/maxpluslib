@@ -514,4 +514,54 @@ void convertMCMgraphToMatrix(MCMgraph &g,
         }
     }
 }
+
+CDouble maximumCycleMeanHoward(MCMgraph& g, MCMnode* *criticalNode) {
+
+    if (g.numberOfNodes() == 0) {
+        if (criticalNode != nullptr) {
+            (*criticalNode) = nullptr;
+        }
+        return -INFINITY;
+    }
+
+    std::shared_ptr<std::vector<int>> ij = nullptr;
+    std::shared_ptr<std::vector<CDouble>> A = nullptr;
+    std::shared_ptr<std::vector<CDouble>> chi = nullptr;
+    std::shared_ptr<std::vector<CDouble>> v = nullptr;
+    std::shared_ptr<std::vector<int>> policy = nullptr;
+    int nr_iterations = 0;
+    int nr_components = 0;
+
+    convertMCMgraphToMatrix(g, &ij, &A);
+
+    Howard(*ij,
+           *A,
+           g.numberOfNodes(),
+           g.numberOfEdges(),
+           &chi,
+           &v,
+           &policy,
+           &nr_iterations,
+           &nr_components);
+
+    // find maximum cycle mean in chi vector
+    MCMnodes& nodes = g.getNodes();
+    auto &n = nodes.begin();
+    CDouble mcm = chi->at(0);
+    MCMnode *critNode = &(*n);
+    for (auto &val : *chi) {
+        if (val > mcm) {
+            mcm = val;
+            critNode = &(*n);
+            n++;
+        }
+    }
+
+    if (criticalNode != nullptr) {
+        (*criticalNode) = &(*n);
+    }
+    return mcm;
+}
+
+
 } // namespace Graphs

@@ -38,19 +38,35 @@ MCMgraph makeGraph1() {
     return g;
 }
 
+// A corner case graph
+MCMgraph makeGraph2() {
+    MCMgraph g;
+
+    MCMnode &n0 = *g.addNode(0);
+    MCMnode &n1 = *g.addNode(1);
+    g.addEdge(0, n0, n1, 1.0, 1.0);
+    //g.addEdge(1, n1, n1, 1.0, 1.0);
+    return g;
+}
+
+
 // Test mcmdg.
 void MCMTest::test_dg() {
     std::cout << "Running test: MCM-dg" << std::endl;
 
-    MCMgraph g = makeGraph1();
-    CDouble result =  mcmDG(g);
+    MCMgraph g1 = makeGraph1();
+    CDouble result =  mcmDG(g1);
     ASSERT_APPROX_EQUAL(2.5, result, 1e-5);
+
+    MCMgraph g2 = makeGraph2();
+    result = mcmDG(g2);
+    ASSERT_EQUAL(-INFINITY, result);
 }
 
 /// Test MCM Howard.
 void MCMTest::test_howard() {
     std::cout << "Running test: MCM-Howard" << std::endl;
-    MCMgraph g = makeGraph1();
+    MCMgraph g1 = makeGraph1();
     
     std::shared_ptr<std::vector<int>> ij = nullptr;
     std::shared_ptr<std::vector<CDouble>> A = nullptr;
@@ -60,12 +76,12 @@ void MCMTest::test_howard() {
     int nr_iterations = 0;
     int nr_components = 0;
     
-    convertMCMgraphToMatrix(g, &ij, &A);
+    convertMCMgraphToMatrix(g1, &ij, &A);
 
-    Howard(*ij,
+   Howard(*ij,
            *A,
-           static_cast<int>(g.getNodes().size()),
-           static_cast<int>(g.getEdges().size()),
+           static_cast<int>(g1.getNodes().size()),
+           static_cast<int>(g1.getEdges().size()),
            &chi,
            &v,
            &policy,
@@ -83,6 +99,16 @@ void MCMTest::test_howard() {
     ASSERT_EQUAL(3, policy->at(2));
     ASSERT_EQUAL(0, policy->at(3));
     ASSERT_EQUAL(4, policy->at(4));
+
+    MCMnode *criticalNode;
+    CDouble result = maximumCycleMeanHoward(g1, &criticalNode);
+    ASSERT_APPROX_EQUAL(2.5, result, 1e-5);
+    ASSERT_THROW(criticalNode->id == 0 || criticalNode->id == 1 || criticalNode->id == 2
+                 || criticalNode->id == 3);
+
+    MCMgraph g2 = makeGraph2();
+    result = maximumCycleMeanHoward(g2, &criticalNode);
+    ASSERT_EQUAL(-INFINITY, result);
 }
 
 /// Test MCM Karp.

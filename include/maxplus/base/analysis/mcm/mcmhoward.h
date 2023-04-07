@@ -88,5 +88,8 @@ void Howard(const std::vector<int> &ij,
             int *nr_iterations,
             int *nr_components);
 
+CDouble maximumCycleMeanHoward(MCMgraph &g, MCMnode **criticalNode);
+
+
 } // namespace Graphs
 #endif

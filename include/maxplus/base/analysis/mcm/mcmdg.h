@@ -14,6 +14,15 @@
  *  Function        :   Compute the MCM for a graph using Dasdan-Gupta's
  *                      algorithm.
  *
+ *  @article{Dasdan1998FasterMA,
+ *    title={Faster maximum and minimum mean cycle algorithms for system-performance analysis},
+ *    author={Ali Dasdan and Rajesh K. Gupta},
+ *    journal={IEEE Trans. Comput. Aided Des. Integr. Circuits Syst.},
+ *    year={1998},
+ *    volume={17},
+ *    pages={889-899}
+ * }
+ *
  *  History         :
  *      08-11-05    :   Initial version.
  *
@@ -48,9 +57,10 @@ namespace Graphs {
 
 /**
  * mcmDG ()
- * The function computes the maximum cycle mean of a HSDF graph using
+ * The function computes the maximum cycle mean of an MCM graph using
  * Dasdan-Gupta's algorithm.
  * Note: this algorithm assumes that edge weights are integer valued !
+ * 
  * @todo
  * check if algorithm can be generalized to float edge weights
  */
