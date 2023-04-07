@@ -187,7 +187,7 @@ private:
             v_aux[i] = EPSILON;
         }
 
-        for (unsigned int i = 0; i < narcs; i++) {
+        for (int i = 0; i < narcs; i++) {
             if (v_aux[ij[i * 2]] <= a[i]) {
                 (**pi)[ij[i * 2]] = ij[i * 2 + 1];
                 c[ij[i * 2]] = a[i];

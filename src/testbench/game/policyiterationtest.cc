@@ -184,7 +184,7 @@ void PolicyIterationTest::testInvalidInputGraphTest() {
                 new PolicyIteration<MPAStateLabel, MPAREdgeLabel>();
         PolicyIteration<MPAStateLabel, MPAREdgeLabel>::PolicyIterationResult result =
                 pi->solve(mpa);
-    } catch (const std::runtime_error &error) {
+    } catch (const std::runtime_error&) {
         // test passes
         // SUCCEED();
     }

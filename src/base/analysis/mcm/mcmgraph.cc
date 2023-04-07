@@ -105,11 +105,11 @@ MCMnode::MCMnode(CId nId, bool nVisible) : id(nId), visible(nVisible) {}
  */
 static void splitMCMedgeToSequence(MCMgraph &g, MCMedge &e) {
     // Create dummy node n;
-    MCMnode *n = g.addNode(g.getNodes().size());
+    MCMnode *n = g.addNode(static_cast<CId>(g.getNodes().size()));
 
     // Create a new edge between the src node of e and a new
     // dummy node.
-    MCMedge *eN = g.addEdge(g.getEdges().size(), *e.src, *n, 0, e.d - 1);
+    MCMedge *eN = g.addEdge(static_cast<CId>(g.getEdges().size()), *e.src, *n, 0, e.d - 1);
 
     // Remove e from the set of edges its source node is connected to
     // and add eN to this list
@@ -226,7 +226,7 @@ static void addLongestDelayEdgeForNode(MCMgraph &g, MCMnode &n, MCMedge &e) {
         if (d[m->id] > 0 && e.dst->id != m->id) {
             // Create an edge between n and m
             MCMedge *eN = g.addEdge(
-                    g.getEdges().size(), n, *m, d[m->id], e.d, false); // e.d should always be 1
+                    static_cast<CId>(g.getEdges().size()), n, *m, d[m->id], e.d, false); // e.d should always be 1
             n.out.push_back(eN);
             m->in.push_back(eN);
         }
@@ -435,7 +435,7 @@ static void addNodeToComponent(const MCMnode &n, MCMgraph &comp) {
     // in the previous loop already
     for (const auto &e : n.in) {
         // Is source node in the component?
-        for (auto iterN : comp.getNodes()) {
+        for (auto& iterN : comp.getNodes()) {
             // if the source node is in the component and it is not a self-edge
             if ((e->src->id == iterN.id) && (e->src->id != e->dst->id)) {
                 // Add a copy of the edge to the component

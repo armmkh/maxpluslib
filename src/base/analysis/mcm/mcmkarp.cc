@@ -73,18 +73,18 @@ CDouble maximumCycleMeanKarp(MCMgraph &mcmGraph) {
 
     // Initialize
     // d[k][u], 1<=k<n+1, 0<=u<n with value -inf
-    for (int k = 1; k < n + 1; k++) {
-        for (int u = 0; u < n; u++) {
+    for (unsigned int k = 1; k < n + 1; k++) {
+        for (unsigned int u = 0; u < n; u++) {
             d[k][u] = -INT_MAX;
         }
     }
     // d[0][u], 0<=u<n with value 0
-    for (int u = 0; u < n; u++) {
+    for (unsigned int u = 0; u < n; u++) {
         d[0][u] = 0;
     }
 
     // Compute the distances
-    for (int k = 1; k < n + 1; k++) {
+    for (unsigned int k = 1; k < n + 1; k++) {
         for (const auto& v : mcmGraph.getNodes()) {
              for (auto e = v.in.begin(); e != v.in.end(); e++) {
                 MCMnode* u = (*e)->src;
@@ -97,7 +97,7 @@ CDouble maximumCycleMeanKarp(MCMgraph &mcmGraph) {
     CDouble l = -INT_MAX;
     for (const auto & u : mcmGraph.getNodes()) {
         CDouble ld = INT_MAX;
-        for (int k = 0; k < n; k++) {
+        for (unsigned int k = 0; k < n; k++) {
             ld = MIN(ld, (CDouble)(d[n][u.id] - d[k][u.id]) / (CDouble)(n - k));
         }
         l = MAX(l, ld);
@@ -125,18 +125,18 @@ CDouble maximumCycleMeanKarpDouble(MCMgraph &mcmGraph, const MCMnode **criticalN
 
     // Initialize
     // d[k][u], 1<=k<n+1, 0<=u<n with value -inf
-    for (int k = 1; k < n + 1; k++) {
-        for (int u = 0; u < n; u++) {
+    for (unsigned int k = 1; k < n + 1; k++) {
+        for (unsigned int u = 0; u < n; u++) {
             d[k][u] = -DBL_MAX;
         }
     }
     // d[0][u], 0<=u<n with value 0
-    for (int u = 0; u < n; u++) {
+    for (unsigned int u = 0; u < n; u++) {
         d[0][u] = 0.0;
     }
 
     // Compute the distances
-    for (int k = 1; k < n + 1; k++) {
+    for (unsigned int k = 1; k < n + 1; k++) {
         for (const auto& v : mcmGraph.getNodes()) {
              for (auto e = v.in.begin(); e != v.in.end(); e++) {
                 MCMnode* u = (*e)->src;
@@ -149,7 +149,7 @@ CDouble maximumCycleMeanKarpDouble(MCMgraph &mcmGraph, const MCMnode **criticalN
     CDouble l = -DBL_MAX;
     for (const auto& u : mcmGraph.getNodes()) {
         CDouble ld = DBL_MAX;
-        for (int k = 0; k < n; k++) {
+        for (unsigned int k = 0; k < n; k++) {
             CDouble nld = (d[n][u.id] - d[k][u.id]) / static_cast<CDouble>(n - k);
             if (nld < ld) {
                 ld = nld;

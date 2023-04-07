@@ -81,7 +81,7 @@ CString::CString(const CString &s) = default;
  */
 CString::CString(const int n) {
     char str[32];
-    sprintf(&str[0], "%i", n);
+    sprintf_s(&str[0], 32, "%i", n);
     append(std::string(str));
 }
 
@@ -91,7 +91,7 @@ CString::CString(const int n) {
  */
 CString::CString(const unsigned int n) {
     char str[32];
-    sprintf(&str[0], "%u", n);
+    sprintf_s(&str[0], 32, "%u", n);
     append(std::string(str));
 }
 
@@ -101,7 +101,7 @@ CString::CString(const unsigned int n) {
  */
 CString::CString(const long int n) {
     char str[32];
-    sprintf(&str[0], "%ld", n);
+    sprintf_s(&str[0], 32, "%ld", n);
     append(std::string(str));
 }
 
@@ -111,7 +111,7 @@ CString::CString(const long int n) {
  */
 CString::CString(const unsigned long int n) {
     char str[32];
-    sprintf(&str[0], "%ld", n);
+    sprintf_s(&str[0], 32, "%ld", n);
     append(std::string(str));
 }
 
@@ -121,7 +121,7 @@ CString::CString(const unsigned long int n) {
  */
 CString::CString(const long long int n) {
     char str[32];
-    sprintf(&str[0], "%lld", n);
+    sprintf_s(&str[0], 32, "%lld", n);
     append(std::string(str));
 }
 
@@ -131,7 +131,7 @@ CString::CString(const long long int n) {
  */
 CString::CString(const unsigned long long int n) {
     char str[32];
-    sprintf(&str[0], "%lld", n);
+    sprintf_s(&str[0], 32, "%lld", n);
     append(std::string(str));
 }
 
@@ -141,7 +141,7 @@ CString::CString(const unsigned long long int n) {
  */
 CString::CString(const CDouble n) {
     char str[32];
-    sprintf(&str[0], "%g", n);
+    sprintf_s(&str[0], 32, "%g", n);
     append(std::string(str));
 }
 
@@ -447,8 +447,8 @@ bool isTok(const char c, const char *tok) { return (strchr(tok, c) != nullptr); 
  * Split a string into tokens using the given token delimiter.
  */
 void stringTok(CStrings &l, CString &str, const char *tok) {
-    const CString::size_type S = str.size();
-    CString::size_type i = 0;
+    const int S = static_cast<int>(str.size());
+    int i = 0;
 
     // Clear list of strings
     l.clear();
@@ -464,7 +464,7 @@ void stringTok(CStrings &l, CString &str, const char *tok) {
         }
 
         // find end of word
-        CString::size_type j = i + 1;
+        int j = i + 1;
         while ((j < S) && (!isTok(str[j], tok))) {
             ++j;
         }

@@ -320,7 +320,7 @@ inline unsigned int VectorList::getSize() const { return static_cast<unsigned in
 
 inline void VectorList::grow() {
     auto last = static_cast<unsigned int>(this->size());
-    this->resize(last + 1);
+    this->resize(static_cast<size_t>(last + 1));
     this->insert(this->begin() + last, std::make_unique<Vector>(oneVectorSize, MP_MINUSINFINITY));
 }
 

@@ -62,7 +62,7 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
     std::vector<std::vector<int>> d(n + 1, std::vector<int>(n));
 
     // Initialize
-    for (int i = 0; i < n; i++) {
+    for (unsigned int i = 0; i < n; i++) {
         level[i] = -1;
     }
     d[0][0] = 0;
@@ -74,7 +74,7 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
     Q_u.push_back(&(mcmGraph->getNodes().front()));
 
     // Compute the distances
-    int k = Q_k.front();
+    unsigned int k = Q_k.front();
     Q_k.pop_front();
     MCMnode* u = Q_u.front();
     Q_u.pop_front();
@@ -83,7 +83,7 @@ CDouble mcmDG(MCMgraph *mcmGraph) {
             MCMedge* e = *iter;
             MCMnode* v = e->dst;
 
-            if (level[v->id] < k + 1) {
+            if (level[v->id] < static_cast<int>(k + 1)) {
                 Q_k.push_back(k + 1);
                 Q_u.push_back(v);
                 pi[k + 1][v->id] = level[v->id];
