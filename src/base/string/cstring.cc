@@ -81,7 +81,7 @@ CString::CString(const CString &s) = default;
  */
 CString::CString(const int n) {
     char str[32];
-    sprintf_s(&str[0], 32, "%i", n);
+    snprintf(&str[0], 32, "%i", n);
     append(std::string(str));
 }
 
@@ -91,7 +91,7 @@ CString::CString(const int n) {
  */
 CString::CString(const unsigned int n) {
     char str[32];
-    sprintf_s(&str[0], 32, "%u", n);
+    snprintf(&str[0], 32, "%u", n);
     append(std::string(str));
 }
 
@@ -101,7 +101,7 @@ CString::CString(const unsigned int n) {
  */
 CString::CString(const long int n) {
     char str[32];
-    sprintf_s(&str[0], 32, "%ld", n);
+    snprintf(&str[0], 32, "%ld", n);
     append(std::string(str));
 }
 
@@ -111,7 +111,7 @@ CString::CString(const long int n) {
  */
 CString::CString(const unsigned long int n) {
     char str[32];
-    sprintf_s(&str[0], 32, "%ld", n);
+    snprintf(&str[0], 32, "%ld", n);
     append(std::string(str));
 }
 
@@ -121,7 +121,7 @@ CString::CString(const unsigned long int n) {
  */
 CString::CString(const long long int n) {
     char str[32];
-    sprintf_s(&str[0], 32, "%lld", n);
+    snprintf(&str[0], 32, "%lld", n);
     append(std::string(str));
 }
 
@@ -131,7 +131,7 @@ CString::CString(const long long int n) {
  */
 CString::CString(const unsigned long long int n) {
     char str[32];
-    sprintf_s(&str[0], 32, "%lld", n);
+    snprintf(&str[0], 32, "%lld", n);
     append(std::string(str));
 }
 
@@ -141,7 +141,7 @@ CString::CString(const unsigned long long int n) {
  */
 CString::CString(const CDouble n) {
     char str[32];
-    sprintf_s(&str[0], 32, "%g", n);
+    snprintf(&str[0], 32, "%g", n);
     append(std::string(str));
 }
 
