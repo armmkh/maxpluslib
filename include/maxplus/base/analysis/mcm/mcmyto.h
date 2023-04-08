@@ -106,18 +106,18 @@ using graph = struct Graph {
  */
 CDouble maxCycleMeanYoungTarjanOrlin(MCMgraph& mcmGraph);
 
-/**
- * maxCycleMeanAndCriticalCycleYoungTarjanOrlin ()
- * The function computes the maximum cycle mean of edge weight of
- * an MCMgraph using Young-Tarjan-Orlin's algorithm.
- * It returns both the MCM and a critical cycle
- * The critical cycle is only returned if cycle and len are not NULL. Then *cycle points
- * to an array of *MCMEdges of the critical cycle and *len indicates the length of the cycle.
- * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
- * in due time.
- */
+
+/// The function computes the maximum cycle mean of edge weight of
+/// an MCMgraph using Young-Tarjan-Orlin's algorithm.
+/// It returns both 
+/// The critical cycle is only returned if cycle is not NULL. Then *cycle points
+/// to an array of *MCMEdges of the critical cycle.
+/// @param mcmGraph The graph to analyze
+/// @param cycle Pointer to the critical cycle
+/// @return the MCM and a critical cycle
 CDouble
 maxCycleMeanAndCriticalCycleYoungTarjanOrlin(MCMgraph& mcmGraph, std::shared_ptr<std::vector<const MCMedge*>> *cycle);
+
 
 /**
  * maxCycleRatioYoungTarjanOrlin ()
@@ -131,10 +131,8 @@ CDouble maxCycleRatioYoungTarjanOrlin(MCMgraph& mcmGraph);
  * The function computes the maximum cycle ratio of edge weight over delay of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  * It returns both the MCR and a critical cycle
- * The critical cycle is only returned if cycle and len are not NULL. Then *cycle points
- * to an array of *MCMEdges of the critical cycle and *len indicates the length of the cycle.
- * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
- * in due time.
+ * The critical cycle is only returned if cycle is not NULL. Then *cycle points
+ * to an array of *MCMEdges of the critical cycle/
  */
 CDouble
 maxCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph& mcmGraph, std::shared_ptr<std::vector<const MCMedge*>> *cycle);
@@ -151,10 +149,8 @@ CDouble minCycleRatioYoungTarjanOrlin(MCMgraph& mcmGraph);
  * The function computes the minimum cycle ratio of edge weight over delay of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  * It returns both the MCR and a critical cycle
- * The critical cycle is only returned if cycle and len are not NULL. Then *cycle points
- * to an array of *MCMEdges of the critical cycle and *len indicates the length of the cycle.
- * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
- * in due time.
+ * The critical cycle is only returned if cycle is not NULL. Then *cycle points
+ * to an array of *MCMEdges of the critical cycle.
  */
 CDouble
 minCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph& mcmGraph, std::shared_ptr<std::vector<const MCMedge*>> *cycle);

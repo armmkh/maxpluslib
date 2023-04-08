@@ -76,6 +76,10 @@ void convertMCMgraphToMatrix(MCMgraph& g, std::shared_ptr<std::vector<int>> *ij,
  *      NIterations: Number of iterations of the algorithm
  *      NComponents: Number of connected components of the optimal policy
  *
+ * ASSUMPTIONS
+ *      The graph has a non-zero number of nodes
+ *      The graph has a non-zero number of edges
+ *      Every node in the graph has outgoing directed edges
  */
 
 void Howard(const std::vector<int> &ij,
@@ -87,6 +91,38 @@ void Howard(const std::vector<int> &ij,
             std::shared_ptr<std::vector<int>>(*policy),
             int *nr_iterations,
             int *nr_components);
+
+/**
+ * maximumCycleMeanHoward ()
+ * Howard Policy Iteration Algorithm for Max Plus Matrices.
+ *
+ * INPUT MCMgraph which must have outoing edges from every node
+ *
+ * OUTPUT:
+ *      maximum cycle mean
+ *      a node on the cycle with maximum cycle mean
+ *
+ * ASSUMPTIONS
+ *      The graph has a non-zero number of nodes
+ *      The graph has a non-zero number of edges
+ *      Every node in the graph has outgoing directed edges
+ *
+ */
+CDouble maximumCycleMeanHoward(MCMgraph &g, MCMnode **criticalNode);
+
+/**
+ * maximumCycleMeanHowardGeneral ()
+ * Howard Policy Iteration Algorithm for Max Plus Matrices.
+ *
+ * INPUT MCMgraph  which can be arbitrary
+ *
+ * OUTPUT:
+ *      maximum cycle mean
+ *      a node on the cycle with maximum cycle mean
+ *
+ */
+CDouble maximumCycleMeanHowardGeneral(MCMgraph &g, MCMnode **criticalNode);
+
 
 } // namespace Graphs
 #endif

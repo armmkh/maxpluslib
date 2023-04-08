@@ -1066,10 +1066,8 @@ CDouble getDelay(const MCMedge& e) { return e.d; }
  * The function computes the maximum cycle mean of edge weight of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  * It returns both the MCM and a critical cycle
- * The critical cycle is only returned if cycle and len are not nullptr. Then *cycle points
- * to an array of *MCMEdges of the critical cycle and *len indicates the length of the cycle.
- * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
- * in due time.
+ * The critical cycle is only returned if cycle is not nullptr. Then *cycle points
+ * to an array of *MCMEdges of the critical cycle.
  *
  * Note that the following assumed are made about the MCMgraph
  * 1. it is assumed that all nodes in the graph are 'visible'
@@ -1126,11 +1124,8 @@ CDouble maxCycleMeanYoungTarjanOrlin(MCMgraph &mcmGraph) {
  * The function computes the maximum cycle ratio of edge weight over delay of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  * It returns both the MCR and a critical cycle
- * Since MCM is in C-style code, let's do it the C-way.
- * The critical cycle is only returned if cycle and len are not nullptr. Then *cycle points
- * to an array of MCMEdges of the critical cycle and *len indicates the length of the cycle.
- * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
- * in due time.
+ * The critical cycle is only returned if cycle is not nullptr. Then *cycle points
+ * to a vector of MCMEdges of the critical cycle.
  */
 
 CDouble maxCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph &mcmGraph,
@@ -1191,10 +1186,8 @@ CDouble maxCycleRatioYoungTarjanOrlin(MCMgraph &mcmGraph) {
  * The function computes the minimum cycle ratio of edge weight over delay of
  * an MCMgraph using Young-Tarjan-Orlin's algorithm.
  * It returns both the MCR and a critical cycle
- * The critical cycle is only returned if cycle and len are not nullptr. Then *cycle points
- * to an array of MCMEdges of the critical cycle and *len indicates the length of the cycle.
- * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
- * in due time.
+ * The critical cycle is only returned if cycle is not nullptr. Then *cycle points
+ * to an array of MCMEdges of the critical cycle.
  */
 
 CDouble minCycleRatioAndCriticalCycleYoungTarjanOrlin(MCMgraph &mcmGraph,

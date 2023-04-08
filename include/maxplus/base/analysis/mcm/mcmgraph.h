@@ -105,6 +105,7 @@ public:
     MCMgraph &operator=(MCMgraph &&) = delete;
     MCMgraph &operator=(const MCMgraph &other) = delete;
 
+    [[nodiscard]] unsigned int numberOfNodes() { return static_cast<unsigned int>(this->nodes.size()); };
     [[nodiscard]] MCMnodes &getNodes() { return nodes; };
     [[nodiscard]] MCMnodeRefs getNodeRefs();
     [[nodiscard]] MCMedgeRefs getEdgeRefs();
@@ -127,6 +128,7 @@ public:
         return nullptr;
     };
 
+    [[nodiscard]] unsigned int numberOfEdges() { return static_cast<unsigned int>(this->edges.size()); };
     [[nodiscard]] MCMedges &getEdges() { return edges; };
 
     MCMedge *getEdge(CId id) {
@@ -196,7 +198,7 @@ public:
         e.dst->in.remove(&e);
     }
 
-    void relabelNodeIds(std::map<int, int> &nodeIdMap);
+    void relabelNodeIds(std::map<int, int> *nodeIdMap = nullptr);
 
     // reduce the MCM graph by removing obviously redundant edges
     // in particular if there are multiple edges between the same pair

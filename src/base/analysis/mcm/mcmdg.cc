@@ -14,6 +14,15 @@
  *  Function        :   Compute the MCM for an HSDF graph using Dasdan-Gupta's
  *                      algorithm.
  *
+ *  @article{Dasdan1998FasterMA,
+ *    title={Faster maximum and minimum mean cycle algorithms for system-performance analysis},
+ *    author={Ali Dasdan and Rajesh K. Gupta},
+ *    journal={IEEE Trans. Comput. Aided Des. Integr. Circuits Syst.},
+ *    year={1998},
+ *    volume={17},
+ *    pages={889-899}
+ * }
+ *
  *  History         :
  *      08-11-05    :   Initial version.
  *
@@ -46,15 +55,11 @@
 #include <memory>
 
 namespace Graphs {
-/**
- * mcmDG ()
- * The function computes the maximum cycle mean of a HSDF graph using
- * Dasdan-Gupta's algorithm.
- * Note: this algorithm assumes that edge weights are integer valued !
- * @todo
- * check if algorithm can be generalized to float edge weights
- */
-CDouble mcmDG(MCMgraph &mcmGraph) {
+
+// assumes teh graph is strongly connected and assumes the node ids are 0...N-1,
+// where N is the number of nodes
+CDouble mcmDG_SCC(MCMgraph &mcmGraph) {
+
     // Allocate memory
     const int n = mcmGraph.nrVisibleNodes();
     std::vector<int> level(n);
@@ -70,17 +75,17 @@ CDouble mcmDG(MCMgraph &mcmGraph) {
     level[0] = 0;
     std::list<int> Q_k;
     Q_k.push_back(0);
-    std::list<MCMnode*> Q_u;
+    std::list<MCMnode *> Q_u;
     Q_u.push_back(&(mcmGraph.getNodes().front()));
 
     // Compute the distances
     int k = Q_k.front();
     Q_k.pop_front();
-    MCMnode* u = Q_u.front();
+    MCMnode *u = Q_u.front();
     Q_u.pop_front();
     do {
-        for (auto& e: u->out) {
-            MCMnode* v = e->dst;
+        for (auto &e : u->out) {
+            MCMnode *v = e->dst;
 
             if (level[v->id] < static_cast<int>(k + 1)) {
                 Q_k.push_back(k + 1);
@@ -99,7 +104,7 @@ CDouble mcmDG(MCMgraph &mcmGraph) {
 
     // Compute lambda using Karp's theorem
     CDouble l = -INT_MAX;
-    for (const auto & u : mcmGraph.getNodes()) {
+    for (const auto &u : mcmGraph.getNodes()) {
 
         if (level[u.id] == n) {
             CDouble ld = INT_MAX;
@@ -113,6 +118,32 @@ CDouble mcmDG(MCMgraph &mcmGraph) {
     }
 
     return l;
+}
+    
+    
+/**
+ * mcmDG ()
+ * The function computes the maximum cycle mean of an MCM graph using
+ * Dasdan-Gupta's algorithm.
+ * Note: this algorithm assumes that edge weights are integer valued !
+ * @todo
+ * check if algorithm can be generalized to float edge weights
+ */
+CDouble mcmDG(MCMgraph &mcmGraph) {
+
+    MCMgraphs sccs;
+    stronglyConnectedMCMgraph(mcmGraph, sccs, false);
+
+    CDouble mcm = -INFINITY;
+    for (auto &scc : sccs) {
+        scc->relabelNodeIds();
+        CDouble cmcm = mcmDG_SCC(*scc);
+        if (cmcm > mcm) {
+            mcm = cmcm;
+        }
+    }
+
+    return mcm;
 }
 
 } // namespace Graphs

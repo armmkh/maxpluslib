@@ -1090,7 +1090,7 @@ Matrix::mp_generalized_eigenvectors() const {
 
         // MCM calculation requires node relabelling
         std::map<int, int> sccNodeIdMap;
-        scc->relabelNodeIds(sccNodeIdMap);
+        scc->relabelNodeIds(&sccNodeIdMap);
 
         if (scc->nrVisibleEdges() > 0) {
             // compute MCM mu and critical node n of scc
