@@ -99,7 +99,7 @@ public:
         *chi = std::make_shared<std::vector<CDouble>>(nr_nodes);
         *v = std::make_shared<std::vector<CDouble>>(nr_nodes);
 
-        Security_Check();
+        Safety_Check();
         Allocate_Memory();
         Epsilon(&epsilon);
         Initial_Policy();
@@ -379,9 +379,11 @@ private:
     }
 
     void Check_Rows() {
+        // check if every node has outgoing edges.
         std::vector<int> u(nr_nodes);
 
         for (int i = 0; i < narcs; i++) {
+            // ij[2*k] is the source node number of edge number k
             u[ij[2 * i]] = 1;
         }
 
@@ -392,7 +394,7 @@ private:
         }
     }
 
-    void Security_Check() {
+    void Safety_Check() {
         if (nr_nodes < 1) {
             throw CException("Howard: number of nodes must be a positive integer.");
         }
@@ -482,7 +484,6 @@ void Howard(const std::vector<int> &ij,
 void convertMCMgraphToMatrix(MCMgraph &g,
                              std::shared_ptr<std::vector<int>> *ij,
                              std::shared_ptr<std::vector<CDouble>> *A) {
-    int k = 0;
     uint i = 0;
     uint j = 0;
     v_uint mapId(g.getNodes().size());
@@ -502,8 +503,9 @@ void convertMCMgraphToMatrix(MCMgraph &g,
     auto& Ar = *(*A);
 
     // Create an entry in the matrices for each edge
+    int k = 0;
     for (const auto &e : g.getEdges()) {
-        // Is the edge a existing edge in the graph?
+        // Is the edge an existing edge in the graph?
         if (e.visible) {
             ijr[2 * k] = mapId[e.src->id];
             ijr[2 * k + 1] = mapId[e.dst->id];
@@ -560,6 +562,32 @@ CDouble maximumCycleMeanHoward(MCMgraph& g, MCMnode* *criticalNode) {
     if (criticalNode != nullptr) {
         (*criticalNode) = &(*n);
     }
+    return mcm;
+}
+
+CDouble maximumCycleMeanHowardGeneral(MCMgraph &g, MCMnode **criticalNode) {
+
+    MCMgraphs sccs;
+    stronglyConnectedMCMgraph(g, sccs, false);
+
+    CDouble mcm = -INFINITY;
+    if (criticalNode != nullptr) {
+        *criticalNode = nullptr;
+    }
+    for (auto &scc : sccs) {
+        std::map<int, int> nodeMap;
+        scc->relabelNodeIds(&nodeMap);
+        MCMnode *sccCriticalNode = nullptr;
+        ;
+        CDouble cmcm = maximumCycleMeanHoward(*scc, &sccCriticalNode);
+        if (cmcm > mcm) {
+            mcm = cmcm;
+            if (criticalNode != nullptr) {
+                *criticalNode = g.getNode(nodeMap[sccCriticalNode->id]);
+            }
+        }
+    }
+
     return mcm;
 }
 

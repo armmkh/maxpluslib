@@ -49,13 +49,45 @@
 
 namespace Graphs {
 
-/**
- * maximumCycleMeanKarp ()
- * The function computes the maximum cycle mean of an MCMgraph using Karp's
- * algorithm.
- */
+/// <summary>
+///		The function computes the maximum cycle mean of an MCMgraph using Karp's
+///		algorithm.
+/// 	Assumes thal all nodes of the graph have an outgoing edge.
+/// 	Assumes that the edge weights are integer (!)
+/// </summary>
+/// <param name="g">graph to analyse</param>
+/// <returns>The maximum cycle mean of the graph.</returns>
 CDouble maximumCycleMeanKarp(MCMgraph& g);
-CDouble maximumCycleMeanKarpDouble(MCMgraph& g, const MCMnode **criticalNode = nullptr);
+
+/// <summary>
+///		The function computes the maximum cycle mean of an MCMgraph using Karp's
+///		algorithm.
+/// </summary>
+/// <param name="g">graph to analyse</param>
+/// <param name="criticalNodeg">optional, will point to an arbitrary node on the cycle with the maximum cycle mean.</param>
+/// <returns>The maximum cycle mean of the graph and optionally a critical node.</returns>
+CDouble maximumCycleMeanKarpDouble(MCMgraph &g, const MCMnode **criticalNode = nullptr);
+
+/// <summary>
+///		The function computes the maximum cycle mean of an MCMgraph using Karp's
+///		algorithm.
+/// 	Does not require that all nodes of the graph have an outgoing edge.
+/// 	Assumes that the edge weights are integer (!)
+/// </summary>
+/// <param name="g">graph to analyse</param>
+/// <returns>The maximum cycle mean of the graph.</returns>
+CDouble maximumCycleMeanKarpGeneral(MCMgraph &g);
+
+/// <summary>
+///		The function computes the maximum cycle mean of an MCMgraph using Karp's
+///		algorithm.
+/// 	Does not require that all nodes of the graph have an outgoing edge.
+/// </summary>
+/// <param name="g">graph to analyse</param>
+/// <param name="criticalNodeg">optional, will point to an arbitrary node on the cycle with the maximum cycle mean.</param>
+/// <returns>The maximum cycle mean of the graph and optionally a critical node.</returns>
+CDouble maximumCycleMeanKarpDoubleGeneral(MCMgraph &g, const MCMnode **criticalNode = nullptr);
+
 
 /**
  * mcmGetAdjacentActors ()

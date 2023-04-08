@@ -47,17 +47,16 @@
 namespace Graphs {
 /**
  * mcmKarp ()
- * The function computes the maximum cycle mean of an MCMgGraph using Karp's
+ * The function computes the maximum cycle mean of an MCMgraph using Karp's
  * algorithm.
  * Note that the following assumptions are made about the MCMgraph
  * 1. it is assumed that the edge weights have integer values.
  * 2. it is assumed that all nodes in the graph are 'visible'
  * 3. it is assumed that the node have id's ranging from 0 up to the number of nodes.
+ * 4. it is assumed that all nodes have an outgoing directed edge
  *
- * The critical cycle is only returned if cycle and len are not nullptr. Then *cycle points
- * to an array of MCMEdges of the critical cycle and *len indicates the length of the cycle.
- * *cycle is a freshly allocated array and it is the caller's obligation to deallocate it
- * in due time.
+ * The critical cycle is only returned if cycle is not nullptr. Then *cycle points
+ * to an array of MCMEdges of the critical cycle.
  * cycle  - pointers to arcs on maximum ratio cycle,
  *          ordered in array from top to bottom with
  *          respect to subsequent arcs on cycle
@@ -105,6 +104,26 @@ CDouble maximumCycleMeanKarp(MCMgraph &mcmGraph) {
 
     return l;
 }
+
+CDouble maximumCycleMeanKarpGeneral(MCMgraph& g) {
+    MCMgraphs sccs;
+    stronglyConnectedMCMgraph(g, sccs, false);
+
+    CDouble mcm = -INFINITY;
+    for (auto &scc : sccs) {
+        std::map<int, int> nodeMap;
+        scc->relabelNodeIds(&nodeMap);
+        MCMnode *sccCriticalNode = nullptr;
+        ;
+        CDouble cmcm = maximumCycleMeanKarp(*scc);
+        if (cmcm > mcm) {
+            mcm = cmcm;
+        }
+    }
+
+    return mcm;
+}
+
 
 /**
  * maximumCycleMeanKarpDouble ()
@@ -164,6 +183,31 @@ CDouble maximumCycleMeanKarpDouble(MCMgraph &mcmGraph, const MCMnode **criticalN
     }
 
     return l;
+}
+
+CDouble maximumCycleMeanKarpDoubleGeneral(MCMgraph &g, const MCMnode **criticalNode) {
+    MCMgraphs sccs;
+    stronglyConnectedMCMgraph(g, sccs, false);
+
+    CDouble mcm = -INFINITY;
+    if (criticalNode != nullptr) {
+        *criticalNode = nullptr;
+    }
+    for (auto &scc : sccs) {
+        std::map<int, int> nodeMap;
+        scc->relabelNodeIds(&nodeMap);
+        const MCMnode *sccCriticalNode = nullptr;
+        ;
+        CDouble cmcm = maximumCycleMeanKarpDouble(*scc, &sccCriticalNode);
+        if (cmcm > mcm) {
+            mcm = cmcm;
+            if (criticalNode != nullptr) {
+                *criticalNode = g.getNode(nodeMap[sccCriticalNode->id]);
+            }
+        }
+    }
+
+    return mcm;
 }
 
 } // namespace Graphs
