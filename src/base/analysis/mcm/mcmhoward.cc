@@ -548,7 +548,7 @@ CDouble maximumCycleMeanHoward(MCMgraph& g, MCMnode* *criticalNode) {
 
     // find maximum cycle mean in chi vector
     MCMnodes& nodes = g.getNodes();
-    auto &n = nodes.begin();
+    auto n = nodes.begin();
     CDouble mcm = chi->at(0);
     MCMnode *critNode = &(*n);
     for (auto &val : *chi) {
