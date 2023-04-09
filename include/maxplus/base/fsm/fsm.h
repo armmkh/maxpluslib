@@ -197,7 +197,7 @@ public:
     FiniteStateMachine(FiniteStateMachine &&) = default;
     FiniteStateMachine &operator=(FiniteStateMachine &&) = delete;
 
-    [[nodiscard]] virtual const State &getInitialState() const = 0;
+    [[nodiscard]] virtual State &getInitialState() = 0;
 };
 
 //
@@ -414,7 +414,7 @@ class FiniteStateMachine : public Abstract::FiniteStateMachine {
 private:
     SetOfStates<StateLabelType, EdgeLabelType> states;
     Abstract::SetOfEdges edges;
-    const State<StateLabelType, EdgeLabelType> *initialState;
+    State<StateLabelType, EdgeLabelType> *initialState;
 
 public:
     FiniteStateMachine() : Abstract::FiniteStateMachine(), initialState(nullptr){};
@@ -473,12 +473,12 @@ public:
         this->initialState = this->states.withLabel(label);
     };
 
-    void setInitialState(const State<StateLabelType, EdgeLabelType>& s) {
+    void setInitialState(State<StateLabelType, EdgeLabelType>& s) {
         // we are asumming s is one of our states
         this->initialState = &s;
     };
 
-    [[nodiscard]] const State<StateLabelType, EdgeLabelType> &getInitialState() const override {
+    [[nodiscard]] State<StateLabelType, EdgeLabelType> &getInitialState() override {
         return *this->initialState;
     };
 
@@ -854,6 +854,7 @@ using ELSSetOfEdgeRefs = ::FSM::Abstract::SetOfEdgeRefs;
 
 class EdgeLabeledScenarioFSM : public ::FSM::Labeled::FiniteStateMachine<CId, CString> {
 public:
+    EdgeLabeledScenarioFSM() = default;
     ~EdgeLabeledScenarioFSM() override = default;
 
     EdgeLabeledScenarioFSM(const EdgeLabeledScenarioFSM &) = delete;
@@ -887,8 +888,8 @@ public:
 
 class FiniteStateMachine : public Labeled::FiniteStateMachine<CString, char> {
 public:
-    const State &getInitialState() {
-        return dynamic_cast<const State &>(
+    State &getInitialState() {
+        return dynamic_cast<State &>(
                 Labeled::FiniteStateMachine<CString, char>::getInitialState());
     };
 
@@ -930,7 +931,7 @@ public:
                        const Abstract::FiniteStateMachine &fsm2) :
         fsm_a(fsm1), fsm_b(fsm2) {}
 
-    std::shared_ptr<State> getInitialState();
+    State& getInitialState();
 
     [[nodiscard]] virtual bool matchEdges(const Abstract::Edge &e1,
                                           const Abstract::Edge &e2) const = 0;

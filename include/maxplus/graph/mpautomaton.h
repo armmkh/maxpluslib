@@ -126,7 +126,7 @@ public:
  */
 using MPAREdgeLabel = struct MPAREdgeLabel {
     MPDelay delay;
-    const CString& scenario;
+    const CString scenario;
     CDouble reward{0.0};
 };
 
@@ -143,7 +143,7 @@ using MPARState = ::FSM::Labeled::State<MPAStateLabel, MPAREdgeLabel>;
 using MPAREdge = ::FSM::Labeled::Edge<MPAStateLabel, MPAREdgeLabel>;
 using MPARSetOfStates = ::FSM::Labeled::SetOfStates<MPAStateLabel, MPAREdgeLabel>;
 using MPARSetOfEdges = ::FSM::Abstract::SetOfEdges;
-using MPARCycle = ::FSM::Abstract::SetOfEdgeRefs;
+using MPARCycle = std::list<const ::FSM::Abstract::Edge*>;
 
 /**
  * A max-plus automaton with rewards. In addition to the usual max-plus automaton,
