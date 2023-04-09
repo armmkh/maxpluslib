@@ -252,7 +252,7 @@ void stronglyConnectedMCMgraph(MCMgraph &g,
  * The function removes all hidden nodes and edges from the graph. All visible
  * edges are assigned a new id starting in the range [0,nrNodes()).
  */
-void relabelMCMgraph(std::shared_ptr<MCMgraph> g);
+void relabelMCMgraph(MCMgraph& g);
 
 /**
  * addLongestDelayEdgesToMCMgraph ()
@@ -261,7 +261,7 @@ void relabelMCMgraph(std::shared_ptr<MCMgraph> g);
  * with no delay are removed and edges with more than one delay element
  * are converted into a sequence of edges with one delay element.
  */
-void addLongestDelayEdgesToMCMgraph(std::shared_ptr<MCMgraph> g);
+void addLongestDelayEdgesToMCMgraph(MCMgraph& g);
 
 } // namespace Graphs
 #endif
