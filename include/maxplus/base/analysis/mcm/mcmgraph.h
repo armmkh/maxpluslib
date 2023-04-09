@@ -42,7 +42,7 @@
 #ifndef BASE_ANALYSIS_MCM_MCMGRAPH_H_INCLUDED
 #define BASE_ANALYSIS_MCM_MCMGRAPH_H_INCLUDED
 
-#include "base/basic_types.h"
+#include "maxplus/base/basic_types.h"
 #include <memory>
 #include <utility>
 

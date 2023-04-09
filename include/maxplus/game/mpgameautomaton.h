@@ -41,9 +41,9 @@
 #ifndef MAXPLUS_GRAPH_MPSTATESPACE_H
 #define MAXPLUS_GRAPH_MPSTATESPACE_H
 
-#include "algebra/mpmatrix.h"
-#include "base/fsm/fsm.h"
-#include "graph/mpautomaton.h"
+#include "maxplus/algebra/mpmatrix.h"
+#include "maxplus/base/fsm/fsm.h"
+#include "maxplus/graph/mpautomaton.h"
 #include "ratiogame.h"
 
 

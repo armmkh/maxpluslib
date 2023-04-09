@@ -51,7 +51,7 @@
 #ifndef BASE_ANALYSIS_MCM_MCMDG_H_INCLUDED
 #define BASE_ANALYSIS_MCM_MCMDG_H_INCLUDED
 
-#include "base/analysis/mcm/mcmgraph.h"
+#include "maxplus/base/analysis/mcm/mcmgraph.h"
 
 namespace Graphs {
 

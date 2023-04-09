@@ -41,7 +41,7 @@
 #ifndef MAXPLUS_ALGEBRA_MATRIX_H_INCLUDED
 #define MAXPLUS_ALGEBRA_MATRIX_H_INCLUDED
 
-#include "base/analysis/mcm/mcmgraph.h"
+#include "maxplus/base/analysis/mcm/mcmgraph.h"
 #include "mptype.h"
 #include <memory>
 #include <unordered_set>

@@ -43,7 +43,7 @@
 #ifndef MAXPLUS_GRAPH_AUTOMATON_H_INCLUDED
 #define MAXPLUS_GRAPH_AUTOMATON_H_INCLUDED
 
-#include "base/fsm/fsm.h"
+#include "maxplus/base/fsm/fsm.h"
 #include "maxplus/algebra/mptype.h"
 
 namespace MaxPlus {

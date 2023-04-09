@@ -44,8 +44,8 @@
 #ifndef BASE_MAXPLUS_MPTYPE_H_INCLUDED
 #define BASE_MAXPLUS_MPTYPE_H_INCLUDED
 
-#include "base/basic_types.h"
-#include "base/string/cstring.h"
+#include "maxplus/base/basic_types.h"
+#include "maxplus/base/string/cstring.h"
 #include <cassert>
 #include <cmath>
 

@@ -41,7 +41,7 @@
 #ifndef MAXPLUS_GAME_STRATEGYVECTOR_H
 #define MAXPLUS_GAME_STRATEGYVECTOR_H
 
-#include "base/fsm/fsm.h"
+#include "maxplus/base/fsm/fsm.h"
 #include "ratiogame.h"
 #include <utility>
 

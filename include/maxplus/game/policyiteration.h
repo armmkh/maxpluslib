@@ -41,7 +41,7 @@
 #ifndef BASE_MAXPLUS_GAME_POLICYITERATION_H
 #define BASE_MAXPLUS_GAME_POLICYITERATION_H
 
-#include "base/fsm/fsm.h"
+#include "maxplus/base/fsm/fsm.h"
 #include "ratiogame.h"
 #include "strategyvector.h"
 #include <algorithm> // std::max
