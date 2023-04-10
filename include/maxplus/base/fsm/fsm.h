@@ -329,7 +329,11 @@ public:
         Abstract::Edge(src, dst), label(lbl) {
     }
 
+    [[nodiscard]] const EdgeLabelType &getLabel() const { return this->label; }
+
+private:
     EdgeLabelType label;
+
 };
 
 // template <typename StateLabelType, typename EdgeLabelType>

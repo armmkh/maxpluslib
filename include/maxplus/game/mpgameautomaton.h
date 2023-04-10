@@ -69,9 +69,9 @@ public:
 
     void addV1(MPARState *s) { this->setV1.insert(s); }
 
-    MPTime getWeight1(const MPAREdge *e) const override { return MPTime(e->label.reward); }
+    MPTime getWeight1(const MPAREdge *e) const override { return MPTime(e->getLabel().reward); }
 
-    MPTime getWeight2(const MPAREdge *e) const override { return e->label.delay; }
+    MPTime getWeight2(const MPAREdge *e) const override { return e->getLabel().delay; }
 
 private:
     std::set<MPARState *> setV0;
