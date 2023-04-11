@@ -17,4 +17,5 @@ public:
     void TearDown() override;
     void Run() override;
     void testCreateFSM();
+    void testDeterminizeFSM();
 };
