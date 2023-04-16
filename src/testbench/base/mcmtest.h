@@ -17,4 +17,5 @@ public:
     void test_howard();
     void test_karp();
     void test_yto();
+    void test_prune();
 };

@@ -725,6 +725,8 @@ std::shared_ptr<MCMgraph> MCMgraph::pruneEdges() {
     // for every node
     for (auto &u : this->nodes) {
 
+        local.paretoEdges.clear();
+
         // for every outgoing edges to a simple cull Pareto filtering
         for (auto &i : u.out) {
             local.insert(i);

@@ -19,6 +19,7 @@ void MCMTest::Run() {
     this->test_howard();
     this->test_karp();
     this->test_yto();
+    this->test_prune();
 };
 
 MCMgraph makeGraph1() {
@@ -181,6 +182,8 @@ void MCMTest::test_karp() {
 
 }
 
+
+
 /// Test MCM YTO.
 void MCMTest::test_yto() {
     std::cout << "Running test: MCM-YTO" << std::endl;
@@ -212,6 +215,7 @@ void MCMTest::test_yto() {
     eid = cycle->at(0)->id;
     ASSERT_THROW(eid == 6);
 
+    // TODO: check of the cycle ratio are identical to old SDF3
     CDouble expectedMinCycleRatios[] = {
             0.526141,  0.124523,  0.0389826, 0.289127,   0.11451,    0.723313,   1.07027,
             0.956067,  0.570066,  0.746341,  0.33622,    0.475978,   0.902663,   1.02951,
@@ -270,5 +274,103 @@ void MCMTest::test_yto() {
         //std::cout << "MCM: " << result << "cycle length: " << cycle->size() << std::endl;
     }
 
+
+}
+
+void MCMTest::test_prune() {
+
+    MCMgraph mcmGraph;
+    auto& n36 = *mcmGraph.addNode(36);
+    auto& n37 = *mcmGraph.addNode(37);
+    auto& n38 = *mcmGraph.addNode(38);
+    auto& n39 = *mcmGraph.addNode(39);
+    auto& n40 = *mcmGraph.addNode(40);
+
+
+    mcmGraph.addEdge(0, n36, n36, 5.83e+06, 1);
+    mcmGraph.addEdge(1, n36, n37, 1.52647e+07, 1);
+    mcmGraph.addEdge(2, n37, n37, 5.83e+06, 1);
+    mcmGraph.addEdge(3, n38, n37, 9.43472e+06, 1);
+    mcmGraph.addEdge(4, n39, n37, 8.72299e+06, 1);
+    mcmGraph.addEdge(5, n40, n37, 8.72299e+06, 1);
+    mcmGraph.addEdge(6, n36, n38, 7.01739e+06, 1);
+    mcmGraph.addEdge(7, n38, n38, 1.18739e+06, 1);
+    mcmGraph.addEdge(8, n36, n39, 1.22848e+07, 1);
+    mcmGraph.addEdge(9, n38, n39, 6.45482e+06, 1);
+    mcmGraph.addEdge(10, n39, n39, 5.74309e+06, 1);
+    mcmGraph.addEdge(11, n36, n40, 1.23277e+07, 1);
+    mcmGraph.addEdge(12, n38, n40, 6.49772e+06, 1);
+    mcmGraph.addEdge(13, n39, n40, 5.78599e+06, 1);
+    mcmGraph.addEdge(14, n40, n40, 5.78599e+06, 1);
+    mcmGraph.addEdge(15, n36, n36, 5.83e+06, 1);
+    mcmGraph.addEdge(16, n36, n37, 1.32964e+07, 1);
+    mcmGraph.addEdge(17, n37, n37, 4.64e+06, 1);
+    mcmGraph.addEdge(18, n38, n37, 7.46636e+06, 1);
+    mcmGraph.addEdge(19, n39, n37, 6.93511e+06, 1);
+    mcmGraph.addEdge(20, n40, n37, 6.93511e+06, 1);
+    mcmGraph.addEdge(21, n36, n38, 6.65645e+06, 1);
+    mcmGraph.addEdge(22, n38, n38, 826446, 1);
+    mcmGraph.addEdge(23, n36, n39, 1.09086e+07, 1);
+    mcmGraph.addEdge(24, n38, n39, 5.07857e+06, 1);
+    mcmGraph.addEdge(25, n39, n39, 4.54732e+06, 1);
+    mcmGraph.addEdge(26, n36, n40, 1.09515e+07, 1);
+    mcmGraph.addEdge(27, n38, n40, 5.12147e+06, 1);
+    mcmGraph.addEdge(28, n39, n40, 4.59021e+06, 1);
+    mcmGraph.addEdge(29, n40, n40, 4.59021e+06, 1);
+    mcmGraph.addEdge(30, n36, n36, 5.83e+06, 1);
+    mcmGraph.addEdge(31, n36, n37, 1.49199e+07, 1);
+    mcmGraph.addEdge(32, n37, n37, 5.76e+06, 1);
+    mcmGraph.addEdge(33, n38, n37, 9.08995e+06, 1);
+    mcmGraph.addEdge(34, n39, n37, 8.61563e+06, 1);
+    mcmGraph.addEdge(35, n40, n37, 8.61563e+06, 1);
+    mcmGraph.addEdge(36, n36, n38, 6.54258e+06, 1);
+    mcmGraph.addEdge(37, n38, n38, 712576, 1);
+    mcmGraph.addEdge(38, n36, n39, 1.19727e+07, 1);
+    mcmGraph.addEdge(39, n38, n39, 6.14268e+06, 1);
+    mcmGraph.addEdge(40, n39, n39, 5.66836e+06, 1);
+    mcmGraph.addEdge(41, n36, n40, 1.20156e+07, 1);
+    mcmGraph.addEdge(42, n38, n40, 6.18558e+06, 1);
+    mcmGraph.addEdge(43, n39, n40, 5.71125e+06, 1);
+    mcmGraph.addEdge(44, n40, n40, 5.71125e+06, 1);
+    mcmGraph.addEdge(45, n36, n36, 5.83e+06, 1);
+    mcmGraph.addEdge(46, n36, n37, 1.51086e+07, 1);
+    mcmGraph.addEdge(47, n37, n37, 5.83e+06, 1);
+    mcmGraph.addEdge(48, n38, n37, 9.27858e+06, 1);
+    mcmGraph.addEdge(49, n39, n37, 8.12511e+06, 1);
+    mcmGraph.addEdge(50, n40, n37, 8.72299e+06, 1);
+    mcmGraph.addEdge(51, n36, n38, 6.7051e+06, 1);
+    mcmGraph.addEdge(52, n38, n38, 875098, 1);
+    mcmGraph.addEdge(53, n36, n39, 1.09329e+07, 1);
+    mcmGraph.addEdge(54, n38, n39, 5.1029e+06, 1);
+    mcmGraph.addEdge(55, n39, n39, 4.54732e+06, 1);
+    mcmGraph.addEdge(56, n36, n40, 1.21716e+07, 1);
+    mcmGraph.addEdge(57, n38, n40, 6.34157e+06, 1);
+    mcmGraph.addEdge(58, n39, n40, 5.1881e+06, 1);
+    mcmGraph.addEdge(59, n40, n40, 5.78599e+06, 1);
+    mcmGraph.addEdge(60, n36, n36, 5.83e+06, 1);
+    mcmGraph.addEdge(61, n36, n37, 1.44916e+07, 1);
+    mcmGraph.addEdge(62, n37, n37, 4.64e+06, 1);
+    mcmGraph.addEdge(63, n38, n37, 8.66157e+06, 1);
+    mcmGraph.addEdge(64, n39, n37, 8.10599e+06, 1);
+    mcmGraph.addEdge(65, n40, n37, 7.5081e+06, 1);
+    mcmGraph.addEdge(66, n36, n38, 6.7051e+06, 1);
+    mcmGraph.addEdge(67, n38, n38, 875098, 1);
+    mcmGraph.addEdge(68, n36, n39, 1.21716e+07, 1);
+    mcmGraph.addEdge(69, n38, n39, 6.34157e+06, 1);
+    mcmGraph.addEdge(70, n39, n39, 5.78599e+06, 1);
+    mcmGraph.addEdge(71, n40, n39, 5.1881e+06, 1);
+    mcmGraph.addEdge(72, n36, n40, 1.09329e+07, 1);
+    mcmGraph.addEdge(73, n38, n40, 5.1029e+06, 1);
+    mcmGraph.addEdge(74, n40, n40, 4.54732e+06, 1);
+
+    std::shared_ptr<MCMgraph> result =  mcmGraph.pruneEdges(); 
+
+
+    CDouble mcr1 = maxCycleRatioAndCriticalCycleYoungTarjanOrlin(mcmGraph, nullptr);
+    ASSERT_APPROX_EQUAL(mcr1, 5.83e+06, 1e3);
+
+    CDouble mcr2 = maxCycleRatioAndCriticalCycleYoungTarjanOrlin(*result, nullptr);   
+
+    ASSERT_APPROX_EQUAL(mcr1, mcr2, 1e3);
 
 }
