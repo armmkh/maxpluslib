@@ -8,6 +8,8 @@
 #include "graph/mpautomaton.h"
 #include "testing.h"
 
+#define ASSERT_EPSILON 0.001
+
 using namespace MaxPlus;
 
 MPAutomatonTest::MPAutomatonTest() = default;
@@ -19,6 +21,7 @@ void MPAutomatonTest::TearDown() {}
 void MPAutomatonTest::Run() {
     testCreateFSM(); 
     testDeterminizeFSM();
+    testMinimizeFSM();
 }
 
 void MPAutomatonTest::testCreateFSM() {
@@ -56,12 +59,10 @@ void MPAutomatonTest::testDeterminizeFSM() {
     std::cout << "Running test: DeterminizeFSM" << std::endl;
 
     MaxPlusAutomatonWithRewards mpa;
-    // One FSM state, three tokens:
-    CId fsm_s0 = 0;
 
-    MPARState *s1 = mpa.addState(makeMPAStateLabel(fsm_s0, 0));
-    MPARState *s2 = mpa.addState(makeMPAStateLabel(fsm_s0, 1));
-    MPARState *s3 = mpa.addState(makeMPAStateLabel(fsm_s0, 2));
+    MPARState *s1 = mpa.addState(makeMPAStateLabel(0, 0));
+    MPARState *s2 = mpa.addState(makeMPAStateLabel(0, 1));
+    MPARState *s3 = mpa.addState(makeMPAStateLabel(0, 2));
 
     // s1 -- (3,A,1) -> s2 
     mpa.addEdge(*s1, makeRewardEdgeLabel(MPTime(3.0), CString("A"), 1.0), *s2);
@@ -88,10 +89,37 @@ void MPAutomatonTest::testDeterminizeFSM() {
     ASSERT_THROW(mpaDeterminized->getStates().size() == 2);
     ASSERT_THROW(mpaDeterminized->getEdges().size()==3);
 
-    auto mpaMin = mpa.minimizeEdgeLabels();
+    CDouble mcr = mpa.calculateMCR();
+    std::shared_ptr<std::vector<const MPAREdge*>> cycle;
+    CDouble mcr1 = mpaDeterminized->calculateMCRAndCycle(&cycle);
+    
+    ASSERT_APPROX_EQUAL(mcr, mcr1, ASSERT_EPSILON);
+    ASSERT_EQUAL(cycle->size(), 2);
+    
+}
 
-    // TODO: implement MCR on MaxPlusAutomatonWithRewards and MCM on MaxPlusAutomaton
-    // CDouble mcr = mpaDeterminized->calculateMCR();
-    // std::cout << "MCR: " << mcr << std::endl;
+void MPAutomatonTest::testMinimizeFSM() {
+
+    std::cout << "Running test: MinimizeFSM" << std::endl;
+
+    FSM::Labeled::FiniteStateMachine<int,int> fsa;
+
+    auto s0 = fsa.addState(3);
+    auto s1 = fsa.addState(5);
+    auto s2 = fsa.addState(5);
+
+    fsa.addEdge(*s0, 2, *s1);
+    fsa.addEdge(*s1, 2, *s2);
+    fsa.addEdge(*s2, 2, *s2);
+
+    fsa.setInitialState(*s0);
+
+    std::shared_ptr<FSM::Labeled::FiniteStateMachine<int,int>> fsaMin = std::dynamic_pointer_cast<FSM::Labeled::FiniteStateMachine<int,int>>(fsa.minimizeEdgeLabels());
+
+    std::cout << "Nr states: " << fsaMin->getStates().size() << std::endl;
+    std::cout << "Nr edges: " << fsaMin->getEdges().size() << std::endl;
+
+    ASSERT_EQUAL(fsaMin->getStates().size(), 2);
+    ASSERT_EQUAL(fsaMin->getEdges().size(), 2);
 
 }

@@ -18,4 +18,5 @@ public:
     void Run() override;
     void testCreateFSM();
     void testDeterminizeFSM();
+    void testMinimizeFSM();
 };

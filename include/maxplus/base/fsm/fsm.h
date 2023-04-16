@@ -691,8 +691,8 @@ public:
     using EquivalenceMap = std::map<const Abstract::State*,
                                     std::shared_ptr<Abstract::SetOfStateRefs>>;
 
-    // minimize the automaton based on edge labels only.
-    std::shared_ptr<FiniteStateMachine<StateLabelType, EdgeLabelType>> minimizeEdgeLabels() {
+    // minimize the automaton based on edge and state labels.
+    std::shared_ptr<FiniteStateMachine<StateLabelType, EdgeLabelType>> minimizeEdgeLabels(bool ignoreStateLabels = false) {
         // partition refinement algorithm
 
         // generate a vector of equivalence classes
@@ -709,8 +709,58 @@ public:
             eqMap[sp] = initialClass;
         }
 
-        // partition refinement
+        // partition on state labels
+
         bool changed = false;
+        if (! ignoreStateLabels) {
+            do {
+                changed = false;
+
+                std::list<std::shared_ptr<Abstract::SetOfStateRefs>> newEqClasses;
+
+                // for every potential equivalence class
+                for (const auto &ic : eqClasses) {
+                    std::shared_ptr<Abstract::SetOfStateRefs> _class = ic;
+
+                    auto i = _class->begin();
+
+                    // pick arbitrary state from class
+                    auto s1 = dynamic_cast<const State<StateLabelType, EdgeLabelType> *>(*i);
+
+                    std::shared_ptr<Abstract::SetOfStateRefs> equivSet =
+                            std::make_shared<Abstract::SetOfStateRefs>();
+                    std::shared_ptr<Abstract::SetOfStateRefs> remainingSet =
+                            std::make_shared<Abstract::SetOfStateRefs>();
+                    equivSet->insert(s1);
+
+                    // check whether all other states have the same label.
+                    while (++i != _class->end()) {
+                        auto s2 = dynamic_cast<const State<StateLabelType, EdgeLabelType> *>(*i);
+                        if (s1->getLabel() == s2->getLabel()) {
+                            equivSet->insert(s2);
+                        } else {
+                            remainingSet->insert(s2);
+                        }
+                    }
+                    // if not, split the class
+                    if (equivSet->size() == _class->size()) {
+                        newEqClasses.push_back(equivSet);
+                        this->mapStates(eqMap, equivSet);
+                    } else {
+                        newEqClasses.push_back(equivSet);
+                        this->mapStates(eqMap, equivSet);
+                        newEqClasses.push_back(remainingSet);
+                        this->mapStates(eqMap, remainingSet);
+                        changed = true;
+                    }
+                }
+                auto tempEqClasses = eqClasses;
+                eqClasses = newEqClasses;
+            } while (changed);
+        }
+
+        // partition refinement on transitions
+        changed = false;
         do {
             changed = false;
 
@@ -818,8 +868,8 @@ private:
             std::shared_ptr<Abstract::SetOfStateRefs> ns1 = s1->nextStatesOfEdgeLabel(l);
             std::shared_ptr<Abstract::SetOfStateRefs> ns2 = s2->nextStatesOfEdgeLabel(l);
             // collect classes of states in ns1 and ns2
-            std::set<SetOfStates<StateLabelType, EdgeLabelType> *> cs1;
-            std::set<SetOfStates<StateLabelType, EdgeLabelType> *> cs2;
+            std::set<std::shared_ptr<Abstract::SetOfStateRefs>> cs1;
+            std::set<std::shared_ptr<Abstract::SetOfStateRefs>> cs2;
             for (auto j : *ns1) {
                 auto s = j;
                 cs1.insert(m[s]);
@@ -846,37 +896,11 @@ private:
 };
 } // namespace Labeled
 
-// Edge Labelled Scenario Automaton
-using ELSState = ::FSM::Labeled::State<CId, CString>;
-using ELSEdge = ::FSM::Labeled::Edge<CId, CString>;
-using ELSSetOfStates = ::FSM::Labeled::SetOfStates<CId, CString>;
-using ELSSetOfEdges = ::FSM::Abstract::SetOfEdges;
-using ELSSetOfStateRefs = ::FSM::Abstract::SetOfStateRefs;
-using ELSSetOfEdgeRefs = ::FSM::Abstract::SetOfEdgeRefs;
-
-class EdgeLabeledScenarioFSM : public ::FSM::Labeled::FiniteStateMachine<CId, CString> {
-public:
-    EdgeLabeledScenarioFSM() = default;
-    ~EdgeLabeledScenarioFSM() override = default;
-
-    EdgeLabeledScenarioFSM(const EdgeLabeledScenarioFSM &) = delete;
-    EdgeLabeledScenarioFSM &operator=(const EdgeLabeledScenarioFSM &other) = delete;
-    EdgeLabeledScenarioFSM(EdgeLabeledScenarioFSM &&) = delete;
-    EdgeLabeledScenarioFSM &operator=(EdgeLabeledScenarioFSM &&) = delete;
-
-    virtual void removeDanglingStates();
-};
 
 namespace StateStringLabeled {
 
 // make an FSM class with unlabeled edges, based on the labeled one with some dummy char labels
 //
-
-// class SetOfEdges : public Labeled::SetOfEdges<CString, char> {};
-// class SetOfEdgeRefs : public Labeled::SetOfEdgeRefs<CString, char> {};
-
-// class SetOfStates : public Labeled::SetOfStates<CString, char> {};
-// class SetOfStateRefs : public Labeled::SetOfStateRefs<CString, char> {};
 
 class State : public Labeled::State<CString, char> {
 public:
