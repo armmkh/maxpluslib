@@ -43,7 +43,7 @@
 #ifndef MAXPLUS_GRAPH_AUTOMATON_H_INCLUDED
 #define MAXPLUS_GRAPH_AUTOMATON_H_INCLUDED
 
-#include "base/fsm/fsm.h"
+#include "maxplus/base/fsm/fsm.h"
 #include "maxplus/algebra/mptype.h"
 
 namespace MaxPlus {
@@ -54,8 +54,10 @@ using namespace ::FSM::Labeled;
  */
 using MPAStateLabel = struct MPAStateLabel {
     CId id;
-    unsigned int tokenNr;
+    int tokenNr; // use -1 to indicate unassigned
 };
+
+
 
 /**
  * Create a new state label.
@@ -69,14 +71,15 @@ inline MPAStateLabel makeMPAStateLabel(CId stateId, unsigned int tokenId) {
     return sl;
 }
 
-inline bool operator==(MPAStateLabel s, MPAStateLabel t) {
+
+inline bool operator==(const MPAStateLabel& s, const MPAStateLabel& t) {
     return s.id == t.id && s.tokenNr == t.tokenNr;
 }
 
 /**
  * Compare MPA state labels using a lexicographical ordering.
  */
-inline bool operator<(MPAStateLabel s, MPAStateLabel t) {
+inline bool operator<(const MPAStateLabel& s, const MPAStateLabel& t) {
     if (s.id < t.id) {
         return true;
     }
@@ -86,20 +89,45 @@ inline bool operator<(MPAStateLabel s, MPAStateLabel t) {
     return s.tokenNr < t.tokenNr;
 }
 
+inline CString toString(const MPAStateLabel& l) {
+    return "(id: " + CString(l.id) + ", tokenNr: " + CString(l.tokenNr)+ ")";
+};
+
+
 /**
  * An MPA edge is labeled with a delay and a scenario name.
  */
 using MPAEdgeLabel = struct MPAEdgeLabel {
     MPDelay delay;
-    CString *scenario{nullptr};
+    CString scenario;
 };
+
+inline bool operator==(const MPAEdgeLabel& s, const MPAEdgeLabel& t) {
+    if (s.delay != t.delay) {
+        return false;
+    }
+    return s.scenario == t.scenario;
+}
+
+/**
+ * Compare MPA state labels using a lexicographical ordering.
+ */
+inline bool operator<(const MPAEdgeLabel& s, const MPAEdgeLabel& t) {
+    if (s.delay < t.delay) {
+        return true;
+    }
+    if (s.delay > t.delay) {
+        return false;
+    }
+    return s.scenario < t.scenario;
+}
 
 /**
  * Create a new edge label
  * @param stateId FSM state id
  * @param tokenId token number
  */
-inline MPAEdgeLabel makeMPAEdgeLabel(MPDelay delay, CString *scenario) {
+inline MPAEdgeLabel makeMPAEdgeLabel(MPDelay delay, CString& scenario) {
     MPAEdgeLabel el;
     el.delay = delay;
     el.scenario = scenario;
@@ -118,7 +146,8 @@ using MPASetOfEdges = ::FSM::Abstract::SetOfEdges;
 class MaxPlusAutomaton : public ::FSM::Labeled::FiniteStateMachine<MPAStateLabel, MPAEdgeLabel> {
 public:
     // Destructor.
-     ~MaxPlusAutomaton() override= default;;
+    ~MaxPlusAutomaton() override= default;
+
 };
 
 /**
@@ -126,7 +155,7 @@ public:
  */
 using MPAREdgeLabel = struct MPAREdgeLabel {
     MPDelay delay;
-    const CString& scenario;
+    const CString scenario;
     CDouble reward{0.0};
 };
 
@@ -138,12 +167,46 @@ inline MPAREdgeLabel makeRewardEdgeLabel(MPDelay d, const CString& sc, CDouble r
     return el;
 }
 
+inline bool operator==(const MPAREdgeLabel& s, const MPAREdgeLabel& t) {
+    if (s.delay != t.delay) {
+        return false;
+    }
+    if (s.scenario != t.scenario) {
+        return false;
+    }
+    return s.reward == t.reward;
+}
+
+/**
+ * Compare MPA state labels using a lexicographical ordering.
+ */
+inline bool operator<(const MPAREdgeLabel& s, const MPAREdgeLabel& t) {
+    if (s.delay < t.delay) {
+        return true;
+    }
+    if (s.delay > t.delay) {
+        return false;
+    }
+    if (s.scenario < t.scenario) {
+        return true;
+    }
+    if (s.scenario > t.scenario) {
+        return false;
+    }
+    return s.reward < t.reward;
+}
+
+inline CString toString(const MPAREdgeLabel& l) {
+    return "(delay: " + CString(l.delay) + ", scenario: " + CString(l.scenario) + ", reward: " + CString(l.reward) + ")";
+};
+
+
 // Types of states, edges, sets and cycle of an MPA with rewards.
 using MPARState = ::FSM::Labeled::State<MPAStateLabel, MPAREdgeLabel>;
 using MPAREdge = ::FSM::Labeled::Edge<MPAStateLabel, MPAREdgeLabel>;
 using MPARSetOfStates = ::FSM::Labeled::SetOfStates<MPAStateLabel, MPAREdgeLabel>;
 using MPARSetOfEdges = ::FSM::Abstract::SetOfEdges;
-using MPARCycle = ::FSM::Abstract::SetOfEdgeRefs;
+using MPARCycle = std::list<const ::FSM::Abstract::Edge*>;
 
 /**
  * A max-plus automaton with rewards. In addition to the usual max-plus automaton,
@@ -154,10 +217,15 @@ class MaxPlusAutomatonWithRewards
 public:
     // Destructor.
      ~MaxPlusAutomatonWithRewards() override= default;
+    std::shared_ptr<::FSM::Abstract::FiniteStateMachine> newInstance() override {
+        return std::make_shared<MaxPlusAutomatonWithRewards>();
+    }
+
     // compute the maximum cycle ratio of delay over progress
     CDouble calculateMCR();
     // compute the maximum cycle ratio of delay over progress and also return a critical cycle
-    CDouble calculateMCRAndCycle(MPARCycle **cycle);
+    CDouble calculateMCRAndCycle(std::shared_ptr<std::vector<const MPAREdge*>> *cycle);
+
 };
 
 } // namespace MaxPlus

@@ -44,8 +44,8 @@
 #ifndef BASE_MAXPLUS_MPTYPE_H_INCLUDED
 #define BASE_MAXPLUS_MPTYPE_H_INCLUDED
 
-#include "base/basic_types.h"
-#include "base/string/cstring.h"
+#include "maxplus/base/basic_types.h"
+#include "maxplus/base/string/cstring.h"
 #include <cassert>
 #include <cmath>
 
@@ -115,6 +115,7 @@ inline CDouble MP_MIN(CDouble a, CDouble b) { return CDouble(MP_MIN(MPTime(a), M
 const MPTime MP_MINUSINFINITY = MPTime(-1.0e+30);
 
 inline bool MP_ISMINUSINFINITY(CDouble a) { return a < MPTIME_MIN_INF_VAL; }
+inline bool MP_ISMINUSINFINITY(MPTime a) { return a < MP_MINUSINFINITY; }
 
 inline MPTime MP_PLUS(CDouble a, CDouble b) {
     return (MP_ISMINUSINFINITY(a) || MP_ISMINUSINFINITY(b)) ? MP_MINUSINFINITY

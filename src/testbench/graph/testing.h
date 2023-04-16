@@ -36,6 +36,25 @@ namespace testing {
   }                                                                 \
 }
 
+#define ASSERT_APPROX_EQUAL( x, y, eps )                                   \
+{                                                                   \
+  if( abs(( x ) - ( y )) > eps )                                              \
+  {                                                                 \
+    throw std::runtime_error(   std::string( "Asserted approximate equality violated." )                  \
+                              + std::string( "\nIn:" )              \
+                              + std::string( __FILE__ )             \
+                              + std::string( ":" )                  \
+                              + std::to_string( __LINE__ )          \
+                              + std::string( " in " )               \
+                              + std::string( __FUNCTION__ )         \
+                              + std::string( ": " )                 \
+                              + std::to_string( ( x ) )             \
+                              + std::string( " != " )               \
+                              + std::to_string( ( y ) )             \
+    );                                                              \
+  }                                                                 \
+}
+
 #define ASSERT_EQUAL_NOPRINT( x, y )                                   \
 {                                                                   \
   if( ( x ) != ( y ) )                                              \

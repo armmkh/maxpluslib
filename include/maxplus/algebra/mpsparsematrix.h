@@ -40,7 +40,7 @@
 #ifndef MAXPLUS_ALGEBRA_SPARSEMATRIX_H_INCLUDED
 #define MAXPLUS_ALGEBRA_SPARSEMATRIX_H_INCLUDED
 
-#include "algebra/mpmatrix.h"
+#include "mpmatrix.h"
 #include "mptype.h"
 #include <vector>
 

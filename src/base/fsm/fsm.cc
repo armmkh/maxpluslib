@@ -46,64 +46,6 @@ namespace FSM {
 
 CId FSM::Abstract::WithUniqueID::nextID = 0;
 
-/*removes states of the fsm with no outgoing edges.*/
-void EdgeLabeledScenarioFSM::removeDanglingStates() {
-
-    // temporary sets of states and edges
-    ELSSetOfEdgeRefs edgesToBeRemoved;
-    ELSSetOfStateRefs statesToBeRemoved;
-
-    ELSSetOfStates &elsStates = this->getStates();
-    ELSSetOfEdges &elsEdges = this->getEdges();
-
-    /*go through all edges and find all edges that end in
-    dangling states. Also store dangling states.*/
-    for(const auto& it: elsEdges){
-        auto& e = *(it.second);
-        const auto& s = dynamic_cast<const ELSState&>(e.getDestination());
-        const auto &oEdges = dynamic_cast<const ELSSetOfEdgeRefs &>(s.getOutgoingEdges());
-        if (oEdges.empty()) {
-            edgesToBeRemoved.insert(&e);
-            statesToBeRemoved.insert(&s);
-        }
-    }
-
-    while (!edgesToBeRemoved.empty()) {
-
-        // remove dangling states
-        for (const auto &s : statesToBeRemoved) {
-            this->removeState(dynamic_cast<const ELSState&>(*s));
-        }
-
-        // remove edges ending in dangling states
-        // remove edges ending in dangling states from the outgoing edges of their source states
-        for (const auto & e : edgesToBeRemoved) {
-            this->removeEdge(dynamic_cast<const ELSEdge&>(*e));
-            auto s = e->getSource();
-            s.removeOutgoingEdge(*e);
-        }
-
-        // empty the temporary sets
-        edgesToBeRemoved.clear();
-        statesToBeRemoved.clear();
-
-        elsStates = this->getStates();
-        elsEdges = this->getEdges();
-
-        /*go through all edges and find all edges that end in
-        dangling states. Also store dangling states.*/
-        for (const auto & it : elsEdges) {
-            const auto& elsEdge = *(it.second);
-            auto e = dynamic_cast<const ELSEdge&>(elsEdge);
-            auto s = dynamic_cast<const ELSState&>(e.getDestination());
-            const auto &oEdges = (s.getOutgoingEdges());
-            if (oEdges.empty()) {
-                edgesToBeRemoved.insert(&e);
-                statesToBeRemoved.insert(&s);
-            }
-        }
-    }
-}
 
 namespace StateStringLabeled {
 

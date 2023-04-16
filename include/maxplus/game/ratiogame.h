@@ -41,7 +41,7 @@
 #ifndef BASE_MAXPLUS_GAME_RATIOGAME_H
 #define BASE_MAXPLUS_GAME_RATIOGAME_H
 
-#include "graph/doubleweightedgraph.h"
+#include "maxplus/graph/doubleweightedgraph.h"
 #include <set>
 
 

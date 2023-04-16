@@ -41,8 +41,8 @@
 #ifndef MAXPLUS_GRAPH_DOUBLEWEIGHTEDGRAPH_H
 #define MAXPLUS_GRAPH_DOUBLEWEIGHTEDGRAPH_H
 
-#include "algebra/mptype.h"
-#include "base/fsm/fsm.h"
+#include "maxplus/algebra/mptype.h"
+#include "maxplus/base/fsm/fsm.h"
 
 namespace MaxPlus {
 

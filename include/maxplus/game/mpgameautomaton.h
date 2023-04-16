@@ -41,9 +41,9 @@
 #ifndef MAXPLUS_GRAPH_MPSTATESPACE_H
 #define MAXPLUS_GRAPH_MPSTATESPACE_H
 
-#include "algebra/mpmatrix.h"
-#include "base/fsm/fsm.h"
-#include "graph/mpautomaton.h"
+#include "maxplus/algebra/mpmatrix.h"
+#include "maxplus/base/fsm/fsm.h"
+#include "maxplus/graph/mpautomaton.h"
 #include "ratiogame.h"
 
 
@@ -69,9 +69,9 @@ public:
 
     void addV1(MPARState *s) { this->setV1.insert(s); }
 
-    MPTime getWeight1(const MPAREdge *e) const override { return MPTime(e->label.reward); }
+    MPTime getWeight1(const MPAREdge *e) const override { return MPTime(e->getLabel().reward); }
 
-    MPTime getWeight2(const MPAREdge *e) const override { return e->label.delay; }
+    MPTime getWeight2(const MPAREdge *e) const override { return e->getLabel().delay; }
 
 private:
     std::set<MPARState *> setV0;

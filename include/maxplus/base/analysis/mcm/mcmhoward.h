@@ -52,7 +52,7 @@
 #ifndef BASE_ANALYSIS_MCM_MCMHOWARD_H_INCLUDED
 #define BASE_ANALYSIS_MCM_MCMHOWARD_H_INCLUDED
 
-#include "base/analysis/mcm/mcmgraph.h"
+#include "maxplus/base/analysis/mcm/mcmgraph.h"
 #include <memory>
 namespace Graphs {
 /**
