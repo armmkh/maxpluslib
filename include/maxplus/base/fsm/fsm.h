@@ -552,13 +552,13 @@ public:
 
     State<StateLabelType, EdgeLabelType> *checkStateLabeled(const StateLabelType &s) {
         // try the index first
-        if (this->states.stateIndex.find(s) != this->states.stateIndex.end()) {
-            return this->states.stateIndex[s];
+        if (this->states.withLabel(s) != nullptr) {
+            return this->states.withLabel(s);
         }
         // for now just a linear search
-        typename SetOfStates<StateLabelType, EdgeLabelType>::CIter i = this->states.begin();
+        auto i = this->states.begin();
         while (i != this->states.end()) {
-            auto &t = *(i.second);
+            auto &t = dynamic_cast<State<StateLabelType, EdgeLabelType>&>(*((*i).second));
             if ((t.stateLabel) == s) {
                 this->states.addToStateIndex(s, &t);
                 return &t;

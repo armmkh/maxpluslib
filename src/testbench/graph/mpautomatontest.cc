@@ -29,12 +29,10 @@ void MPAutomatonTest::testCreateFSM() {
     std::cout << "Running test: CreateFSM" << std::endl;
 
     MaxPlusAutomatonWithRewards mpa;
-    // One FSM state, three tokens:
-    CId fsm_s0 = 0;
 
-    MPARState *s1 = mpa.addState(makeMPAStateLabel(fsm_s0, 0));
-    MPARState *s2 = mpa.addState(makeMPAStateLabel(fsm_s0, 1));
-    MPARState *s3 = mpa.addState(makeMPAStateLabel(fsm_s0, 2));
+    MPARState *s1 = mpa.addState(makeMPAStateLabel(0, 0));
+    MPARState *s2 = mpa.addState(makeMPAStateLabel(0, 1));
+    MPARState *s3 = mpa.addState(makeMPAStateLabel(0, 2));
 
     mpa.addEdge(*s1, makeRewardEdgeLabel(MPTime(3.0), CString("A"), 1.0), *s2);
     mpa.addEdge(*s1, makeRewardEdgeLabel(MPTime(3.0), CString("A"), 1.0), *s3);
@@ -50,6 +48,9 @@ void MPAutomatonTest::testCreateFSM() {
     }
 
     mpa.setInitialState(*s1);
+
+    auto s = mpa.checkStateLabeled(makeMPAStateLabel(0, 1));
+    ASSERT_THROW(s != nullptr);
 
     ASSERT_EQUAL_NOPRINT(s1, &(mpa.getInitialState()));
 }
