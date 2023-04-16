@@ -52,6 +52,9 @@ void MPAutomatonTest::testCreateFSM() {
     auto s = mpa.checkStateLabeled(makeMPAStateLabel(0, 1));
     ASSERT_THROW(s != nullptr);
 
+    auto e = mpa.findEdge(makeMPAStateLabel(0, 0), makeRewardEdgeLabel(MPTime(3.0), CString("A"), 1.0), makeMPAStateLabel(0, 1));
+    ASSERT_THROW(e != nullptr);
+
     ASSERT_EQUAL_NOPRINT(s1, &(mpa.getInitialState()));
 }
 

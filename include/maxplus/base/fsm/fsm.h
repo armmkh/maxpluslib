@@ -580,14 +580,13 @@ public:
     // check if there exists a transition e = (q1,alpha,q2)
     const Edge<StateLabelType, EdgeLabelType> *
     findEdge(StateLabelType src, EdgeLabelType lbl, StateLabelType dst) {
-        Edge<StateLabelType, EdgeLabelType> *found = nullptr;
 
         // get all labels
         SetOfStates<StateLabelType, EdgeLabelType> &allStates = this->getStates();
 
         for (auto iter : allStates) {
-            auto s = *iter;
-            if (s->stateLabel == src) {
+            auto s = dynamic_cast<State<StateLabelType, EdgeLabelType>&>(*(iter.second));
+            if (s.stateLabel == src) {
                 State<StateLabelType, EdgeLabelType> &srcState = this->getStateLabeled(src);
 
                 const auto &outgoingEdges =
@@ -595,10 +594,9 @@ public:
 
                 for (const auto &it : outgoingEdges) {
                     auto e = dynamic_cast<const Edge<StateLabelType, EdgeLabelType> *>(it);
-                    auto dstState = e->getDestination();
-                    if (e->label == lbl && dstState->getLabel() == dst) {
-                        found = e;
-                        return found;
+                    auto dstState = dynamic_cast<const State<StateLabelType, EdgeLabelType>&>(e->getDestination());
+                    if (e->getLabel() == lbl && dstState.getLabel() == dst) {
+                        return e;
                     }
                 }
             }
