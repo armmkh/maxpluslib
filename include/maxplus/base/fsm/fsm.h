@@ -148,7 +148,9 @@ public:
         return this->outgoingEdges;
     }
 
-    void removeOutgoingEdge(Edge &e) { this->outgoingEdges.erase(&e); }
+    void removeOutgoingEdge(const Edge &e) {
+        this->outgoingEdges.erase(const_cast<Edge*>(&e)); 
+    }
     void insertOutgoingEdge(Edge &e) { this->outgoingEdges.insert(&e); }
 
 private:
@@ -459,7 +461,7 @@ public:
     };
 
     void removeEdge(const Edge<StateLabelType, EdgeLabelType> &e) { 
-        auto csrc = dynamic_cast<State<StateLabelType, EdgeLabelType> &>(e.getSource());
+        auto csrc = dynamic_cast<const State<StateLabelType, EdgeLabelType> &>(e.getSource());
         // get a non-const version of the state
         auto src = this->getStateLabeled(csrc.getLabel());
         src.removeOutgoingEdge(e);
