@@ -50,7 +50,7 @@
 #include <cmath>
 
 #define MPTIME_MAXVAL 1.0e+30
-#define MPTIME_MIN_INF_VAL -1.0e+20
+#define MPTIME_MIN_INF_VAL -1.0e+30
 
 namespace MaxPlus {
 
@@ -113,9 +113,10 @@ inline CDouble MP_MIN(CDouble a, CDouble b) { return CDouble(MP_MIN(MPTime(a), M
 
 // the quick and dirty way of representing -infinity
 const MPTime MP_MINUSINFINITY = MPTime(-1.0e+30);
-
-inline bool MP_ISMINUSINFINITY(CDouble a) { return a < MPTIME_MIN_INF_VAL; }
-inline bool MP_ISMINUSINFINITY(MPTime a) { return a < MP_MINUSINFINITY; }
+const MPTime MP_MINUSINFINITY_THR = MPTime(-0.5e+30);
+const CDouble MPTIME_MIN_INF_VALPTHR = -0.5e+30;
+inline bool MP_ISMINUSINFINITY(CDouble a) { return a <= MPTIME_MIN_INF_VALPTHR; }
+inline bool MP_ISMINUSINFINITY(MPTime a) { return a <= MP_MINUSINFINITY_THR; }
 
 inline MPTime MP_PLUS(CDouble a, CDouble b) {
     return (MP_ISMINUSINFINITY(a) || MP_ISMINUSINFINITY(b)) ? MP_MINUSINFINITY
