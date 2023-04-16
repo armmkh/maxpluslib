@@ -88,6 +88,8 @@ void MPAutomatonTest::testDeterminizeFSM() {
     ASSERT_THROW(mpaDeterminized->getStates().size() == 2);
     ASSERT_THROW(mpaDeterminized->getEdges().size()==3);
 
+    auto mpaMin = mpa.minimizeEdgeLabels();
+
     // TODO: implement MCR on MaxPlusAutomatonWithRewards and MCM on MaxPlusAutomaton
     // CDouble mcr = mpaDeterminized->calculateMCR();
     // std::cout << "MCR: " << mcr << std::endl;

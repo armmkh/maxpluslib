@@ -54,8 +54,10 @@ using namespace ::FSM::Labeled;
  */
 using MPAStateLabel = struct MPAStateLabel {
     CId id;
-    unsigned int tokenNr;
+    int tokenNr; // use -1 to indicate unassigned
 };
+
+
 
 /**
  * Create a new state label.
@@ -68,6 +70,7 @@ inline MPAStateLabel makeMPAStateLabel(CId stateId, unsigned int tokenId) {
     sl.tokenNr = tokenId;
     return sl;
 }
+
 
 inline bool operator==(const MPAStateLabel& s, const MPAStateLabel& t) {
     return s.id == t.id && s.tokenNr == t.tokenNr;
@@ -143,7 +146,8 @@ using MPASetOfEdges = ::FSM::Abstract::SetOfEdges;
 class MaxPlusAutomaton : public ::FSM::Labeled::FiniteStateMachine<MPAStateLabel, MPAEdgeLabel> {
 public:
     // Destructor.
-     ~MaxPlusAutomaton() override= default;;
+    ~MaxPlusAutomaton() override= default;
+
 };
 
 /**
