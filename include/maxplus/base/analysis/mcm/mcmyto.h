@@ -173,7 +173,7 @@ CDouble getWeight(const MCMedge& e);
  * to graph input for Young-Tarjan-Orlin's algorithm.
  * It assumes that the id's of the nodes are 0 <= id < number of nodes
  */
-void convertMCMgraphToYTOgraph(const MCMgraph& g,
+void convertMCMgraphToYTOgraph(MCMgraph& g,
                                graph& gr,
                                CDouble (*costFunction)(const MCMedge& e),
                                CDouble (*transit_timeFunction)(const MCMedge& e));
