@@ -109,9 +109,9 @@ CDouble maximumCycleMeanKarpGeneral(MCMgraph& g) {
     MCMgraphs sccs;
     stronglyConnectedMCMgraph(g, sccs, false);
 
-    CDouble mcm = -INFINITY;
+    auto mcm = static_cast<CDouble>(-INFINITY);
     for (auto &scc : sccs) {
-        std::map<int, int> nodeMap;
+        std::map<CId, CId> nodeMap;
         scc->relabelNodeIds(&nodeMap);
         MCMnode *sccCriticalNode = nullptr;
         ;
@@ -189,12 +189,12 @@ CDouble maximumCycleMeanKarpDoubleGeneral(MCMgraph &g, const MCMnode **criticalN
     MCMgraphs sccs;
     stronglyConnectedMCMgraph(g, sccs, false);
 
-    CDouble mcm = -INFINITY;
+    auto mcm = static_cast<CDouble>(-INFINITY);
     if (criticalNode != nullptr) {
         *criticalNode = nullptr;
     }
     for (auto &scc : sccs) {
-        std::map<int, int> nodeMap;
+        std::map<CId, CId> nodeMap;
         scc->relabelNodeIds(&nodeMap);
         const MCMnode *sccCriticalNode = nullptr;
         ;

@@ -198,7 +198,7 @@ public:
         e.dst->in.remove(&e);
     }
 
-    void relabelNodeIds(std::map<int, int> *nodeIdMap = nullptr);
+    void relabelNodeIds(std::map<CId, CId> *nodeIdMap = nullptr);
 
     // reduce the MCM graph by removing obviously redundant edges
     // in particular if there are multiple edges between the same pair

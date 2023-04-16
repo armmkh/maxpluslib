@@ -940,20 +940,20 @@ void convertMCMgraphToYTOgraph(MCMgraph &g,
                                CDouble (*costFunction)(const MCMedge& e),
                                CDouble (*transit_timeFunction)(const MCMedge& e)) {
 
-    gr.n_nodes = g.nrVisibleNodes();
-    gr.n_arcs = g.nrVisibleEdges();
+    gr.n_nodes = static_cast<int>(g.nrVisibleNodes());
+    gr.n_arcs = static_cast<int>(g.nrVisibleEdges());
     // allocate space for the nodes, plus one for the exta source node that will be added
     gr.nodes.resize(gr.n_nodes + 1);
     gr.arcs.resize(gr.n_arcs + gr.n_nodes);
 
     // create nodes
     // keep an index of node id's
-    std::map<int,int> nodeIndex;
+    std::map<CId,CId> nodeIndex;
     uint ind = 0;
     for (const auto &n : g.getNodes()) {
         nodeIndex[n.id] = ind;
         node& x = (gr.nodes)[ind];
-        x.id = n.id + 1;
+        x.id = static_cast<int>(n.id + 1);
         x.first_arc_out = nullptr;
         x.first_arc_in = nullptr;
 

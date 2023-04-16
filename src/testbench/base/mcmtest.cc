@@ -9,6 +9,7 @@
 #include "mcmtest.h"
 #include "testing.h"
 #include <random>
+#include <type_traits>
 
 
 using namespace MaxPlus;
@@ -216,7 +217,7 @@ void MCMTest::test_yto() {
     ASSERT_THROW(eid == 6);
 
     // TODO: check of the cycle ratio are identical to old SDF3
-    CDouble expectedMinCycleRatios[] = {
+    std::array<CDouble,250> expectedMinCycleRatios = {
             0.526141,  0.124523,  0.0389826, 0.289127,   0.11451,    0.723313,   1.07027,
             0.956067,  0.570066,  0.746341,  0.33622,    0.475978,   0.902663,   1.02951,
             0.088711,  0.269878,  0.213763,  0.468927,   2.13632,    0.564086,   0.656227,
@@ -262,12 +263,12 @@ void MCMTest::test_yto() {
         //std::cout << "MCM: " << result << "cycle length: " << cycle->size() << std::endl;
     }
 
-    CDouble expectedMaxCycleRatios[] = {
+    std::array<CDouble, 25> expectedMaxCycleRatios = {
             304.647, 122.759, 104.209, 126.85,  1341.83, 135.611, 186.801, 151.854, 341.077,
             216.21,  148.74,  117.382, 127.863, 246.385, 92.0357, 72.9353, 124.893, 202.074,
             281.92,  481.408, 253.295, 849.381, 123.668, 64.0955, 219.92};
     // go through a bunch of (deterministic) big pseudo-random graphs
-    for (int k = 0; k < 25; k++) {
+    for (int k = 0; k < expectedMaxCycleRatios.size(); k++) {
         MCMgraph gr = makeRandomGraph(1000, 100000, k);
         result = maxCycleRatioAndCriticalCycleYoungTarjanOrlin(gr, &cycle);
         ASSERT_APPROX_EQUAL(expectedMaxCycleRatios[k], result, 1e-2);

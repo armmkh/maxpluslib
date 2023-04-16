@@ -575,7 +575,7 @@ CDouble maximumCycleMeanHowardGeneral(MCMgraph &g, MCMnode **criticalNode) {
         *criticalNode = nullptr;
     }
     for (auto &scc : sccs) {
-        std::map<int, int> nodeMap;
+        std::map<CId, CId> nodeMap;
         scc->relabelNodeIds(&nodeMap);
         MCMnode *sccCriticalNode = nullptr;
         ;

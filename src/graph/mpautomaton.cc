@@ -16,15 +16,15 @@ CDouble MaxPlusAutomatonWithRewards::calculateMCR(){
 
     std::map<const ::FSM::Abstract::State*, MCMnode*> nodeMap;
 
-    for (auto s: this->getStates()) {
-        auto n = g.addNode(nId++);
+    for (const auto& s: this->getStates()) {
+        auto *n = g.addNode(nId++);
         nodeMap[&(*(s.second))] = n;
     }
 
     CId eId = 0;
-    for (auto s: this->getStates()) {
-        for(auto e: (s.second)->getOutgoingEdges()) {
-            auto mpae = dynamic_cast<MPAREdge*>(e);
+    for (const auto& s: this->getStates()) {
+        for(auto *e: (s.second)->getOutgoingEdges()) {
+            auto *mpae = dynamic_cast<MPAREdge*>(e);
             g.addEdge(eId++, *nodeMap[&(mpae->getSource())], *nodeMap[&(mpae->getDestination())], static_cast<CDouble>(mpae->getLabel().delay), mpae->getLabel().reward);
         }
     }
@@ -42,17 +42,17 @@ CDouble MaxPlusAutomatonWithRewards::calculateMCRAndCycle(std::shared_ptr<std::v
     CId nId = 0;
     std::map<const ::FSM::Abstract::State*, MCMnode*> nodeMap;
 
-    for (auto s: this->getStates()) {
-        auto n = g.addNode(nId++);
+    for (const auto& s: this->getStates()) {
+        auto *n = g.addNode(nId++);
         nodeMap[&(*(s.second))] = n;
     }
 
     CId eId = 0;
     std::map<const MCMedge*, const MPAREdge*> edgeMap;
 
-    for (auto s: this->getStates()) {
-        for(auto e: (s.second)->getOutgoingEdges()) {
-            auto mpae = dynamic_cast<MPAREdge*>(e);
+    for (const auto& s: this->getStates()) {
+        for(auto *e: (s.second)->getOutgoingEdges()) {
+            auto *mpae = dynamic_cast<MPAREdge*>(e);
             g.addEdge(eId++, *nodeMap[&(mpae->getSource())], *nodeMap[&(mpae->getDestination())], static_cast<CDouble>(mpae->getLabel().delay), mpae->getLabel().reward);
         }
     }
@@ -61,7 +61,7 @@ CDouble MaxPlusAutomatonWithRewards::calculateMCRAndCycle(std::shared_ptr<std::v
     CDouble mcr = maxCycleRatioAndCriticalCycleYoungTarjanOrlin(g, &mcmCycle);
     if (cycle != nullptr) {
         *cycle = std::make_shared<std::vector<const MPAREdge*>>();
-        for (auto e: *mcmCycle) {
+        for (const auto *e: *mcmCycle) {
             (*cycle)->push_back(edgeMap[e]);
         }
     }

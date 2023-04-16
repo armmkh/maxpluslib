@@ -40,7 +40,7 @@ namespace testing {
 
 #define ASSERT_APPROX_EQUAL( x, y, eps )                                   \
 {                                                                   \
-  if( abs(( x ) - ( y )) > eps )                                              \
+  if( std::abs(( x ) - ( y )) > eps )                                              \
   {                                                                 \
     throw std::runtime_error(   std::string( "Asserted approximate equality violated." )                  \
                               + std::string( "\nIn:" )              \

@@ -1089,7 +1089,7 @@ Matrix::mp_generalized_eigenvectors() const {
         sccMapInv[k] = scc.get();
 
         // MCM calculation requires node relabelling
-        std::map<int, int> sccNodeIdMap;
+        std::map<CId, CId> sccNodeIdMap;
         scc->relabelNodeIds(&sccNodeIdMap);
 
         if (scc->nrVisibleEdges() > 0) {

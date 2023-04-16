@@ -61,7 +61,7 @@ namespace Graphs {
 CDouble mcmDG_SCC(MCMgraph &mcmGraph) {
 
     // Allocate memory
-    const int n = mcmGraph.nrVisibleNodes();
+    const int n = static_cast<int>(mcmGraph.nrVisibleNodes());
     std::vector<int> level(n);
     std::vector<std::vector<int>> pi(n + 1, std::vector<int>(n));
     std::vector<std::vector<int>> d(n + 1, std::vector<int>(n));
@@ -134,7 +134,7 @@ CDouble mcmDG(MCMgraph &mcmGraph) {
     MCMgraphs sccs;
     stronglyConnectedMCMgraph(mcmGraph, sccs, false);
 
-    CDouble mcm = -INFINITY;
+    auto mcm = static_cast<CDouble>(-INFINITY);
     for (auto &scc : sccs) {
         scc->relabelNodeIds();
         CDouble cmcm = mcmDG_SCC(*scc);

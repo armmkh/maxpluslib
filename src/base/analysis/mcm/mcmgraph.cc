@@ -225,8 +225,12 @@ static void addLongestDelayEdgeForNode(MCMgraph &g, MCMnode &n, MCMedge &e) {
         // Node m reachable from n and not connected directly to n via e?
         if (d[m->id] > 0 && e.dst->id != m->id) {
             // Create an edge between n and m
-            MCMedge *eN = g.addEdge(
-                    static_cast<CId>(g.getEdges().size()), n, *m, d[m->id], e.d, false); // e.d should always be 1
+            MCMedge *eN = g.addEdge(static_cast<CId>(g.getEdges().size()),
+                                    n,
+                                    *m,
+                                    d[m->id],
+                                    e.d,
+                                    false); // e.d should always be 1
             n.out.push_back(eN);
             m->in.push_back(eN);
         }
@@ -435,7 +439,7 @@ static void addNodeToComponent(const MCMnode &n, MCMgraph &comp) {
     // in the previous loop already
     for (const auto &e : n.in) {
         // Is source node in the component?
-        for (auto& iterN : comp.getNodes()) {
+        for (auto &iterN : comp.getNodes()) {
             // if the source node is in the component and it is not a self-edge
             if ((e->src->id == iterN.id) && (e->src->id != e->dst->id)) {
                 // Add a copy of the edge to the component
@@ -757,7 +761,7 @@ CDouble MCMgraph::calculateMaximumCycleRatioAndCriticalCycleYoungTarjanOrlin(
     return maxCycleRatioAndCriticalCycleYoungTarjanOrlin(*this, cycle);
 }
 
-void MCMgraph::relabelNodeIds(std::map<int, int> *nodeIdMap) {
+void MCMgraph::relabelNodeIds(std::map<CId, CId> *nodeIdMap) {
     int k = 0;
     for (auto &i : this->nodes) {
         MCMnode &n = i;
