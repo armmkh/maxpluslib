@@ -458,7 +458,13 @@ public:
         return &e;
     };
 
-    void removeEdge(const Edge<StateLabelType, EdgeLabelType> &e) { this->edges.remove(e); }
+    void removeEdge(const Edge<StateLabelType, EdgeLabelType> &e) { 
+        auto csrc = dynamic_cast<State<StateLabelType, EdgeLabelType> &>(e.getSource());
+        // get a non-const version of the state
+        auto src = this->getStateLabeled(csrc.getLabel());
+        src.removeOutgoingEdge(e);
+        this->edges.remove(e);
+    }
 
     void removeState(const State<StateLabelType, EdgeLabelType> &s) {
         // remove related edges
