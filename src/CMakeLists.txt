@@ -5,7 +5,11 @@ add_subdirectory(algebra)
 add_subdirectory(base)
 add_subdirectory(game)
 add_subdirectory(graph)
-add_subdirectory(testbench)
+
+if (BUILD_TESTS)
+    add_subdirectory(testbench)
+endif (BUILD_TESTS)
+
 
 set(MAXPLUSLIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 target_include_directories(maxplus PUBLIC

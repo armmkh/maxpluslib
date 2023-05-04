@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.14.0 FATAL_ERROR)
 project(MaxPLusLib)
 
 option(CODE_COVERAGE "Compile for code coverage (default OFF)." OFF)
+option(BUILD_TESTS "Build tests" OFF)
 
 set(CPM_USE_LOCAL_PACKAGES ON)
 include(config/get_cpm.cmake)

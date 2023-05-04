@@ -22,7 +22,7 @@ This creates a static library that can be used with the provided include files.
 Use the following to run the tests and coverage results.
 
 ``` bash
-cmake -DCODE_COVERAGE=ON .
+cmake -DCODE_COVERAGE=ON -DBUILD_TESTS=ON.
 ctest
 make maxpluslibcoverage
 ```
