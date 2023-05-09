@@ -608,6 +608,12 @@ Matrix Matrix::getSubMatrix(const std::list<unsigned int> &indices) const {
     return this->getSubMatrix(indices, indices);
 }
 
+std::shared_ptr<Matrix> Matrix::getSubMatrixPtr(const std::list<unsigned int> &indices) const {
+    assert(this->getRows() == this->getCols());
+    return this->getSubMatrixPtr(indices, indices);
+}
+
+
 /**
  * Make sub matrix with indices in list for non-square matrix. The new matrix only keeps the columns
  * of the original matrix with the selected indices.
