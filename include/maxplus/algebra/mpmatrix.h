@@ -177,6 +177,9 @@ public:
     [[nodiscard]] virtual Matrix getSubMatrix(const std::list<unsigned int> &rowIndices,
                                                const std::list<unsigned int> &colIndices) const;
 
+    [[nodiscard]] virtual std::shared_ptr<Matrix> getSubMatrixPtr(const std::list<unsigned int> &rowIndices,
+                                               const std::list<unsigned int> &colIndices) const;
+
     [[nodiscard]] Matrix getSubMatrix(const std::list<unsigned int> &indices) const;
 
     [[nodiscard]] Matrix getSubMatrixNonSquare(const std::list<unsigned int> &indices) const;

@@ -581,6 +581,25 @@ Matrix Matrix::getSubMatrix(const std::list<unsigned int> &rowIndices,
     return newMatrix;
 }
 
+std::shared_ptr<Matrix> Matrix::getSubMatrixPtr(const std::list<unsigned int> &rowIndices,
+                                    const std::list<unsigned int> &colIndices) const {
+    auto NR = static_cast<unsigned int>(rowIndices.size());
+    auto NC = static_cast<unsigned int>(colIndices.size());
+    auto newMatrix = std::make_shared<Matrix>(NR, NC);
+
+    auto rit = rowIndices.begin();
+    for (unsigned int r = 0; r < NR; r++, rit++) {
+        unsigned int ri = (*rit);
+        auto cit = colIndices.begin();
+        for (unsigned int c = 0; c < NC; c++, cit++) {
+            unsigned int ci = (*cit);
+            newMatrix->put(r, c, this->get(ri, ci));
+        }
+    }
+    return newMatrix;
+}
+
+
 /**
  * Make sub matrix with indices in list from square matrix
  */
