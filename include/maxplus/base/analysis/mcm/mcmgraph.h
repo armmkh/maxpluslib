@@ -193,10 +193,9 @@ public:
     // Remove an edge from the MCMgraph.
     // Note: containers of edges are lists, so remove is expensive!
     void removeEdge(MCMedge &e) {
-        this->edges.remove(e);
         e.src->out.remove(&e);
         e.dst->in.remove(&e);
-    }
+        this->edges.remove(e);    }
 
     void relabelNodeIds(std::map<CId, CId> *nodeIdMap = nullptr);
 

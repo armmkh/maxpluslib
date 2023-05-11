@@ -599,10 +599,36 @@ void stronglyConnectedMCMgraph(MCMgraph &g,
  * edges are assigned a new id starting in the range [0,nrNodes()).
  */
 void relabelMCMgraph(MCMgraph &g) {
-    uint nodeId = 0;
-    uint edgeId = 0;
+
+    std::set<MCMedge*> edgesToRemove;
+    std::set<MCMnode*> nodesToRemove;
+    
+    // find nodes to remove
+    for (auto &n : g.getNodes()) {
+        if (! n.visible) {
+            nodesToRemove.insert(&n);
+        }
+    }
+
+    // find edges to remove
+    for (auto &e : g.getEdges()) {
+        if (! e.visible) {
+            edgesToRemove.insert(&e);
+        }
+    }
+
+    // remove edges
+    for (auto *e : edgesToRemove) {
+        g.removeEdge(*e);
+    }
+
+    // remove nodes
+    for (auto *n : nodesToRemove) {
+        g.removeNode(*n);
+    }
 
     // Relabel nodes
+    uint nodeId = 0;
     for (auto &n : g.getNodes()) {
         if (n.visible) {
             n.id = nodeId;
@@ -611,6 +637,7 @@ void relabelMCMgraph(MCMgraph &g) {
     }
 
     // Relabel edges
+    uint edgeId = 0;
     for (auto &e : g.getEdges()) {
         if (e.visible) {
             e.id = edgeId;
@@ -618,60 +645,6 @@ void relabelMCMgraph(MCMgraph &g) {
         }
     }
 
-    // Remove edges from nodes
-    for (auto &n : g.getNodes()) {
-        if (!n.visible) {
-            continue;
-        }
-
-        for (auto iterE = n.in.begin(); iterE != n.in.end();) {
-            auto iterEN = iterE;
-
-            // Next iterator
-            iterE++;
-
-            // Erase current iterator?
-            if (!(*iterEN)->visible) {
-                n.in.erase(iterEN);
-            }
-        }
-
-        for (auto iterE = n.out.begin(); iterE != n.out.end();) {
-            auto iterEN = iterE;
-
-            // Next iterator
-            iterE++;
-
-            // Erase current iterator?
-            if (!(*iterEN)->visible) {
-                n.out.erase(iterEN);
-            }
-        }
-    }
-
-    // Remove nodes from graph
-    for (auto iter = g.getNodes().begin(); iter != g.getNodes().end();) {
-        auto iterN = iter;
-
-        // Next iterator
-        iter++;
-
-        if (!(*iterN).visible) {
-            g.removeNode(*iterN);
-        }
-    }
-
-    // Remove edges from graph
-    for (auto iter = g.getEdges().begin(); iter != g.getEdges().end();) {
-        auto iterE = iter;
-
-        // Next iterator
-        iter++;
-
-        if (!(*iterE).visible) {
-            g.removeEdge(*iterE);
-        }
-    }
 }
 
 // Prune the edges in the MCMgraph to maintain only Pareto maximal combinations
