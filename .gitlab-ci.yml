@@ -8,7 +8,7 @@ build:
     tags:
         - Ubuntu2004-64bit
     script:
-        - cmake -DCODE_COVERAGE=ON -DBUILD_TESTS=ON.
+        - cmake -DCODE_COVERAGE=ON -DBUILD_TESTS=ON .
         - make
         - ctest --output-on-failure
         - make maxpluslibcoverage
