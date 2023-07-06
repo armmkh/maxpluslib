@@ -72,13 +72,13 @@ namespace MaxPlus {
         inline MPTime get(unsigned int row) const {
             return this->table[row];
         }
-
+        void toLaTeXString(CString& outString, double scale = 1.0) const;
         void put(unsigned int row, MPTime value);
 
         void toString(CString &outString, double scale = 1.0) const;
 
         Vector(const Vector &);
-
+        void randomize(unsigned int max);
         Vector &operator=(const Vector &);
 
         MPTime norm();
@@ -184,6 +184,7 @@ namespace MaxPlus {
 
         Matrix *getTransposedCopy() const;
 
+        Matrix* getSubMatrixNonSquareRows(const list<unsigned int>& rowIndices) const;
         virtual Matrix *getSubMatrix(const list<unsigned int> &rowIndices, const list<unsigned int> &colIndices) const;
 
         Matrix *getSubMatrix(const list<unsigned int> &indices) const;
@@ -195,6 +196,10 @@ namespace MaxPlus {
 		*/
 		void addRows(uint n);
 
+        /**
+        * Increases the number of cols of the matrix by n and fills the new elements with -\infty.
+        */
+        void addCols(uint n);
 
         void toString(CString &outString, double scale = 1.0) const;
 		void toMatlabString(CString& outString, double scale = 1.0) const;
@@ -250,11 +255,16 @@ namespace MaxPlus {
          */
         MPTime largestFiniteElement() const;
         MPTime minimalFiniteElement() const;
+        MPTime getMaxOfCol(uint colNumber) const;
+        MPTime getMaxOfRow(uint rowNumber) const;
+        MPTime  getMaxOfRowUntilCol(uint rowNumber, uint colNumber) const;
+        MPTime getMaxOfColUntilRow(uint colNumber,uint rowNumber) const;
 
         Matrix *plusClosureMatrix(MPTime posCycleThre = MP_EPSILON) const;
 
         Matrix *starClosureMatrix(MPTime posCycleThre = MP_EPSILON) const;
-
+        // randomizes all elements of an existing matrix up to and including val max
+        void randomize(unsigned int max);
         Matrix *allPairLongestPathMatrix(MPTime posCycleThre, bool implyZeroSelfEdges) const;
 		bool allPairLongestPathMatrix(MPTime posCycleThre, bool implyZeroSelfEdges, Matrix& res) const;
 

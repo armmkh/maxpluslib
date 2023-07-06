@@ -109,6 +109,7 @@ namespace MaxPlus {
     typedef ::FSM::Labeled::Edge<MPAStateLabel, MPAEdgeLabel> MPAEdge;
     typedef ::FSM::Labeled::SetOfStates<MPAStateLabel, MPAEdgeLabel> MPASetOfStates;
     typedef ::FSM::Labeled::SetOfEdges<MPAStateLabel, MPAEdgeLabel> MPASetOfEdges;
+	typedef ::FSM::Labeled::ListOfEdges<MPAStateLabel, MPAEdgeLabel> MPASequence;
 
     /**
      * A max-plus automaton
